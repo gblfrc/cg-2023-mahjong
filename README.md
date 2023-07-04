@@ -5,7 +5,7 @@ DISCLAIMER: The project is a major task in the course work and the main requirem
 
 ## Table of contents
 - [Setup](#setup)
-  -  [Visual Studio](visual-studio)
+  -  [Visual Studio](#visual-studio)
 - [Troubleshooting](#troubleshooting)
 - [Authors](#authors)
 
