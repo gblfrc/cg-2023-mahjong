@@ -11,18 +11,27 @@
 //        mat3  : alignas(16)
 //        mat4  : alignas(16)
 
-struct MeshUniformBlock {
+struct TileUniformBlock {
 	alignas(4) float amb;
 	alignas(4) float gamma;
 	alignas(16) glm::vec3 sColor;
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
+	alignas(4) int tldx;
 };
 
-struct OverlayUniformBlock {
-	alignas(4) float visible;
+struct BackgroundUniformBlock {
+	alignas(4) float amb;
+	alignas(4) float gamma;
+	alignas(16) glm::vec3 sColor;
+	//Oren-Nayar:
+	alignas(16) glm::vec3 DlightDir;
+	alignas(16) glm::vec3 DlightColor;
+	alignas(16) glm::vec3 eyePos;
+
 };
+
 
 struct GlobalUniformBlock {
 	alignas(16) glm::vec3 DlightDir;
@@ -38,13 +47,7 @@ struct VertexMesh {
 	glm::vec2 UV;
 };
 
-struct VertexOverlay {
-	glm::vec2 pos;
-	glm::vec2 UV;
-};
 
-/* A16 */
-/* Add the C++ datastructure for the required vertex format */
 
 
 
@@ -56,47 +59,36 @@ class A16 : public BaseProject {
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay;
-	/* A16 */
-	/* Add the variable that will contain the required Descriptor Set Layout */
+	DescriptorSetLayout DSLGubo, DSLTile, DSLBackground;
+
 
 	// Vertex formats
 	VertexDescriptor VMesh;
-	VertexDescriptor VOverlay;
-	/* A16 */
-	/* Add the variable that will contain the required Vertex format definition */
+
 
 	// Pipelines [Shader couples]
-	Pipeline PMesh;
-	Pipeline POverlay;
-	/* A16 */
-	/* Add the variable that will contain the new pipeline */
+	Pipeline PTile;
+	Pipeline PBackground;
+
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MBody, MHandle, MWheel;
-	/* A16 */
-	/* Add the variable that will contain the model for the room */
-	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSBody, DSHandle, DSWheel1, DSWheel2, DSWheel3, DSKey, DSSplash;
-	/* A16 */
-	/* Add the variable that will contain the Descriptor Set for the room */	
-	Texture TBody, THandle, TWheel, TKey, TSplash;
+	Model<VertexMesh> MTile, MBackground;
+
+
+	DescriptorSet DSGubo, DSBackground;
+	DescriptorSet DSTile[144];	//????
+
+	Texture TPoolCloth, TWhiteTiles;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboBody, uboHandle, uboWheel1, uboWheel2, uboWheel3;
-	/* A16 */
-	/* Add the variable that will contain the Uniform Block in slot 0, set 1 of the room */
+	TileUniformBlock tileubo[144];	//???
+	BackgroundUniformBlock bgubo;
 	GlobalUniformBlock gubo;
-	OverlayUniformBlock uboKey, uboSplash;
 
 	// Other application parameters
 	float CamH, CamRadius, CamPitch, CamYaw;
 	int gameState;
-	float HandleRot = 0.0;
-	float Wheel1Rot = 0.0;
-	float Wheel2Rot = 0.0;
-	float Wheel3Rot = 0.0;
 
 
 	// Here you set the main application parameters
@@ -104,16 +96,14 @@ class A16 : public BaseProject {
 		// window size, titile and initial background
 		windowWidth = 800;
 		windowHeight = 600;
-		windowTitle = "A16";
+		windowTitle = "MahJong";
     	windowResizable = GLFW_TRUE;
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		/* A16 */
-		/* Update the requirements for the size of the pool */
-		uniformBlocksInPool = 8;
-		texturesInPool = 7;
-		setsInPool = 8;
+		uniformBlocksInPool = 146; //was 8
+		texturesInPool = 145;
+		setsInPool = 146; //was 8
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -127,87 +117,73 @@ class A16 : public BaseProject {
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
-		DSLMesh.init(this, {
-					// this array contains the bindings:
-					// first  element : the binding number
-					// second element : the type of element (buffer or texture)
-					//                  using the corresponding Vulkan constant
-					// third  element : the pipeline stage where it will be used
-					//                  using the corresponding Vulkan constant
+		DSLTile.init(this, {
+			// this array contains the bindings:
+			// first  element : the binding number
+			// second element : the type of element (buffer or texture)
+			//                  using the corresponding Vulkan constant
+			// third  element : the pipeline stage where it will be used
+			//                  using the corresponding Vulkan constant
+			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			});
+
+		DSLBackground.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-				});
-				
-		DSLOverlay.init(this, {
-					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-				});
-		/* A16 */
-		/* Init the new Data Set Layout */
-				
+			});
+
 		DSLGubo.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
-				});
+			});
+
 
 		// Vertex descriptors
 		VMesh.init(this, {
-				  // this array contains the bindings
-				  // first  element : the binding number
-				  // second element : the stride of this binging
-				  // third  element : whether this parameter change per vertex or per instance
-				  //                  using the corresponding Vulkan constant
-				  {0, sizeof(VertexMesh), VK_VERTEX_INPUT_RATE_VERTEX}
-				}, {
-				  // this array contains the location
-				  // first  element : the binding number
-				  // second element : the location number
-				  // third  element : the offset of this element in the memory record
-				  // fourth element : the data type of the element
-				  //                  using the corresponding Vulkan constant
-				  // fifth  elmenet : the size in byte of the element
-				  // sixth  element : a constant defining the element usage
-				  //                   POSITION - a vec3 with the position
-				  //                   NORMAL   - a vec3 with the normal vector
-				  //                   UV       - a vec2 with a UV coordinate
-				  //                   COLOR    - a vec4 with a RGBA color
-				  //                   TANGENT  - a vec4 with the tangent vector
-				  //                   OTHER    - anything else
-				  //
-				  // ***************** DOUBLE CHECK ********************
-				  //    That the Vertex data structure you use in the "offsetoff" and
-				  //	in the "sizeof" in the previous array, refers to the correct one,
-				  //	if you have more than one vertex format!
-				  // ***************************************************
-				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, pos),
-				         sizeof(glm::vec3), POSITION},
-				  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, norm),
-				         sizeof(glm::vec3), NORMAL},
-				  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexMesh, UV),
-				         sizeof(glm::vec2), UV}
-				});
-
-		VOverlay.init(this, {
-				  {0, sizeof(VertexOverlay), VK_VERTEX_INPUT_RATE_VERTEX}
-				}, {
-				  {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexOverlay, pos),
-				         sizeof(glm::vec2), OTHER},
-				  {0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexOverlay, UV),
-				         sizeof(glm::vec2), UV}
-				});
-		/* A16 */
-		/* Define the new Vertex Format */
+			// this array contains the bindings
+			// first  element : the binding number
+			// second element : the stride of this binging
+			// third  element : whether this parameter change per vertex or per instance
+			//                  using the corresponding Vulkan constant
+			{0, sizeof(VertexMesh), VK_VERTEX_INPUT_RATE_VERTEX}
+			}, {
+				// this array contains the location
+				// first  element : the binding number
+				// second element : the location number
+				// third  element : the offset of this element in the memory record
+				// fourth element : the data type of the element
+				//                  using the corresponding Vulkan constant
+				// fifth  elmenet : the size in byte of the element
+				// sixth  element : a constant defining the element usage
+				//                   POSITION - a vec3 with the position
+				//                   NORMAL   - a vec3 with the normal vector
+				//                   UV       - a vec2 with a UV coordinate
+				//                   COLOR    - a vec4 with a RGBA color
+				//                   TANGENT  - a vec4 with the tangent vector
+				//                   OTHER    - anything else
+				//
+				// ***************** DOUBLE CHECK ********************
+				//    That the Vertex data structure you use in the "offsetoff" and
+				//	in the "sizeof" in the previous array, refers to the correct one,
+				//	if you have more than one vertex format!
+				// ***************************************************
+				{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, pos),
+					   sizeof(glm::vec3), POSITION},
+				{0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, norm),
+					   sizeof(glm::vec3), NORMAL},
+				{0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexMesh, UV),
+					   sizeof(glm::vec2), UV}
+			});
 
 		// Pipelines [Shader couples]
 		// The second parameter is the pointer to the vertex definition
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
-		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
-		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
- 								    VK_CULL_MODE_NONE, false);
-		/* A16 */
-		/* Create the new pipeline, using shaders "VColorVert.spv" and "VColorFrag.spv" */
+		PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
+		PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
+
+
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -215,14 +191,12 @@ class A16 : public BaseProject {
 		// The second parameter is the pointer to the vertex definition for this model
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
-		MBody.init(this,   &VMesh, "Models/SlotBody.obj", OBJ);
-		MHandle.init(this, &VMesh, "Models/SlotHandle.obj", OBJ);
-		MWheel.init(this,  &VMesh, "Models/SlotWheel.obj", OBJ);
-		/* A16 */
-		/* load the mesh for the room, contained in OBJ file "Room.obj" */
-
-
+		MTile.init(this,   &VMesh, "Models/Tile.obj", OBJ);
 		
+		MBackground.init(this, &VMesh, "Models/..."/*TO FIX*/, OBJ);		//TO FIX -> MANUAL INIT?
+
+
+		/* ?????
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
 						 {{ 0.8f, 0.6f}, {1.0f,0.0f}}, {{ 0.8f, 0.95f}, {1.0f,1.0f}}};
@@ -234,16 +208,14 @@ class A16 : public BaseProject {
 						 {{ 1.0f,-0.58559f}, {1.0f,0.0f}}, {{ 1.0f, 0.58559f}, {1.0f,0.85512f}}};
 		MSplash.indices = {0, 1, 2,    1, 2, 3};
 		MSplash.initMesh(this, &VOverlay);
+		*/
 		
 		// Create the textures
 		// The second parameter is the file name
-		TBody.init(this,   "textures/SlotBody.png");
-		THandle.init(this, "textures/SlotHandle.png");
-		TWheel.init(this,  "textures/SlotWheel.png");
-		TKey.init(this,    "textures/PressSpace.png");
-		TSplash.init(this, "textures/SplashScreen.png");
-		
-		// Init local variables
+		TWhiteTiles.init(this,   "textures/tiles/white.png");			//CHECK NAMES
+		TPoolCloth.init(this, "textures/background/poolCloth.png");
+
+		// Init local variables				TO SEE
 		CamH = 1.0f;
 		CamRadius = 3.0f;
 		CamPitch = glm::radians(15.f);
@@ -254,49 +226,29 @@ class A16 : public BaseProject {
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
-		PMesh.create();
-		POverlay.create();
-		/* A16 */
-		/* Create the new pipeline */
+		PTile.create();
+		PBackground.create();
 		
-		// Here you define the data set
-		DSBody.init(this, &DSLMesh, {
-		// the second parameter, is a pointer to the Uniform Set Layout of this set
-		// the last parameter is an array, with one element per binding of the set.
-		// first  elmenet : the binding number
-		// second element : UNIFORM or TEXTURE (an enum) depending on the type
-		// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TBody}
+		// Here you define the data set			//MADE A CICLE FOR THE 144 DS
+		for (int i = 0; i < 144; i++) {
+			DSTile[i].init(this, &DSLTile, {
+				// the second parameter, is a pointer to the Uniform Set Layout of this set
+				// the last parameter is an array, with one element per binding of the set.
+				// first  elmenet : the binding number
+				// second element : UNIFORM or TEXTURE (an enum) depending on the type
+				// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
+				// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
+							{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
+							{1, TEXTURE, 0, &TWhiteTiles}
 				});
-		DSHandle.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &THandle}
-				});
-		DSWheel1.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSWheel2.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSWheel3.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		/* A16 */
-		/* Define the data set for the room */
+		}
 
-		DSKey.init(this, &DSLOverlay, {
-					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TKey}
+		
+		DSBackground.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TPoolCloth}
 				});
-		DSSplash.init(this, &DSLOverlay, {
-					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TSplash}
-				});
+		
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -306,22 +258,14 @@ class A16 : public BaseProject {
 	// All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
-		PMesh.cleanup();
-		POverlay.cleanup();
-		/* A16 */
-		/* cleanup the new pipeline */
+		PTile.cleanup();
+		PBackground.cleanup();
 
 		// Cleanup datasets
-		DSBody.cleanup();
-		DSHandle.cleanup();
-		DSWheel1.cleanup();
-		DSWheel2.cleanup();
-		DSWheel3.cleanup();
-		/* A16 */
-		/* cleanup the dataset for the room */
-
-		DSKey.cleanup();
-		DSSplash.cleanup();
+		for (int i = 0; i < 144; i++) {
+			DSTile[i].cleanup();
+		}
+		DSBackground.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -331,34 +275,21 @@ class A16 : public BaseProject {
 	// methods: .cleanup() recreates them, while .destroy() delete them completely
 	void localCleanup() {
 		// Cleanup textures
-		TBody.cleanup();
-		THandle.cleanup();
-		TWheel.cleanup();
-		TKey.cleanup();
-		TSplash.cleanup();
+		TWhiteTiles.cleanup();
+		TPoolCloth.cleanup();
 		
 		// Cleanup models
-		MBody.cleanup();
-		MHandle.cleanup();
-		MWheel.cleanup();
-		MKey.cleanup();
-		MSplash.cleanup();
-		/* A16 */
-		/* Cleanup the mesh for the room */
+		MTile.cleanup();
+		MBackground.cleanup();
 		
 		// Cleanup descriptor set layouts
-		DSLMesh.cleanup();
-		DSLOverlay.cleanup();
-		/* A16 */
-		/* Cleanup the new Descriptor Set Layout */
-
+		DSLTile.cleanup();
+		DSLBackground.cleanup();
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
-		PMesh.destroy();		
-		POverlay.destroy();
-		/* A16 */
-		/* Destroy the new pipeline */
+		PTile.destroy();		
+		PBackground.destroy();
 	}
 	
 	// Here it is the creation of the command buffer:
@@ -367,60 +298,45 @@ class A16 : public BaseProject {
 	
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// sets global uniforms (see below fro parameters explanation)
-		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+
+		/*
+		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);				//????
 
 		// binds the pipeline
 		PMesh.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
+		*/
+
 
 		// binds the model
-		MBody.bind(commandBuffer);
+		MTile.bind(commandBuffer);
 		// For a Model object, this command binds the corresponing index and vertex buffer
 		// to the command buffer passed in its parameter
 		
 		// binds the data set
-		DSBody.bind(commandBuffer, PMesh, 1, currentImage);
-		// For a Dataset object, this command binds the corresponing dataset
-		// to the command buffer and pipeline passed in its first and second parameters.
-		// The third parameter is the number of the set being bound
-		// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
-		// This is done automatically in file Starter.hpp, however the command here needs also the index
-		// of the current image in the swap chain, passed in its last parameter
-					
-		// record the drawing command in the command buffer
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MBody.indices.size()), 1, 0, 0, 0);
-		// the second parameter is the number of indexes to be drawn. For a Model object,
-		// this can be retrieved with the .indices.size() method.
+		for (int i = 0; i < 144; i++) {
+			DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
+			// For a Dataset object, this command binds the corresponing dataset
+			// to the command buffer and pipeline passed in its first and second parameters.
+			// The third parameter is the number of the set being bound
+			// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
+			// This is done automatically in file Starter.hpp, however the command here needs also the index
+			// of the current image in the swap chain, passed in its last parameter
 
-		MHandle.bind(commandBuffer);
-		DSHandle.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MHandle.indices.size()), 1, 0, 0, 0);
+			// record the drawing command in the command buffer
+			vkCmdDrawIndexed(commandBuffer,
+				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
+			// the second parameter is the number of indexes to be drawn. For a Model object,
+			// this can be retrieved with the .indices.size() method.
+		}
+		
 
-		MWheel.bind(commandBuffer);
-		DSWheel1.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		DSWheel2.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		DSWheel3.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		/* A16 */
-		/* Insert the commands to draw the room */
 
-		POverlay.bind(commandBuffer);
-		MKey.bind(commandBuffer);
-		DSKey.bind(commandBuffer, POverlay, 0, currentImage);
+		MBackground.bind(commandBuffer);
+		DSBackground.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MKey.indices.size()), 1, 0, 0, 0);
-
-		MSplash.bind(commandBuffer);
-		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MSplash.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MBackground.indices.size()), 1, 0, 0, 0);
+		
 	}
 
 	// Here is where you update the uniforms.
@@ -559,6 +475,7 @@ class A16 : public BaseProject {
 		// the third parameter is its size
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
+		/*
 		glm::mat4 World = glm::mat4(1);		
 		uboBody.amb = 1.0f; uboBody.gamma = 180.0f; uboBody.sColor = glm::vec3(1.0f);
 		uboBody.mvpMat = Prj * View * World;
@@ -597,10 +514,18 @@ class A16 : public BaseProject {
 		uboWheel3.mMat = World;
 		uboWheel3.nMat = glm::inverse(glm::transpose(World));
 		DSWheel3.map(currentImage, &uboWheel3, sizeof(uboWheel3), 0);
-		/* A16 */
-		/* fill the uniform block for the room. Identical to the one of the body of the slot machine */
 
-		/* map the uniform data block to the GPU */
+		// A16
+		// fill the uniform block for the room. Identical to the one of the body of the slot machine
+		World = glm::mat4(1);
+		uboRoom.amb = 1.0f; uboRoom.gamma = 180.0f; uboRoom.sColor = glm::vec3(1.0f);
+		uboRoom.mvpMat = Prj * View * World;
+		uboRoom.mMat = World;
+		uboRoom.nMat = glm::inverse(glm::transpose(World));
+		DSRoom.map(currentImage, &uboRoom, sizeof(uboRoom), 0);
+
+
+		// map the uniform data block to the GPU
 
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
@@ -608,6 +533,8 @@ class A16 : public BaseProject {
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
 		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
+
+		*/
 	}	
 };
 
