@@ -18,20 +18,18 @@ struct TileUniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
-	alignas(4) int tldx;
+	//alignas(4) int tIdx;
 };
 
 struct BackgroundUniformBlock {
 	alignas(4) float amb;
 	alignas(4) float gamma;
 	alignas(16) glm::vec3 sColor;
-	//Oren-Nayar:
-	alignas(16) glm::vec3 DlightDir;
-	alignas(16) glm::vec3 DlightColor;
-	alignas(16) glm::vec3 eyePos;
-
+	// adjust removing matrices
+	alignas(16) glm::mat4 mvpMat;
+	alignas(16) glm::mat4 mMat;
+	alignas(16) glm::mat4 nMat;
 };
-
 
 struct GlobalUniformBlock {
 	alignas(16) glm::vec3 DlightDir;
@@ -47,42 +45,42 @@ struct VertexMesh {
 	glm::vec2 UV;
 };
 
-
-
-
-
 // MAIN ! 
-class A16 : public BaseProject {
+class Mahjong : public BaseProject {
 	protected:
 
-	// Current aspect ratio (used by the callback that resized the window
+	// Current aspect ratio (used by the callback that resized the window)
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLTile, DSLBackground;
-
+	DescriptorSetLayout DSLGubo;
+	DescriptorSetLayout DSLTile;
+	DescriptorSetLayout DSLBackground;
 
 	// Vertex formats
 	VertexDescriptor VMesh;
-
 
 	// Pipelines [Shader couples]
 	Pipeline PTile;
 	Pipeline PBackground;
 
-
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MTile, MBackground;
+	Model<VertexMesh> MBackground;
+	Model<VertexMesh> MTile;
 
+	DescriptorSet DSGubo;
+	DescriptorSet DSBackground;
+	//DescriptorSet DSTile[144];
+	DescriptorSet DSTile;
 
-	DescriptorSet DSGubo, DSBackground;
-	DescriptorSet DSTile[144];	//????
-
-	Texture TPoolCloth, TWhiteTiles;
+	//Texture TPoolCloth, TWhiteTiles;
+	Texture TPoolCloth;
+	Texture TWhiteTiles;
 	
 	// C++ storage for uniform variables
-	TileUniformBlock tileubo[144];	//???
+	//TileUniformBlock tileubo[144];	//???
+	TileUniformBlock tileubo;
 	BackgroundUniformBlock bgubo;
 	GlobalUniformBlock gubo;
 
@@ -90,21 +88,24 @@ class A16 : public BaseProject {
 	float CamH, CamRadius, CamPitch, CamYaw;
 	int gameState;
 
-
 	// Here you set the main application parameters
 	void setWindowParameters() {
-		// window size, titile and initial background
+		// window size, title and initial background
 		windowWidth = 800;
 		windowHeight = 600;
-		windowTitle = "MahJong";
+		windowTitle = "Mahjong";
     	windowResizable = GLFW_TRUE;
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 146; //was 8
-		texturesInPool = 145;
-		setsInPool = 146; //was 8
-		
+		//uniformBlocksInPool = 146; //was 8
+		//texturesInPool = 145;
+		//setsInPool = 146; //was 8
+		uniformBlocksInPool = 3;
+		texturesInPool = 2;
+		setsInPool = 3;
+
+		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
 	
@@ -113,7 +114,7 @@ class A16 : public BaseProject {
 		Ar = (float)w / (float)h;
 	}
 	
-	// Here you load and setup all your Vulkan Models and Texutures.
+	// Here you load and setup all your Vulkan Models and Textures.
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
@@ -180,9 +181,10 @@ class A16 : public BaseProject {
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
-		PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
-
+		//PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
+		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
+		PBackground.init(this, &VMesh, "shaders/MeshVert.spv" , "shaders/MeshFrag.spv", {&DSLGubo, &DSLBackground});
+		PTile.init(this, &VMesh, "shaders/MeshVert.spv" , "shaders/MeshFrag.spv", {&DSLGubo, &DSLTile});
 
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
@@ -191,29 +193,23 @@ class A16 : public BaseProject {
 		// The second parameter is the pointer to the vertex definition for this model
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
-		MTile.init(this,   &VMesh, "Models/Tile.obj", OBJ);
-		
-		MBackground.init(this, &VMesh, "Models/..."/*TO FIX*/, OBJ);		//TO FIX -> MANUAL INIT?
+		// Create Background model manually
+		float side = 10.0f;
+		MBackground.vertices = { 
+			{{-side, 0.0f, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
+			{{side, 0.0f, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
+			{{side, 0.0f, -side},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f}},
+			{{-side, 0.0f, -side},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f}},
+		};
+		MBackground.indices = { 0, 1, 2,    0, 2, 3 };
+		MBackground.initMesh(this, &VMesh);
+		// Import Tile model
+		MTile.init(this, &VMesh, "Models/Tile.obj", OBJ);
 
-
-		/* ?????
-		// Creates a mesh with direct enumeration of vertices and indices
-		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
-						 {{ 0.8f, 0.6f}, {1.0f,0.0f}}, {{ 0.8f, 0.95f}, {1.0f,1.0f}}};
-		MKey.indices = {0, 1, 2,    1, 2, 3};
-		MKey.initMesh(this, &VOverlay);
-		
-		// Creates a mesh with direct enumeration of vertices and indices
-		MSplash.vertices = {{{-1.0f, -0.58559f}, {0.0102f, 0.0f}}, {{-1.0f, 0.58559f}, {0.0102f,0.85512f}},
-						 {{ 1.0f,-0.58559f}, {1.0f,0.0f}}, {{ 1.0f, 0.58559f}, {1.0f,0.85512f}}};
-		MSplash.indices = {0, 1, 2,    1, 2, 3};
-		MSplash.initMesh(this, &VOverlay);
-		*/
-		
 		// Create the textures
 		// The second parameter is the file name
-		TWhiteTiles.init(this,   "textures/tiles/white.png");			//CHECK NAMES
-		TPoolCloth.init(this, "textures/background/poolCloth.png");
+		TPoolCloth.init(this, "textures/background/poolcloth.png");
+		TWhiteTiles.init(this, "textures/tiles/tiles_white.png");
 
 		// Init local variables				TO SEE
 		CamH = 1.0f;
@@ -226,47 +222,54 @@ class A16 : public BaseProject {
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
-		PTile.create();
+		//PTile.create();
 		PBackground.create();
+		PTile.create();
 		
-		// Here you define the data set			//MADE A CICLE FOR THE 144 DS
-		for (int i = 0; i < 144; i++) {
-			DSTile[i].init(this, &DSLTile, {
-				// the second parameter, is a pointer to the Uniform Set Layout of this set
-				// the last parameter is an array, with one element per binding of the set.
-				// first  elmenet : the binding number
-				// second element : UNIFORM or TEXTURE (an enum) depending on the type
-				// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-				// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-							{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-							{1, TEXTURE, 0, &TWhiteTiles}
-				});
-		}
+		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
+		//for (int i = 0; i < 144; i++) {
+		//	DSTile[i].init(this, &DSLTile, {
+		//		// the second parameter, is a pointer to the Uniform Set Layout of this set
+		//		// the last parameter is an array, with one element per binding of the set.
+		//		// first  elmenet : the binding number
+		//		// second element : UNIFORM or TEXTURE (an enum) depending on the type
+		//		// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
+		//		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
+		//					{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
+		//					{1, TEXTURE, 0, &TWhiteTiles}
+		//		});
+		//}
 
-		
+		DSGubo.init(this, &DSLGubo, {
+			{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
+			});
+
 		DSBackground.init(this, &DSLBackground, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TPoolCloth}
 				});
-		
-		DSGubo.init(this, &DSLGubo, {
-					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
+
+		DSTile.init(this, &DSLTile, {
+					{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TWhiteTiles}
 				});
+		
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
 	// All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
-		PTile.cleanup();
 		PBackground.cleanup();
+		PTile.cleanup();
 
 		// Cleanup datasets
-		for (int i = 0; i < 144; i++) {
-			DSTile[i].cleanup();
-		}
-		DSBackground.cleanup();
+		//for (int i = 0; i < 144; i++) {
+		//	DSTile[i].cleanup();
+		//}
 		DSGubo.cleanup();
+		DSBackground.cleanup();
+		DSTile.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -275,19 +278,19 @@ class A16 : public BaseProject {
 	// methods: .cleanup() recreates them, while .destroy() delete them completely
 	void localCleanup() {
 		// Cleanup textures
-		TWhiteTiles.cleanup();
 		TPoolCloth.cleanup();
+		TWhiteTiles.cleanup();
 		
 		// Cleanup models
-		MTile.cleanup();
 		MBackground.cleanup();
+		MTile.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
 		DSLBackground.cleanup();
 		DSLGubo.cleanup();
 		
-		// Destroies the pipelines
+		// Destroys the pipelines
 		PTile.destroy();		
 		PBackground.destroy();
 	}
@@ -309,33 +312,42 @@ class A16 : public BaseProject {
 
 
 		// binds the model
-		MTile.bind(commandBuffer);
+		//MTile.bind(commandBuffer);
 		// For a Model object, this command binds the corresponing index and vertex buffer
 		// to the command buffer passed in its parameter
 		
 		// binds the data set
-		for (int i = 0; i < 144; i++) {
-			DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
-			// For a Dataset object, this command binds the corresponing dataset
-			// to the command buffer and pipeline passed in its first and second parameters.
-			// The third parameter is the number of the set being bound
-			// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
-			// This is done automatically in file Starter.hpp, however the command here needs also the index
-			// of the current image in the swap chain, passed in its last parameter
+		//for (int i = 0; i < 144; i++) {
+		//	DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
+		//	// For a Dataset object, this command binds the corresponing dataset
+		//	// to the command buffer and pipeline passed in its first and second parameters.
+		//	// The third parameter is the number of the set being bound
+		//	// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
+		//	// This is done automatically in file Starter.hpp, however the command here needs also the index
+		//	// of the current image in the swap chain, passed in its last parameter
 
-			// record the drawing command in the command buffer
-			vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
-			// the second parameter is the number of indexes to be drawn. For a Model object,
-			// this can be retrieved with the .indices.size() method.
-		}
-		
+		//	// record the drawing command in the command buffer
+		//	vkCmdDrawIndexed(commandBuffer,
+		//		static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
+		//	// the second parameter is the number of indexes to be drawn. For a Model object,
+		//	// this can be retrieved with the .indices.size() method.
+		//}
+		//
 
-
+		// Background pipeline binding
+		PBackground.bind(commandBuffer);
 		MBackground.bind(commandBuffer);
+		DSGubo.bind(commandBuffer, PBackground, 0, currentImage);
 		DSBackground.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MBackground.indices.size()), 1, 0, 0, 0);
+		// Tile pipeline binding
+		PTile.bind(commandBuffer);
+		MTile.bind(commandBuffer);
+		DSGubo.bind(commandBuffer, PTile, 0, currentImage);
+		DSTile.bind(commandBuffer, PTile, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 		
 	}
 
@@ -379,68 +391,16 @@ class A16 : public BaseProject {
 		static float Wheel3Rot = 0.0;
 		static float TargetRot = 0.0;	// Target rotation
 
-//std::cout << gameState << "\n";	
-		switch(gameState) {		// main state machine implementation
-		  case 0: // initial state - show splash screen
-			if(handleFire) {
-				gameState = 1;	// jump to the wait key state
-			}
-			break;
-		  case 1: // wait key state
-			if(handleFire) {
-				gameState = 2;	// jump to the moving handle state
-			}
-			break;
-		  case 2: // handle moving down state
-			HandleRot += HandleSpeed * deltaT;
-			Wheel1Rot += WheelSpeed * deltaT;
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(HandleRot > HandleRange) {	// when limit is reached, jump the handle moving up state
-				gameState = 3;
-				HandleRot = HandleRange;
-			}
-			break;
-		  case 3: // handle moving up state
-			HandleRot -= HandleSpeed * deltaT;
-			Wheel1Rot += WheelSpeed * deltaT;
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(HandleRot < 0.0f) {	// when limit is reached, jump the 3 wheels spinning state
-				gameState = 4;
-				HandleRot = 0.0f;
-				TargetRot = Wheel1Rot + (10 + (rand() % 11)) * SymExtent;
-			}
-			break;
-		  case 4: // 3 wheels spinning state
-			Wheel1Rot += WheelSpeed * deltaT;
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-//std::cout << Wheel1Rot << " --- " << TargetRot << "\n";
-			if(Wheel1Rot >= TargetRot) {	// When the target rotation is reached, jump to the next state
-				gameState = 5;
-				Wheel1Rot = round(TargetRot / SymExtent) * SymExtent; // quantize position
-				TargetRot = Wheel2Rot + (10 + (rand() % 11)) * SymExtent;
-			}
-			break;
-		  case 5: // 2 wheels spinning state
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(Wheel2Rot >= TargetRot) {	// When the target rotation is reached, jump to the next state
-				gameState = 6;
-				Wheel2Rot = round(TargetRot / SymExtent) * SymExtent; // quantize position
-				TargetRot = Wheel3Rot + (10 + (rand() % 11)) * SymExtent;
-			}
-			break;
-		  case 6: // 1 wheels spinning state
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(Wheel3Rot >= TargetRot) {	// When the target rotation is reached, jump to the next state
-				gameState = 1;
-				Wheel3Rot = round(TargetRot / SymExtent) * SymExtent; // quantize position
-			}
-			break;
-		}
-		
+		/*
+		* 
+		* 
+		* 
+		* GAME LOGIC HERE!!
+		* 
+		* 
+		* 
+		*/
+
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
 		const float FOVy = glm::radians(90.0f);
@@ -475,14 +435,22 @@ class A16 : public BaseProject {
 		// the third parameter is its size
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
-		/*
+		// Matrix setup for background
 		glm::mat4 World = glm::mat4(1);		
-		uboBody.amb = 1.0f; uboBody.gamma = 180.0f; uboBody.sColor = glm::vec3(1.0f);
-		uboBody.mvpMat = Prj * View * World;
-		uboBody.mMat = World;
-		uboBody.nMat = glm::inverse(glm::transpose(World));
-		DSBody.map(currentImage, &uboBody, sizeof(uboBody), 0);
-	
+		bgubo.amb = 1.0f; bgubo.gamma = 180.0f; bgubo.sColor = glm::vec3(1.0f);
+		bgubo.mvpMat = Prj * View * World;
+		bgubo.mMat = World;
+		bgubo.nMat = glm::inverse(glm::transpose(World));
+		DSBackground.map(currentImage, &bgubo, sizeof(bgubo), 0);
+
+		// Matrix setup for tiles
+		World = glm::scale(glm::mat4(1), glm::vec3(1)*50.0f);		
+		tileubo.amb = 1.0f; tileubo.gamma = 180.0f; tileubo.sColor = glm::vec3(1.0f);
+		tileubo.mvpMat = Prj * View * World;
+		tileubo.mMat = World;
+		tileubo.nMat = glm::inverse(glm::transpose(World));
+		DSTile.map(currentImage, &tileubo, sizeof(tileubo), 0);
+	/*
 		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
 							HandleRot, glm::vec3(1,0,0));
 		uboHandle.amb = 1.0f; uboHandle.gamma = 180.0f; uboHandle.sColor = glm::vec3(1.0f);
@@ -541,7 +509,7 @@ class A16 : public BaseProject {
 
 // This is the main: probably you do not need to touch this!
 int main() {
-    A16 app;
+    Mahjong app;
 
     try {
         app.run();
