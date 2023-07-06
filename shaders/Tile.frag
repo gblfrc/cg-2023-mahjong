@@ -30,6 +30,7 @@ void main() {
 	vec3 N = normalize(fragNorm);				// surface normal
 	vec3 V = normalize(gubo.eyePos - fragPos);	// viewer direction
 	vec3 L = normalize(gubo.DlightDir);			// light direction
+	vec3 H = normalize(L + V);					// half vector for Blinn BRDF
 
 	vec3 albedo = texture(tex, fragUV).rgb;		// main color
 	vec3 MD = albedo;
@@ -37,11 +38,9 @@ void main() {
 	vec3 MA = albedo * ubo.amb;
 	vec3 LA = gubo.AmbLightColor;
 	
-	// Write the shader here
-	
-	outColor = vec4(
-				clamp(MD * clamp(dot(L,N),0.0f,1.0f) +
-					  MS * pow(clamp(dot(N, normalize(L + V)), 0.0f, 1.0f), ubo.gamma) +
-					  LA * MA,
-				0.0f, 1.0f), 1.0f);	// output color
+	vec3 Lambert = MD * clamp(dot(L,N),0.0f,1.0f);
+	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), ubo.gamma);
+	vec3 Ambient = LA * MA;
+
+	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), 1.0f);
 }
