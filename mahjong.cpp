@@ -18,7 +18,7 @@ struct TileUniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
-	//alignas(4) int tIdx;
+	alignas(4) int tIdx;
 };
 
 struct BackgroundUniformBlock {
@@ -71,16 +71,16 @@ class Mahjong : public BaseProject {
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
-	//DescriptorSet DSTile[144];
-	DescriptorSet DSTile;
+	DescriptorSet DSTile[144];
+	//DescriptorSet DSTile;
 
 	//Texture TPoolCloth, TWhiteTiles;
 	Texture TPoolCloth;
 	Texture TWhiteTiles;
 	
 	// C++ storage for uniform variables
-	//TileUniformBlock tileubo[144];	//???
-	TileUniformBlock tileubo;
+	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
+	//TileUniformBlock tileubo;
 	BackgroundUniformBlock bgubo;
 	GlobalUniformBlock gubo;
 
@@ -98,12 +98,9 @@ class Mahjong : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		//uniformBlocksInPool = 146; //was 8
-		//texturesInPool = 145;
-		//setsInPool = 146; //was 8
-		uniformBlocksInPool = 3;
-		texturesInPool = 2;
-		setsInPool = 3;
+		uniformBlocksInPool = 146; 
+		texturesInPool = 145;
+		setsInPool = 146;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -184,7 +181,7 @@ class Mahjong : public BaseProject {
 		//PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
 		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
 		PBackground.init(this, &VMesh, "shaders/MeshVert.spv" , "shaders/MeshFrag.spv", {&DSLGubo, &DSLBackground});
-		PTile.init(this, &VMesh, "shaders/MeshVert.spv" , "shaders/MeshFrag.spv", {&DSLGubo, &DSLTile});
+		PTile.init(this, &VMesh, "shaders/TileVert.spv" , "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
 
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
@@ -222,23 +219,22 @@ class Mahjong : public BaseProject {
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
-		//PTile.create();
 		PBackground.create();
 		PTile.create();
 		
 		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
-		//for (int i = 0; i < 144; i++) {
-		//	DSTile[i].init(this, &DSLTile, {
-		//		// the second parameter, is a pointer to the Uniform Set Layout of this set
-		//		// the last parameter is an array, with one element per binding of the set.
-		//		// first  elmenet : the binding number
-		//		// second element : UNIFORM or TEXTURE (an enum) depending on the type
-		//		// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-		//		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-		//					{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-		//					{1, TEXTURE, 0, &TWhiteTiles}
-		//		});
-		//}
+		for (int i = 0; i < 144; i++) {
+			DSTile[i].init(this, &DSLTile, {
+				// the second parameter, is a pointer to the Uniform Set Layout of this set
+				// the last parameter is an array, with one element per binding of the set.
+				// first  elmenet : the binding number
+				// second element : UNIFORM or TEXTURE (an enum) depending on the type
+				// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
+				// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
+							{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
+							{1, TEXTURE, 0, &TWhiteTiles}
+				});
+		}
 
 		DSGubo.init(this, &DSLGubo, {
 			{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
@@ -249,10 +245,10 @@ class Mahjong : public BaseProject {
 					{1, TEXTURE, 0, &TPoolCloth}
 				});
 
-		DSTile.init(this, &DSLTile, {
-					{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWhiteTiles}
-				});
+		//DSTile.init(this, &DSLTile, {
+		//			{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
+		//			{1, TEXTURE, 0, &TWhiteTiles}
+		//		});
 		
 	}
 
@@ -264,12 +260,12 @@ class Mahjong : public BaseProject {
 		PTile.cleanup();
 
 		// Cleanup datasets
-		//for (int i = 0; i < 144; i++) {
-		//	DSTile[i].cleanup();
-		//}
 		DSGubo.cleanup();
 		DSBackground.cleanup();
-		DSTile.cleanup();
+		for (int i = 0; i < 144; i++) {
+			DSTile[i].cleanup();
+		}
+		//DSTile.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -345,9 +341,11 @@ class Mahjong : public BaseProject {
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PTile, 0, currentImage);
-		DSTile.bind(commandBuffer, PTile, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
+		for (int i = 0; i < 144; i++) {
+			DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
+			vkCmdDrawIndexed(commandBuffer,
+				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
+		}
 		
 	}
 
@@ -444,65 +442,16 @@ class Mahjong : public BaseProject {
 		DSBackground.map(currentImage, &bgubo, sizeof(bgubo), 0);
 
 		// Matrix setup for tiles
-		World = glm::scale(glm::mat4(1), glm::vec3(1)*50.0f);		
-		tileubo.amb = 1.0f; tileubo.gamma = 180.0f; tileubo.sColor = glm::vec3(1.0f);
-		tileubo.mvpMat = Prj * View * World;
-		tileubo.mMat = World;
-		tileubo.nMat = glm::inverse(glm::transpose(World));
-		DSTile.map(currentImage, &tileubo, sizeof(tileubo), 0);
-	/*
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
-							HandleRot, glm::vec3(1,0,0));
-		uboHandle.amb = 1.0f; uboHandle.gamma = 180.0f; uboHandle.sColor = glm::vec3(1.0f);
-		uboHandle.mvpMat = Prj * View * World;
-		uboHandle.mMat = World;
-		uboHandle.nMat = glm::inverse(glm::transpose(World));
-		DSHandle.map(currentImage, &uboHandle, sizeof(uboHandle), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-0.15f,0.93f,-0.15f)),
-							Wheel1Rot, glm::vec3(1,0,0));
-		uboWheel1.amb = 1.0f; uboWheel1.gamma = 180.0f; uboWheel1.sColor = glm::vec3(1.0f);
-		uboWheel1.mvpMat = Prj * View * World;
-		uboWheel1.mMat = World;
-		uboWheel1.nMat = glm::inverse(glm::transpose(World));
-		DSWheel1.map(currentImage, &uboWheel1, sizeof(uboWheel1), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.93f,-0.15f)),
-							Wheel2Rot, glm::vec3(1,0,0));
-		uboWheel2.amb = 1.0f; uboWheel2.gamma = 180.0f; uboWheel2.sColor = glm::vec3(1.0f);
-		uboWheel2.mvpMat = Prj * View * World;
-		uboWheel2.mMat = World;
-		uboWheel2.nMat = glm::inverse(glm::transpose(World));
-		DSWheel2.map(currentImage, &uboWheel2, sizeof(uboWheel2), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.15f,0.93f,-0.15f)),
-							Wheel3Rot, glm::vec3(1,0,0));
-		uboWheel3.amb = 1.0f; uboWheel3.gamma = 180.0f; uboWheel3.sColor = glm::vec3(1.0f);
-		uboWheel3.mvpMat = Prj * View * World;
-		uboWheel3.mMat = World;
-		uboWheel3.nMat = glm::inverse(glm::transpose(World));
-		DSWheel3.map(currentImage, &uboWheel3, sizeof(uboWheel3), 0);
-
-		// A16
-		// fill the uniform block for the room. Identical to the one of the body of the slot machine
-		World = glm::mat4(1);
-		uboRoom.amb = 1.0f; uboRoom.gamma = 180.0f; uboRoom.sColor = glm::vec3(1.0f);
-		uboRoom.mvpMat = Prj * View * World;
-		uboRoom.mMat = World;
-		uboRoom.nMat = glm::inverse(glm::transpose(World));
-		DSRoom.map(currentImage, &uboRoom, sizeof(uboRoom), 0);
-
-
-		// map the uniform data block to the GPU
-
-
-		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
-		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
-
-		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
-		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
-
-		*/
+		for (int i = 0; i < 144; i++) {
+			// improve placement, tiles are currently displayed beside one another
+			World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
+			tileubo[i].amb = 1.0f; tileubo[i].gamma = 180.0f; tileubo[i].sColor = glm::vec3(1.0f);
+			tileubo[i].tIdx = i%50;
+			tileubo[i].mvpMat = Prj * View * World;
+			tileubo[i].mMat = World;
+			tileubo[i].nMat = glm::inverse(glm::transpose(World));
+			DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0);
+		}
 	}	
 };
 
