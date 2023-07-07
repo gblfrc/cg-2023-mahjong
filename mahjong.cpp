@@ -180,7 +180,7 @@ class Mahjong : public BaseProject {
 		// be used in this pipeline. The first element will be set 0, and so on..
 		//PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
 		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
-		PBackground.init(this, &VMesh, "shaders/MeshVert.spv" , "shaders/MeshFrag.spv", {&DSLGubo, &DSLBackground});
+		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv" , "shaders/BackgroundFrag.spv", {&DSLGubo, &DSLBackground});
 		PTile.init(this, &VMesh, "shaders/TileVert.spv" , "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
 
 
