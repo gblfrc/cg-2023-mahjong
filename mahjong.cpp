@@ -94,6 +94,8 @@ class Mahjong : public BaseProject {
 
 	// Other application parameters
 	float CamH, CamRadius, CamPitch, CamYaw;
+	const float initialPitch = glm::radians(70.0f);
+	const float initialYaw = glm::radians(0.0f);
 	int gameState;
 
 	// Here you set the main application parameters
@@ -216,11 +218,11 @@ class Mahjong : public BaseProject {
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
 		TWhiteTiles.init(this, "textures/tiles/tiles_white.png");
 
-		// Init local variables				TO SEE
+		// Init local variables
 		CamH = 1.0f;
-		CamRadius = 3.0f;
-		CamPitch = glm::radians(15.f);
-		CamYaw = glm::radians(30.f);
+		CamRadius = 4.5f;
+		CamPitch = initialPitch;
+		CamYaw = initialYaw;
 		gameState = 0;
 	}
 	
@@ -386,12 +388,7 @@ class Mahjong : public BaseProject {
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
 
-		/*
-		//Bring to initial position
-		float initialPitch = glm::radians(85.0f);
-		float initialYaw = glm::radians(0.0f);
-		glm::vec3 camPos = glm::vec3(0, 0, 0) + 105.0f * glm::vec3(cos(initialPitch) * sin(initialYaw), sin(initialPitch), cos(initialPitch) * cos(initialYaw));
-		*/
+		
 
 	// Target rotation
 
@@ -404,6 +401,10 @@ class Mahjong : public BaseProject {
 		* 
 		* 
 		*/
+
+
+
+
 
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
@@ -448,7 +449,16 @@ class Mahjong : public BaseProject {
 		//c  da vedere
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
 
-		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));
+		
+
+
+		//Game logic: overwrites coordinates if fire was pressed    DOES NOT WORK
+		if (wasFire) { //Bring to initial position
+			//glm::vec3 
+			camPos = glm::vec3(0, 0, 0) + 105.0f * glm::vec3(cos(initialPitch) * sin(initialYaw), sin(initialPitch), cos(initialPitch) * cos(initialYaw));
+		}
+
+		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
