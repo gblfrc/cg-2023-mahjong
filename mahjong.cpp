@@ -1,6 +1,8 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
+#include <glm/ext/vector_common.hpp>
+#include <glm/ext/scalar_common.hpp>
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -10,6 +12,12 @@
 //        vec4  : alignas(16)
 //        mat3  : alignas(16)
 //        mat4  : alignas(16)
+
+struct UniformBufferObject {
+	alignas(16) glm::mat4 mvpMat;
+	alignas(16) glm::mat4 mMat;
+	alignas(16) glm::mat4 nMat;
+};
 
 struct TileUniformBlock {
 	alignas(4) float amb;
@@ -357,6 +365,7 @@ class Mahjong : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 		
+		//FIRE TO GO BACK TO INITIAL POSITION
 		// Integration with the timers and the controllers
 		float deltaT;
 		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
@@ -376,18 +385,15 @@ class Mahjong : public BaseProject {
 		static bool wasFire = false;
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
-		
-		// Parameters: wheels and handle speed and range
-		const float HandleSpeed = glm::radians(90.0f);
-		const float HandleRange = glm::radians(45.0f);
-		const float WheelSpeed = glm::radians(180.0f);
-		const float SymExtent = glm::radians(15.0f);	// size of one symbol on the wheel in angle rad.
-		// static variables for current angles
-		static float HandleRot = 0.0;
-		static float Wheel1Rot = 0.0;
-		static float Wheel2Rot = 0.0;
-		static float Wheel3Rot = 0.0;
-		static float TargetRot = 0.0;	// Target rotation
+
+		/*
+		//Bring to initial position
+		float initialPitch = glm::radians(85.0f);
+		float initialYaw = glm::radians(0.0f);
+		glm::vec3 camPos = glm::vec3(0, 0, 0) + 105.0f * glm::vec3(cos(initialPitch) * sin(initialYaw), sin(initialPitch), cos(initialPitch) * cos(initialYaw));
+		*/
+
+	// Target rotation
 
 		/*
 		* 
@@ -405,20 +411,43 @@ class Mahjong : public BaseProject {
 		const float nearPlane = 0.1f;
 		const float farPlane = 100.0f;
 		const float rotSpeed = glm::radians(90.0f);
-		const float movSpeed = 1.0f;
+		const float movSpeed = 10.0f;
+		
 		
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
+		CamRadius = glm::clamp(CamRadius, 10.0f, 20.0f); //minumum and maximum zoom of the cam
+
+
 		CamPitch -= r.x * rotSpeed * deltaT;
+		CamPitch = glm::clamp(CamPitch, glm::radians(30.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
+
 		CamYaw += r.y * rotSpeed * deltaT;
 		
+	
+		/* da usare insieme a ubo perché servono le matrici
+		glm::mat4 initalModel = glm::rotate(glm::mat4(1.0f),
+                                glm::radians(0.0f),
+                                glm::vec3(0.0f, 0.0f, 1.0f));
+            
+        
+        ubo.view = glm::lookAt(game.getCamPos(deltaT),game.getAimPos(),glm::vec3(0.0f, 1.0f, 0.0f));
+        ubo.proj = glm::perspective(glm::radians(45.0f),
+                        swapChainExtent.width / (float) swapChainExtent.height,
+                        0.1f, 10.0f); ==  glm::perspective(FOVy, Ar, nearPlane, farPlane);
+        ubo.proj[1][1] *= -1;*/
+
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
-		glm::vec3 camTarget = glm::vec3(0,CamH,0);
-		glm::vec3 camPos    = camTarget +
-							  CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw),
-													sin(CamPitch),
-													cos(CamPitch) * cos(CamYaw));
+
+
+		//a
+		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
+		glm::vec3 camTarget = glm::vec3(0, 0, 0);
+		
+		//c  da vedere
+		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
+
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
