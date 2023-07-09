@@ -21,7 +21,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat;
 	mat4 mMat;
 	mat4 nMat;
-	int tIdx;
+	int suitIdx;
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;
