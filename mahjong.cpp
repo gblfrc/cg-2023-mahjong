@@ -95,6 +95,7 @@ class Mahjong : public BaseProject {
 
 	// Other application parameters
 	float CamH, CamRadius, CamPitch, CamYaw;
+	const float initialCamRadius = 10.0f;
 	const float initialPitch = glm::radians(70.0f);
 	const float initialYaw = glm::radians(0.0f);
 	int gameState;
@@ -221,7 +222,7 @@ class Mahjong : public BaseProject {
 
 		// Init local variables
 		CamH = 1.0f;
-		CamRadius = 4.5f;
+		CamRadius = initialCamRadius; //was 4.5f initially
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
 		gameState = 0;
@@ -420,7 +421,7 @@ class Mahjong : public BaseProject {
 		
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 10.0f, 20.0f); //minumum and maximum zoom of the cam
+		CamRadius = glm::clamp(CamRadius, 7.8f, 20.0f); //minumum and maximum zoom of the cam
 
 
 		CamPitch -= r.x * rotSpeed * deltaT;
@@ -444,10 +445,11 @@ class Mahjong : public BaseProject {
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
 
-		//Game logic: overwrites coordinates if fire was pressed    DOES NOT WORK
-		if (wasFire) { //Bring to initial position
+		//Game logic: overwrites coordinates if fire (space) is pressed and released
+		//Bring to initial position
+		if (handleFire) { //replace hanfleFire with "wasFire" to have event happen upon pressing and not release of fire key
 			//glm::vec3 
-			CamRadius = 4.5f;
+			CamRadius = initialCamRadius;
 			CamPitch = initialPitch;
 			CamYaw = initialYaw;
 		}
