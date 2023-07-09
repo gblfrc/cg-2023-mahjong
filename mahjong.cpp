@@ -203,7 +203,7 @@ class Mahjong : public BaseProject {
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 		// Create Background model manually
-		float side = 10.0f;
+		float side = 18.0f;
 		MBackground.vertices = { 
 			{{-side, 0.0f, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
 			{{side, 0.0f, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
