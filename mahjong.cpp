@@ -3,6 +3,7 @@
 #include "Starter.hpp"
 #include <glm/ext/vector_common.hpp>
 #include <glm/ext/scalar_common.hpp>
+#include "MahjongGame.hpp"
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -26,7 +27,7 @@ struct TileUniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
-	alignas(4) int tIdx;
+	alignas(4) int suitIdx;
 };
 
 struct BackgroundUniformBlock {
@@ -393,15 +394,17 @@ class Mahjong : public BaseProject {
 	// Target rotation
 
 		/*
-		* 
-		* 
-		* 
 		* GAME LOGIC HERE!!
-		* 
-		* 
-		* 
 		*/
+		string structurePath = "./structure.json";
+		static MahjongGame game = MahjongGame(structurePath);
 
+		//static bool executedOnce = false;
+		//if (!executedOnce) {
+		//	string structurePath = "./structure.json";
+		//	static MahjongGame game = MahjongGame(structurePath);
+		//	executedOnce = true;
+		//}
 
 
 
@@ -482,10 +485,13 @@ class Mahjong : public BaseProject {
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
-			// improve placement, tiles are currently displayed beside one another
-			World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
+			double scaleFactor = 50.0f;
+			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * 50.0f); // matrix for translation
+			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
+			World = Tmat * Smat; // translate tile in position
+			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; tileubo[i].gamma = 180.0f; tileubo[i].sColor = glm::vec3(1.0f);
-			tileubo[i].tIdx = i%50;
+			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].mvpMat = Prj * View * World;
 			tileubo[i].mMat = World;
 			tileubo[i].nMat = glm::inverse(glm::transpose(World));

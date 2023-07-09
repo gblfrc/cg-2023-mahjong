@@ -43,3 +43,7 @@ x64/
 !models/*
 !shaders/*
 !textures/*
+
+# Work-in-progress files
+*.xcf
+*.pdf

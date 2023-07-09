@@ -8,7 +8,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat;
 	mat4 mMat;
 	mat4 nMat;
-	int tIdx;
+	int suitIdx;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
@@ -23,5 +23,5 @@ void main() {
 	gl_Position = ubo.mvpMat * vec4(inPosition, 1.0);
 	fragPos = (ubo.mMat * vec4(inPosition, 1.0)).xyz;
 	fragNorm = (ubo.nMat * vec4(inNorm, 0.0)).xyz;
-	outUV = vec2((ubo.tIdx % 10 + inUV.x)*0.1, (ubo.tIdx /10 + inUV.y)  *0.2);
+	outUV = vec2((ubo.suitIdx % 10 + inUV.x)*0.1, (ubo.suitIdx /10 + inUV.y)  *0.2);
 }
