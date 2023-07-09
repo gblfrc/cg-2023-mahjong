@@ -1819,31 +1819,37 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			r.x = -m_dy / MOUSE_RES;
 		}
 
-		if(glfwGetKey(window, GLFW_KEY_LEFT)) {
+		if(glfwGetKey(window, GLFW_KEY_A)) {		//move camera left around the centre
 			r.y = -1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_RIGHT)) {
+		if(glfwGetKey(window, GLFW_KEY_D)) {		//move camera right around the centre
 			r.y = 1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_UP)) {
+		if(glfwGetKey(window, GLFW_KEY_R)) {		//move camera up above the centre
 			r.x = -1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_DOWN)) {
+		if(glfwGetKey(window, GLFW_KEY_F)) {		//move camera down
 			r.x = 1.0f;
 		}
+		/*
 		if(glfwGetKey(window, GLFW_KEY_Q)) {
 			r.z = 1.0f;
 		}
 		if(glfwGetKey(window, GLFW_KEY_E)) {
 			r.z = -1.0f;
 		}
-
-		if(glfwGetKey(window, GLFW_KEY_A)) {
+		*/
+		if(glfwGetKey(window, GLFW_KEY_S)) {	//zoom out
 			m.x = -1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_D)) {
+		if(glfwGetKey(window, GLFW_KEY_W)) {	//zoom in
 			m.x = 1.0f;
 		}
+
+
+		//HOW TO ADD MOUSE SCROLL?
+
+		/*
 		if(glfwGetKey(window, GLFW_KEY_S)) {
 			m.z = -1.0f;
 		}
@@ -1856,6 +1862,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		if(glfwGetKey(window, GLFW_KEY_F)) {
 			m.y = -1.0f;
 		}
+		*/
 		
 		fire = glfwGetKey(window, GLFW_KEY_SPACE) | glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 		handleGamePad(GLFW_JOYSTICK_1,m,r,fire);
