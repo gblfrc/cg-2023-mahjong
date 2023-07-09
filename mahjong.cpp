@@ -441,6 +441,13 @@ class Mahjong : public BaseProject {
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
 
+		//Game logic: overwrites coordinates if fire was pressed    DOES NOT WORK
+		if (wasFire) { //Bring to initial position
+			//glm::vec3 
+			CamRadius = 4.5f;
+			CamPitch = initialPitch;
+			CamYaw = initialYaw;
+		}
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
@@ -449,14 +456,6 @@ class Mahjong : public BaseProject {
 		//c  da vedere
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
 
-		
-
-
-		//Game logic: overwrites coordinates if fire was pressed    DOES NOT WORK
-		if (wasFire) { //Bring to initial position
-			//glm::vec3 
-			camPos = glm::vec3(0, 0, 0) + 105.0f * glm::vec3(cos(initialPitch) * sin(initialYaw), sin(initialPitch), cos(initialPitch) * cos(initialYaw));
-		}
 
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
 
