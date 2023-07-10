@@ -28,8 +28,11 @@ class Tile {
 			this->position = position;
 		};
 
-
 		bool isOpen() {
 			return (over.size() == 0 && (left.size() == 0 ||right.size() == 0));
+		}
+
+		bool isRemoved() {
+			return (left.size() == 0 && right.size() == 0 && under.size() == 0 && over.size() == 0);
 		}
 };

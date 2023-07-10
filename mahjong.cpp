@@ -390,8 +390,6 @@ class Mahjong : public BaseProject {
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
 
-		
-
 	// Target rotation
 
 		/*
@@ -399,16 +397,6 @@ class Mahjong : public BaseProject {
 		*/
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
-
-		//static bool executedOnce = false;
-		//if (!executedOnce) {
-		//	string structurePath = "./structure.json";
-		//	static MahjongGame game = MahjongGame(structurePath);
-		//	executedOnce = true;
-		//}
-
-
-
 
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
@@ -486,7 +474,7 @@ class Mahjong : public BaseProject {
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
-			double scaleFactor = 50.0f;
+			double scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 50.0f;
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * 50.0f); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 			World = Tmat * Smat; // translate tile in position
