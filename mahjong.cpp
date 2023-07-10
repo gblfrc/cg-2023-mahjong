@@ -95,8 +95,8 @@ class Mahjong : public BaseProject {
 
 	// Other application parameters
 	float CamH, CamRadius, CamPitch, CamYaw;
-	const float initialCamRadius = 10.0f;
-	const float initialPitch = glm::radians(78.0f);
+	const float initialCamRadius = 8.5f;
+	const float initialPitch = glm::radians(90.0f);
 	const float initialYaw = glm::radians(0.0f);
 	int gameState;
 
