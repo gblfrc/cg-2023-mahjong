@@ -1771,28 +1771,38 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		if(glfwJoystickIsGamepad(id)) {
 			GLFWgamepadstate state;
 			if (glfwGetGamepadState(id, &state)) {
-				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > deadZone) {
-					m.x += state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-				}
+
+				//left stick
+				//now used for zoom
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > deadZone) {
+					m.x -= state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+				}
+				/*if (fabs(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > deadZone) {
 					m.z -= state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
 				}
+				*/
+
+				//triggers for zoom
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER]) > deadZone) {
-					m.y -= state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
+					m.x -= state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
 				}
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]) > deadZone) {
-					m.y += state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
+					m.x += state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
 				}
 
+				//right stick to rotate around the pyramid
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]) > deadZone) {
 					r.y += state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
 				}
 				if(fabs(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]) > deadZone) {
 					r.x += state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
 				}
+
 				r.z += state.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER] ? 1.0f : 0.0f;
 				r.z -= state.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] ? 1.0f : 0.0f;
-				fire = fire | (bool)state.buttons[GLFW_GAMEPAD_BUTTON_A] | (bool)state.buttons[GLFW_GAMEPAD_BUTTON_B];
+
+				//fire button
+				fire = fire | (bool)state.buttons[GLFW_GAMEPAD_BUTTON_X] | (bool)state.buttons[GLFW_GAMEPAD_BUTTON_B];
 			}
 		}
 	}
@@ -1846,9 +1856,9 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		}
 
 		//Update on mouse scroll
-		m.x += yScrollOffset;
+		m.x += 4*yScrollOffset;
 		yScrollOffset = 0.0f;
-		r.y -= xScrollOffset;
+		r.y -= 4*xScrollOffset;
 		xScrollOffset = 0.0f;
 		
 		fire = glfwGetKey(window, GLFW_KEY_SPACE) | glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
