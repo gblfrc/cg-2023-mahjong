@@ -350,6 +350,8 @@ public:
 protected:
 	uint32_t windowWidth;
 	uint32_t windowHeight;
+	double xScrollOffset;
+	double yScrollOffset;
 	bool windowResizable;
 	std::string windowTitle;
 	VkClearColorValue initialBackgroundColor;
@@ -1818,6 +1820,11 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			r.y = -m_dx / MOUSE_RES;
 			r.x = -m_dy / MOUSE_RES;
 		}
+		glfwSetScrollCallback(window, [](GLFWwindow* window, double xoffset, double yoffset){
+			auto app = reinterpret_cast<BaseProject*>(glfwGetWindowUserPointer(window));
+			app->xScrollOffset = xoffset;
+			app->yScrollOffset = yoffset;
+			});
 
 		if(glfwGetKey(window, GLFW_KEY_A)) {		//move camera left around the centre
 			r.y = -1.0f;
@@ -1825,44 +1832,24 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		if(glfwGetKey(window, GLFW_KEY_D)) {		//move camera right around the centre
 			r.y = 1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_R)) {		//move camera up above the centre
+		if(glfwGetKey(window, GLFW_KEY_W)) {		//move camera up above the centre
 			r.x = -1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_F)) {		//move camera down
+		if(glfwGetKey(window, GLFW_KEY_S)) {		//move camera down
 			r.x = 1.0f;
 		}
-		/*
-		if(glfwGetKey(window, GLFW_KEY_Q)) {
-			r.z = 1.0f;
-		}
-		if(glfwGetKey(window, GLFW_KEY_E)) {
-			r.z = -1.0f;
-		}
-		*/
-		if(glfwGetKey(window, GLFW_KEY_S)) {	//zoom out
+		if(glfwGetKey(window, GLFW_KEY_F)) {		//zoom out
 			m.x = -1.0f;
 		}
-		if(glfwGetKey(window, GLFW_KEY_W)) {	//zoom in
+		if(glfwGetKey(window, GLFW_KEY_R)) {		//zoom in
 			m.x = 1.0f;
 		}
 
-
-		//HOW TO ADD MOUSE SCROLL?
-
-		/*
-		if(glfwGetKey(window, GLFW_KEY_S)) {
-			m.z = -1.0f;
-		}
-		if(glfwGetKey(window, GLFW_KEY_W)) {
-			m.z = 1.0f;
-		}
-		if(glfwGetKey(window, GLFW_KEY_R)) {
-			m.y = 1.0f;
-		}
-		if(glfwGetKey(window, GLFW_KEY_F)) {
-			m.y = -1.0f;
-		}
-		*/
+		//Update on mouse scroll
+		m.x += yScrollOffset;
+		yScrollOffset = 0.0f;
+		r.y -= xScrollOffset;
+		xScrollOffset = 0.0f;
 		
 		fire = glfwGetKey(window, GLFW_KEY_SPACE) | glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 		handleGamePad(GLFW_JOYSTICK_1,m,r,fire);
