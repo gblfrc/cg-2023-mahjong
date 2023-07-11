@@ -101,6 +101,9 @@ class Mahjong : public BaseProject {
 	int gameState;
 	float DisappearingTileTransparency = 1.0f;
 	int firstTileIndex, secondTileIndex;
+	const glm::mat4 removedTileWorld = /*glm::translate(glm::mat4(1.0), glm::vec3(100.0f, -20.0f, 0.0f)) * */ 
+								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
+	bool disappearedTiles[144] = {0};
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -227,7 +230,7 @@ class Mahjong : public BaseProject {
 		CamRadius = initialCamRadius; //was 4.5f initially
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;
+		gameState = -1;
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -393,6 +396,9 @@ class Mahjong : public BaseProject {
 		wasFire = fire;
 
 
+		string structurePath = "./structure.json";
+		static MahjongGame game = MahjongGame(structurePath);
+
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
@@ -423,6 +429,7 @@ class Mahjong : public BaseProject {
 			case 3:
 				//wrong choice of second piece
 				//notify error, how?
+				//deselect tiles
 				gameState = 0;
 			case 4:
 				//two pieces start to disappear
@@ -433,7 +440,9 @@ class Mahjong : public BaseProject {
 				}
 			case 5:
 				//remove the tile
-				glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(100.0f, -20.0f, 0.0f)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01f, 0.01f, 0.01f));
+				disappearedTiles[firstTileIndex] = true;
+				disappearedTiles[secondTileIndex] = true;
+				//game.removeTiles(firstTileIndex, secondTileIndex);
 				//go back to initial state
 				gameState = 0;
 
@@ -443,8 +452,7 @@ class Mahjong : public BaseProject {
 		/*
 		* GAME LOGIC HERE!!
 		*/
-		string structurePath = "./structure.json";
-		static MahjongGame game = MahjongGame(structurePath);
+		
 
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
@@ -525,14 +533,29 @@ class Mahjong : public BaseProject {
 			double scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 50.0f;
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * 50.0f); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
+
 			World = Tmat * Smat; // translate tile in position
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; tileubo[i].gamma = 180.0f; tileubo[i].sColor = glm::vec3(1.0f);
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
-			tileubo[i].mvpMat = Prj * View * World;
-			tileubo[i].mMat = World;
-			tileubo[i].nMat = glm::inverse(glm::transpose(World));
-			DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0);
+			
+			if (disappearedTiles[i]) {
+				tileubo[i].mvpMat = Prj * View * removedTileWorld; 
+				tileubo[i].mMat = removedTileWorld; 
+				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
+				//set transparency to 0
+				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0);
+				
+			}
+			else {
+				tileubo[i].mvpMat = Prj * View * World; 
+				tileubo[i].mMat = World; 
+				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
+				if (i == firstTileIndex || i == secondTileIndex) {
+					//set transparency to = DisappearingTileTransparency;
+				}
+				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0); 
+			}
 		}
 	}	
 };
