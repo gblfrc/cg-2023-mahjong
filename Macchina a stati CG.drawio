@@ -1,6 +1,6 @@
-<mxfile host="Electron" modified="2023-07-10T09:03:49.819Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.2.8 Chrome/112.0.5615.165 Electron/24.2.0 Safari/537.36" etag="TZ9ZFHBTLSnZ5mlJKo8a" version="21.2.8" type="device">
+<mxfile host="Electron" modified="2023-07-11T07:37:27.737Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.2.8 Chrome/112.0.5615.165 Electron/24.2.0 Safari/537.36" etag="rfjuUgV-CmwxRAAb6Mhl" version="21.2.8" type="device">
   <diagram name="Pagina-1" id="ZosER6FYlhUaswWea86L">
-    <mxGraphModel dx="1327" dy="1432" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0">
+    <mxGraphModel dx="847" dy="1329" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="291" pageHeight="413" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -127,27 +127,28 @@
         <mxCell id="RC5CroMytO5CbKUsDzlH-13" value="3: Notify wrong choice&lt;br&gt;(highlight both red?)" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
           <mxGeometry x="-40" y="470" width="80" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="RC5CroMytO5CbKUsDzlH-18" value="dT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="RC5CroMytO5CbKUsDzlH-15" target="RC5CroMytO5CbKUsDzlH-17" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="RC5CroMytO5CbKUsDzlH-15" value="5: Transparency 100%" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
-          <mxGeometry x="-62" y="580" width="80" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="RC5CroMytO5CbKUsDzlH-19" value="dT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="RC5CroMytO5CbKUsDzlH-17" target="RC5CroMytO5CbKUsDzlH-5" edge="1">
+        <mxCell id="RC5CroMytO5CbKUsDzlH-18" value="dT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="RC5CroMytO5CbKUsDzlH-15" target="RC5CroMytO5CbKUsDzlH-5" edge="1">
           <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-106" y="620" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="-230" y="620" />
-              <mxPoint x="-230" y="410" />
+              <mxPoint x="-190" y="620" />
+              <mxPoint x="-190" y="410" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="RC5CroMytO5CbKUsDzlH-17" value="6: Remove obj ftom scene" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
-          <mxGeometry x="-186" y="580" width="80" height="80" as="geometry" />
+        <mxCell id="RC5CroMytO5CbKUsDzlH-15" value="5: Transparency 100% reached&lt;br&gt;+ Word matrix" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+          <mxGeometry x="-118.5" y="580" width="80" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="RC5CroMytO5CbKUsDzlH-22" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" target="RC5CroMytO5CbKUsDzlH-5" edge="1">
+        <mxCell id="BiML--l_YuYtLMepY_ds-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="BiML--l_YuYtLMepY_ds-1" target="RC5CroMytO5CbKUsDzlH-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BiML--l_YuYtLMepY_ds-1" value="-1: menù" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="-150" y="220" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="BiML--l_YuYtLMepY_ds-3" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" target="BiML--l_YuYtLMepY_ds-1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="-110" y="320" as="sourcePoint" />
-            <mxPoint x="-83" y="290" as="targetPoint" />
+            <mxPoint y="210" as="sourcePoint" />
+            <mxPoint x="40" y="220" as="targetPoint" />
           </mxGeometry>
         </mxCell>
       </root>

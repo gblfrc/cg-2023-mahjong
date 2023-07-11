@@ -99,6 +99,8 @@ class Mahjong : public BaseProject {
 	const float initialPitch = glm::radians(90.0f);
 	const float initialYaw = glm::radians(0.0f);
 	int gameState;
+	float DisappearingTileTransparency = 1.0f;
+	int firstTileIndex, secondTileIndex;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -390,6 +392,50 @@ class Mahjong : public BaseProject {
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
 
+
+		switch (gameState) {		// main state machine implementation
+			
+			case -1: //menu	
+				//get clicks to change textures and shaders
+			case 0:
+				//no piece selected
+				//highlight the piece on which the mouse is hoovering
+				firstTileIndex = 10; //how to select?
+				gameState = 1;
+			case 1:
+				//1 piece selected and highlighted
+				//highlight the piece on which the mouse is hoovering
+				secondTileIndex = 11; //how to select?
+				gameState = 2;
+			case 2:
+				//2 pieces selected and highlighted
+				if (gameState) { //change the if condition
+					//selected 2 uncompatible tiles
+					gameState = 3;
+				}
+				else {
+					//correct selection
+					gameState = 4;
+				}
+				DisappearingTileTransparency = 1.0f;
+			case 3:
+				//wrong choice of second piece
+				//notify error, how?
+				gameState = 0;
+			case 4:
+				//two pieces start to disappear
+				DisappearingTileTransparency = DisappearingTileTransparency - 0.1f * deltaT; //check coefficient 0.1f
+				if (DisappearingTileTransparency <= 0) {
+					DisappearingTileTransparency = 0;
+					gameState = 5;
+				}
+			case 5:
+				//remove the tile
+				glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(100.0f, -20.0f, 0.0f)) * glm::scale(glm::mat4(1.0), glm::vec3(0.01f, 0.01f, 0.01f));
+				//go back to initial state
+				gameState = 0;
+
+		}
 	// Target rotation
 
 		/*
