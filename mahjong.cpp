@@ -417,19 +417,21 @@ class Mahjong : public BaseProject {
 				gameState = 2;
 			case 2:
 				//2 pieces selected and highlighted
-				if (gameState) { //change the if condition
-					//selected 2 uncompatible tiles
-					gameState = 3;
-				}
-				else {
+				if (game.canRemoveTiles(firstTileIndex,secondTileIndex)) {
 					//correct selection
 					gameState = 4;
+				}
+				else {
+					//selected 2 uncompatible tiles
+					gameState = 3;
 				}
 				DisappearingTileTransparency = 1.0f;
 			case 3:
 				//wrong choice of second piece
 				//notify error, how?
 				//deselect tiles
+				firstTileIndex = -1;
+				secondTileIndex = -1;
 				gameState = 0;
 			case 4:
 				//two pieces start to disappear
@@ -552,6 +554,7 @@ class Mahjong : public BaseProject {
 				tileubo[i].mMat = World; 
 				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
 				if (i == firstTileIndex || i == secondTileIndex) {
+					//set highlight of selected tile
 					//set transparency to = DisappearingTileTransparency;
 				}
 				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0); 

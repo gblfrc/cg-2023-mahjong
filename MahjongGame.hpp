@@ -69,6 +69,15 @@ public:
 		}
 	}
 
+	//returns true if the two tiles whose tile_indexes are passed as parameters can be removed from the game together
+	bool canRemoveTiles(int idx0, int idx1) {
+		Tile tile0 = tiles[idx0];
+		Tile tile1 = tiles[idx1];
+		return (((idx0 < 40 && idx1 == idx0) ||
+			(idx0 >= 40 && idx0 < 44 && idx1 >= 40 && idx1 < 44) ||
+			(idx0 >= 44 && idx0 < 48 && idx1 >= 44 && idx1 < 48)) && tile0.isOpen() && tile1.isOpen());
+	}
+
 	void removeTiles(int idx0, int idx1) {
 		// access tiles
 		Tile tile0 = tiles[idx0];
