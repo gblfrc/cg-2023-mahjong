@@ -396,6 +396,8 @@ class Mahjong : public BaseProject {
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
+				//show menu overlay
+				// diable commands?
 				//get clicks to change textures and shaders
 			case 0:
 				//no piece selected
