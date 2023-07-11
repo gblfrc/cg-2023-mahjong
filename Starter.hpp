@@ -301,7 +301,7 @@ struct Pipeline {
 	void cleanup();
 };
 
-enum DescriptorSetElementType {UNIFORM, TEXTURE};
+enum DescriptorSetElementType {UNIFORM, TEXTURE, STORAGE};
 
 struct DescriptorSetElement {
 	int binding;
@@ -357,6 +357,7 @@ protected:
 	VkClearColorValue initialBackgroundColor;
 	int uniformBlocksInPool;
 	int texturesInPool;
+	int storageBlocksInPool;
 	int setsInPool;
 
     GLFWwindow* window;
@@ -449,7 +450,7 @@ protected:
     }
 
     void createInstance() {
-std::cout << "Starting createInstance()\n"  << std::flush;
+		std::cout << "Starting createInstance()\n"  << std::flush;
     	VkApplicationInfo appInfo{};
        	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     	appInfo.pApplicationName = windowTitle.c_str();
@@ -831,6 +832,8 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.sampleRateShading = VK_TRUE;
+		// needed for writable buffer storage
+		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 		
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1484,12 +1487,15 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 	}
     
 	void createDescriptorPool() {
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(uniformBlocksInPool *
 															 swapChainImages.size());
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(texturesInPool *
+															 swapChainImages.size());
+		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[2].descriptorCount = static_cast<uint32_t>(storageBlocksInPool *
 															 swapChainImages.size());
 															 
 		VkDescriptorPoolCreateInfo poolInfo{};
@@ -1504,6 +1510,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		 	PrintVkError(result);
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
+
 	}
 	
 	virtual void populateCommandBuffer(VkCommandBuffer commandBuffer, int i) = 0;
@@ -2797,10 +2804,12 @@ void DescriptorSet::init(BaseProject *bp, DescriptorSetLayout *DSL,
 	for (int j = 0; j < E.size(); j++) {
 		uniformBuffers[j].resize(BP->swapChainImages.size());
 		uniformBuffersMemory[j].resize(BP->swapChainImages.size());
-		if(E[j].type == UNIFORM) {
+		if(E[j].type == UNIFORM || E[j].type == STORAGE) {
 			for (size_t i = 0; i < BP->swapChainImages.size(); i++) {
 				VkDeviceSize bufferSize = E[j].size;
-				BP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				BP->createBuffer(bufferSize, E[j].type == UNIFORM ? 
+										 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 
+										 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 									 	 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 									 	 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 									 	 uniformBuffers[j][i], uniformBuffersMemory[j][i]);
@@ -2843,6 +2852,18 @@ void DescriptorSet::init(BaseProject *bp, DescriptorSetLayout *DSL,
 				descriptorWrites[j].dstBinding = E[j].binding;
 				descriptorWrites[j].dstArrayElement = 0;
 				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrites[j].descriptorCount = 1;
+				descriptorWrites[j].pBufferInfo = &bufferInfo[j];
+			} else if(E[j].type == STORAGE) {
+				bufferInfo[j].buffer = uniformBuffers[j][i];
+				bufferInfo[j].offset = 0;
+				bufferInfo[j].range = E[j].size;
+
+				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[j].dstSet = descriptorSets[i];
+				descriptorWrites[j].dstBinding = E[j].binding;
+				descriptorWrites[j].dstArrayElement = 0;
+				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				descriptorWrites[j].descriptorCount = 1;
 				descriptorWrites[j].pBufferInfo = &bufferInfo[j];
 			} else if(E[j].type == TEXTURE) {
