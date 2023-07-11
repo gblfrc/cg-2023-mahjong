@@ -371,11 +371,18 @@ protected:
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 
+	// Resolved Images
+	// swap chain images
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
+	// entity image
+	VkImage entityImage;
+	VkImageView entityImageView;
+	VkFormat entityImageFormat = VK_FORMAT_R32_SINT;
+	VkDeviceMemory entityImageMemory;
 	
 	VkRenderPass renderPass;
 	
@@ -387,10 +394,16 @@ protected:
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
 
+	// Unresolved Images
+	// color image
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
+	// color entity image
+	VkImage colorEntityImage;
+	VkDeviceMemory colorEntityImageMemory;
+	VkImageView colorEntityImageView;
 
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	size_t currentFrame = 0;
@@ -1011,9 +1024,22 @@ protected:
 		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		VkAttachmentReference colorAttachmentResolveRef{};
-		colorAttachmentResolveRef.attachment = 2;
-		colorAttachmentResolveRef.layout =
+		VkAttachmentDescription colorEntityAttachmentResolve{};
+		colorEntityAttachmentResolve.format = entityImageFormat;
+		colorEntityAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorEntityAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorEntityAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorEntityAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorEntityAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorEntityAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorEntityAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+		VkAttachmentReference colorAttachmentResolveRefs[2];
+		colorAttachmentResolveRefs[0].attachment = 3;
+		colorAttachmentResolveRefs[0].layout =
+						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentResolveRefs[1].attachment = 4;
+		colorAttachmentResolveRefs[1].layout =
 						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		
 		VkAttachmentDescription depthAttachment{};
@@ -1041,18 +1067,31 @@ protected:
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    	VkAttachmentDescription colorEntityAttachment{};
+		colorEntityAttachment.format = entityImageFormat;
+		colorEntityAttachment.samples = msaaSamples;
+		colorEntityAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorEntityAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorEntityAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorEntityAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorEntityAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorEntityAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout =
+		VkAttachmentReference colorAttachmentRefs[2];
+		colorAttachmentRefs[0].attachment = 0;
+		colorAttachmentRefs[0].layout =
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentRefs[1].attachment = 2;
+		colorAttachmentRefs[1].layout =
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.colorAttachmentCount = 2;
+		subpass.pColorAttachments = colorAttachmentRefs;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-		subpass.pResolveAttachments = &colorAttachmentResolveRef;
+		subpass.pResolveAttachments = colorAttachmentResolveRefs;
 		
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -1062,9 +1101,10 @@ protected:
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-		std::array<VkAttachmentDescription, 3> attachments =
+		std::array<VkAttachmentDescription, 5> attachments =
 								{colorAttachment, depthAttachment,
-								 colorAttachmentResolve};
+								 colorEntityAttachment, colorAttachmentResolve,
+								 colorEntityAttachmentResolve};
 
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -1086,10 +1126,12 @@ protected:
     void createFramebuffers() {
 		swapChainFramebuffers.resize(swapChainImageViews.size());
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-			std::array<VkImageView, 3> attachments = {
+			std::array<VkImageView, 5> attachments = {
 				colorImageView,
 				depthImageView,
-				swapChainImageViews[i]
+				colorEntityImageView,
+				swapChainImageViews[i],
+				entityImageView
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};
@@ -1128,7 +1170,22 @@ protected:
 		}
 	}
 
+	int getMaxImageSize() {
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		int count;
+		const GLFWvidmode* modes = glfwGetVideoModes(monitor, &count);
+		int maxWidth = 0;
+		int maxHeight = 0;
+		for (int i = 0; i < count; i++) {
+			if (modes[i].width > maxWidth) maxWidth = modes[i].width;
+			if (modes[i].height > maxHeight) maxHeight = modes[i].height;
+		}
+		return maxWidth * maxHeight; // should contain integers, which are 4-byte elements
+	}
+
+
 	void createColorResources() {
+		// Color image
 		VkFormat colorFormat = swapChainImageFormat;
 		createImage(swapChainExtent.width, swapChainExtent.height, 1, 1,
 					msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
@@ -1139,6 +1196,27 @@ protected:
 		colorImageView = createImageView(colorImage, colorFormat,
 									VK_IMAGE_ASPECT_COLOR_BIT, 1,
 									VK_IMAGE_VIEW_TYPE_2D, 1);
+		// Entity color image
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, 1,
+			msaaSamples, entityImageFormat, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			colorEntityImage, colorEntityImageMemory);
+		colorEntityImageView = createImageView(colorEntityImage, entityImageFormat,
+			VK_IMAGE_ASPECT_COLOR_BIT, 1,
+			VK_IMAGE_VIEW_TYPE_2D, 1);
+		// Entity image
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, 1,
+			VK_SAMPLE_COUNT_1_BIT, entityImageFormat, VK_IMAGE_TILING_LINEAR,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+			entityImage, entityImageMemory);
+		entityImageView = createImageView(entityImage, entityImageFormat,
+			VK_IMAGE_ASPECT_COLOR_BIT, 1,
+			VK_IMAGE_VIEW_TYPE_2D, 1);
 	}
 
 	void createDepthResources() {
@@ -1192,7 +1270,8 @@ protected:
 					 uint32_t mipLevels, int imgCount,
 					 VkSampleCountFlagBits numSamples, 
 					 VkFormat format,
-				 	 VkImageTiling tiling, VkImageUsageFlags usage,
+				 	 VkImageTiling tiling, 
+					 VkImageUsageFlags usage,
 				 	 VkImageCreateFlags cflags,
 				 	 VkMemoryPropertyFlags properties, VkImage& image,
 				 	 VkDeviceMemory& imageMemory) {		
@@ -1402,7 +1481,29 @@ protected:
 
 		endSingleTimeCommands(commandBuffer);
 	}
-	
+
+	//void copyImageToBuffer(VkBuffer buffer, VkImage image, uint32_t
+	//	width, uint32_t height, int layerCount) {
+	//	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+	//	VkBufferImageCopy region{};
+	//	region.bufferOffset = 0;
+	//	region.bufferRowLength = 0;
+	//	region.bufferImageHeight = 0;
+	//	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	region.imageSubresource.mipLevel = 0;
+	//	region.imageSubresource.baseArrayLayer = 0;
+	//	region.imageSubresource.layerCount = layerCount;
+	//	region.imageOffset = { 0, 0, 0 };
+	//	region.imageExtent = { width, height, 1 };
+
+	//	vkCmdCopyImageToBuffer(commandBuffer, image, 
+	//						   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	//						   buffer, 1, &region);
+
+	//	endSingleTimeCommands(commandBuffer);
+	//}
+
 	VkCommandBuffer beginSingleTimeCommands() { 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1487,16 +1588,18 @@ protected:
 	}
     
 	void createDescriptorPool() {
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
+		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(uniformBlocksInPool *
 															 swapChainImages.size());
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(texturesInPool *
 															 swapChainImages.size());
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		poolSizes[2].descriptorCount = static_cast<uint32_t>(storageBlocksInPool *
-															 swapChainImages.size());
+		// Commented not to throw any validation error
+		// Uncomment if and when storage buffers are needed
+		//poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		//poolSizes[2].descriptorCount = static_cast<uint32_t>(storageBlocksInPool *
+		//		swapChainImages.size());
 															 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1549,9 +1652,10 @@ protected:
 			renderPassInfo.renderArea.offset = {0, 0};
 			renderPassInfo.renderArea.extent = swapChainExtent;
 	
-			std::array<VkClearValue, 2> clearValues{};
+			std::array<VkClearValue, 3> clearValues{};
 			clearValues[0].color = initialBackgroundColor;
 			clearValues[1].depthStencil = {1.0f, 0};
+			clearValues[2].color = {0.0, 0.0, 0.0, 0.0};
 	
 			renderPassInfo.clearValueCount =
 							static_cast<uint32_t>(clearValues.size());
@@ -1565,6 +1669,8 @@ protected:
 			
 
 			vkCmdEndRenderPass(commandBuffers[i]);
+
+			//copyImageToBuffer(entityBuffer, entityImage, swapChainExtent.width, swapChainExtent.height, 1);
 
 			if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to record command buffer!");
@@ -1713,10 +1819,19 @@ protected:
 	}
 
 	void cleanupSwapChain() {
+		// destroy color image
     	vkDestroyImageView(device, colorImageView, nullptr);
     	vkDestroyImage(device, colorImage, nullptr);
     	vkFreeMemory(device, colorImageMemory, nullptr);
-    	
+		// destroy entity color image
+    	vkDestroyImageView(device, colorEntityImageView, nullptr);
+    	vkDestroyImage(device, colorEntityImage, nullptr);
+    	vkFreeMemory(device, colorEntityImageMemory, nullptr);
+		// destroy entity image
+    	vkDestroyImageView(device, entityImageView, nullptr);
+    	vkDestroyImage(device, entityImage, nullptr);
+    	vkFreeMemory(device, entityImageMemory, nullptr);
+    	// destroy depth image
 		vkDestroyImageView(device, depthImageView, nullptr);
 		vkDestroyImage(device, depthImage, nullptr);
 		vkFreeMemory(device, depthImageMemory, nullptr);
@@ -2422,7 +2537,8 @@ void Texture::createTextureImage(const char *const files[], VkFormat Fmt = VK_FO
 	
 	
 	BP->createImage(texWidth, texHeight, mipLevels, imgs, VK_SAMPLE_COUNT_1_BIT, Fmt,
-				VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 				imgs == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage,
@@ -2635,24 +2751,42 @@ void Pipeline::create() {
 	multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
 	multisampling.alphaToOneEnable = VK_FALSE; // Optional
 	
-	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-	colorBlendAttachment.colorWriteMask =
+	VkPipelineColorBlendAttachmentState colorBlendAttachments[2];
+	colorBlendAttachments[0].colorWriteMask =
 			VK_COLOR_COMPONENT_R_BIT |
 			VK_COLOR_COMPONENT_G_BIT |
 			VK_COLOR_COMPONENT_B_BIT |
 			VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = transp ? VK_TRUE : VK_FALSE;
-	colorBlendAttachment.srcColorBlendFactor =
+	colorBlendAttachments[0].blendEnable = transp ? VK_TRUE : VK_FALSE;
+	colorBlendAttachments[0].srcColorBlendFactor =
 			transp ? VK_BLEND_FACTOR_SRC_ALPHA : VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstColorBlendFactor =
+	colorBlendAttachments[0].dstColorBlendFactor =
 			transp ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.colorBlendOp =
+	colorBlendAttachments[0].colorBlendOp =
 			VK_BLEND_OP_ADD; // Optional
-	colorBlendAttachment.srcAlphaBlendFactor =
+	colorBlendAttachments[0].srcAlphaBlendFactor =
 			VK_BLEND_FACTOR_ONE; // Optional
-	colorBlendAttachment.dstAlphaBlendFactor =
+	colorBlendAttachments[0].dstAlphaBlendFactor =
 			VK_BLEND_FACTOR_ZERO; // Optional
-	colorBlendAttachment.alphaBlendOp =
+	colorBlendAttachments[0].alphaBlendOp =
+			VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachments[1].colorWriteMask =
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachments[1].blendEnable = transp ? VK_TRUE : VK_FALSE;
+	colorBlendAttachments[1].srcColorBlendFactor =
+			transp ? VK_BLEND_FACTOR_SRC_ALPHA : VK_BLEND_FACTOR_ONE;
+	colorBlendAttachments[1].dstColorBlendFactor =
+			transp ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachments[1].colorBlendOp =
+			VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachments[1].srcAlphaBlendFactor =
+			VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachments[1].dstAlphaBlendFactor =
+			VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachments[1].alphaBlendOp =
 			VK_BLEND_OP_ADD; // Optional
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
@@ -2660,8 +2794,8 @@ void Pipeline::create() {
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.attachmentCount = 2;
+	colorBlending.pAttachments = colorBlendAttachments;
 	colorBlending.blendConstants[0] = 0.0f; // Optional
 	colorBlending.blendConstants[1] = 0.0f; // Optional
 	colorBlending.blendConstants[2] = 0.0f; // Optional

@@ -27,6 +27,7 @@ struct TileUniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
+	alignas(4) int tileIdx;
 	alignas(4) int suitIdx;
 };
 
@@ -56,7 +57,7 @@ struct VertexMesh {
 
 // MAIN ! 
 class Mahjong : public BaseProject {
-	protected:
+protected:
 
 	// Current aspect ratio (used by the callback that resized the window)
 	float Ar;
@@ -86,7 +87,7 @@ class Mahjong : public BaseProject {
 	//Texture TPoolCloth, TWhiteTiles;
 	Texture TPoolCloth;
 	Texture TWhiteTiles;
-	
+
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
 	//TileUniformBlock tileubo;
@@ -111,23 +112,25 @@ class Mahjong : public BaseProject {
 		windowWidth = 800;
 		windowHeight = 600;
 		windowTitle = "Mahjong";
-    	windowResizable = GLFW_TRUE;
-		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
-		
+		windowResizable = GLFW_TRUE;
+		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
+
 		// Descriptor pool sizes
-		uniformBlocksInPool = 146; 
+		uniformBlocksInPool = 146;
 		texturesInPool = 145;
 		setsInPool = 146;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
-	
+
 	// What to do when the window changes size
 	void onWindowResize(int w, int h) {
 		Ar = (float)w / (float)h;
+		windowWidth = w;
+		windowHeight = h;
 	}
-	
+
 	// Here you load and setup all your Vulkan Models and Textures.
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
@@ -197,8 +200,8 @@ class Mahjong : public BaseProject {
 		// be used in this pipeline. The first element will be set 0, and so on..
 		//PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
 		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
-		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv" , "shaders/BackgroundFrag.spv", {&DSLGubo, &DSLBackground});
-		PTile.init(this, &VMesh, "shaders/TileVert.spv" , "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
+		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
+		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile });
 
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
@@ -209,7 +212,7 @@ class Mahjong : public BaseProject {
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 		// Create Background model manually
 		float side = 18.0f;
-		MBackground.vertices = { 
+		MBackground.vertices = {
 			{{-side, 0.0f, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
 			{{side, 0.0f, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
 			{{side, 0.0f, -side},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f}},
@@ -232,13 +235,13 @@ class Mahjong : public BaseProject {
 		CamYaw = initialYaw;
 		gameState = -1;
 	}
-	
+
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
 		PBackground.create();
 		PTile.create();
-		
+
 		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].init(this, &DSLTile, {
@@ -260,13 +263,9 @@ class Mahjong : public BaseProject {
 		DSBackground.init(this, &DSLBackground, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TPoolCloth}
-				});
+			});
 
-		//DSTile.init(this, &DSLTile, {
-		//			{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-		//			{1, TEXTURE, 0, &TWhiteTiles}
-		//		});
-		
+
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -282,7 +281,7 @@ class Mahjong : public BaseProject {
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].cleanup();
 		}
-		//DSTile.cleanup();
+
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -293,25 +292,25 @@ class Mahjong : public BaseProject {
 		// Cleanup textures
 		TPoolCloth.cleanup();
 		TWhiteTiles.cleanup();
-		
+
 		// Cleanup models
 		MBackground.cleanup();
 		MTile.cleanup();
-		
+
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
 		DSLBackground.cleanup();
 		DSLGubo.cleanup();
-		
+
 		// Destroys the pipelines
-		PTile.destroy();		
+		PTile.destroy();
 		PBackground.destroy();
 	}
-	
+
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
 	// with their buffers and textures
-	
+
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// sets global uniforms (see below fro parameters explanation)
 
@@ -328,7 +327,7 @@ class Mahjong : public BaseProject {
 		//MTile.bind(commandBuffer);
 		// For a Model object, this command binds the corresponing index and vertex buffer
 		// to the command buffer passed in its parameter
-		
+
 		// binds the data set
 		//for (int i = 0; i < 144; i++) {
 		//	DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
@@ -363,17 +362,17 @@ class Mahjong : public BaseProject {
 			vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 		}
-		
+
 	}
 
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
 		// Standard procedure to quit when the ESC key is pressed
-		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
-		
+
 		//FIRE TO GO BACK TO INITIAL POSITION
 		// Integration with the timers and the controllers
 		float deltaT;
@@ -394,6 +393,20 @@ class Mahjong : public BaseProject {
 		static bool wasFire = false;
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
+
+		double mousex, mousey;
+		glfwGetCursorPos(window, &mousex, &mousey);
+		int x = int(mousex);
+		int y = int(mousey);
+
+		void* data;
+		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data);
+		int* pixels = reinterpret_cast<int*>(data);
+		int index = y * windowWidth + x;
+		if (y < windowHeight && x < windowWidth) {
+			cout << pixels[index] << "\n";
+		}
+		vkUnmapMemory(device, entityImageMemory);
 
 
 		string structurePath = "./structure.json";
@@ -449,12 +462,6 @@ class Mahjong : public BaseProject {
 				gameState = 0;
 
 		}
-	// Target rotation
-
-		/*
-		* GAME LOGIC HERE!!
-		*/
-		
 
 		// Parameters
 		// Camera FOV-y, Near Plane and Far Plane
@@ -463,8 +470,8 @@ class Mahjong : public BaseProject {
 		const float farPlane = 100.0f;
 		const float rotSpeed = glm::radians(90.0f);
 		const float movSpeed = 10.0f;
-		
-		
+
+
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
 		CamRadius = glm::clamp(CamRadius, 7.8f, 20.0f); //minumum and maximum zoom of the cam
@@ -474,19 +481,19 @@ class Mahjong : public BaseProject {
 		CamPitch = glm::clamp(CamPitch, glm::radians(30.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
 
 		CamYaw += r.y * rotSpeed * deltaT;
-		
-	
+
+
 		/* da usare insieme a ubo perché servono le matrici
 		glm::mat4 initalModel = glm::rotate(glm::mat4(1.0f),
-                                glm::radians(0.0f),
-                                glm::vec3(0.0f, 0.0f, 1.0f));
-            
-        
-        ubo.view = glm::lookAt(game.getCamPos(deltaT),game.getAimPos(),glm::vec3(0.0f, 1.0f, 0.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f),
-                        swapChainExtent.width / (float) swapChainExtent.height,
-                        0.1f, 10.0f); ==  glm::perspective(FOVy, Ar, nearPlane, farPlane);
-        ubo.proj[1][1] *= -1;*/
+								glm::radians(0.0f),
+								glm::vec3(0.0f, 0.0f, 1.0f));
+
+
+		ubo.view = glm::lookAt(game.getCamPos(deltaT),game.getAimPos(),glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f),
+						swapChainExtent.width / (float) swapChainExtent.height,
+						0.1f, 10.0f); ==  glm::perspective(FOVy, Ar, nearPlane, farPlane);
+		ubo.proj[1][1] *= -1;*/
 
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
@@ -503,7 +510,7 @@ class Mahjong : public BaseProject {
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
 		glm::vec3 camTarget = glm::vec3(0, 0, 0);
-		
+
 		//c  da vedere
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
 
@@ -523,7 +530,7 @@ class Mahjong : public BaseProject {
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
 		// Matrix setup for background
-		glm::mat4 World = glm::mat4(1);		
+		glm::mat4 World = glm::mat4(1);
 		bgubo.amb = 1.0f; bgubo.gamma = 180.0f; bgubo.sColor = glm::vec3(1.0f);
 		bgubo.mvpMat = Prj * View * World;
 		bgubo.mMat = World;
@@ -539,6 +546,7 @@ class Mahjong : public BaseProject {
 			World = Tmat * Smat; // translate tile in position
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; tileubo[i].gamma = 180.0f; tileubo[i].sColor = glm::vec3(1.0f);
+			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			
 			if (disappearedTiles[i]) {
@@ -566,14 +574,15 @@ class Mahjong : public BaseProject {
 
 // This is the main: probably you do not need to touch this!
 int main() {
-    Mahjong app;
+	Mahjong app;
 
-    try {
-        app.run();
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
+	try {
+		app.run();
+	}
+	catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
 
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

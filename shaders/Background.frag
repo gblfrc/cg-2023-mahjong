@@ -6,6 +6,7 @@ layout(location = 1) in vec3 fragNorm;
 layout(location = 2) in vec2 fragUV;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 DlightDir;		// direction of the direct light
@@ -72,4 +73,5 @@ void main() {
 
 	
 	outColor = vec4(clamp(0.95 * (DiffSpec) * lightColor.rgb + Ambient,0.0,1.0), 1.0f);
+	id = -1;
 }

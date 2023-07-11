@@ -6,6 +6,7 @@ layout(location = 1) in vec3 fragNorm;
 layout(location = 2) in vec2 fragUV;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 DlightDir;		// direction of the direct light
@@ -21,6 +22,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat;
 	mat4 mMat;
 	mat4 nMat;
+	int tileIdx;
 	int suitIdx;
 } ubo;
 
@@ -43,6 +45,6 @@ void main() {
 	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), ubo.gamma);
 	vec3 Ambient = LA * MA;
 
-	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), transparency);
-	//outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), 1.0f);
+	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), 1.0f);
+	id = ubo.tileIdx;
 }
