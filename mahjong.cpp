@@ -109,8 +109,8 @@ protected:
 	// Here you set the main application parameters
 	void setWindowParameters() {
 		// window size, title and initial background
-		windowWidth = 800;
-		windowHeight = 600;
+		windowWidth = 1200;
+		windowHeight = 900;
 		windowTitle = "Mahjong";
 		windowResizable = GLFW_TRUE;
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };

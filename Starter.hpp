@@ -381,7 +381,7 @@ protected:
 	// entity image
 	VkImage entityImage;
 	VkImageView entityImageView;
-	VkFormat entityImageFormat = VK_FORMAT_R32_SINT;
+	VkFormat entityImageFormat;
 	VkDeviceMemory entityImageMemory;
 	
 	VkRenderPass renderPass;
@@ -1025,7 +1025,7 @@ protected:
 		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		VkAttachmentDescription colorEntityAttachmentResolve{};
-		colorEntityAttachmentResolve.format = entityImageFormat;
+		colorEntityAttachmentResolve.format = findEntityImageFormat();
 		colorEntityAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorEntityAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorEntityAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1069,7 +1069,7 @@ protected:
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     	VkAttachmentDescription colorEntityAttachment{};
-		colorEntityAttachment.format = entityImageFormat;
+		colorEntityAttachment.format = findEntityImageFormat();
 		colorEntityAttachment.samples = msaaSamples;
 		colorEntityAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorEntityAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1197,6 +1197,8 @@ protected:
 									VK_IMAGE_ASPECT_COLOR_BIT, 1,
 									VK_IMAGE_VIEW_TYPE_2D, 1);
 		// Entity color image
+		entityImageFormat = findEntityImageFormat();
+
 		createImage(swapChainExtent.width, swapChainExtent.height, 1, 1,
 			msaaSamples, entityImageFormat, VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
@@ -1212,7 +1214,7 @@ protected:
 			//VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			entityImage, entityImageMemory);
 		entityImageView = createImageView(entityImage, entityImageFormat,
 			VK_IMAGE_ASPECT_COLOR_BIT, 1,
@@ -1240,7 +1242,13 @@ protected:
 									VK_FORMAT_D32_SFLOAT_S8_UINT,
 									VK_FORMAT_D24_UNORM_S8_UINT},
 									VK_IMAGE_TILING_OPTIMAL, 
-								VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT );
+									VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT );
+	}
+
+	VkFormat findEntityImageFormat() {
+		return findSupportedFormat({VK_FORMAT_R32_SINT},
+									VK_IMAGE_TILING_LINEAR, 
+									VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
 	}
 	
 	VkFormat findSupportedFormat(const std::vector<VkFormat> candidates,
