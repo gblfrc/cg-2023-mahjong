@@ -24,6 +24,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 nMat;
 	int tileIdx;
 	int suitIdx;
+	float transparency;
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;
@@ -33,7 +34,7 @@ void main() {
 	vec3 V = normalize(gubo.eyePos - fragPos);	// viewer direction
 	vec3 L = normalize(gubo.DlightDir);			// light direction
 	vec3 H = normalize(L + V);					// half vector for Blinn BRDF
-	float transparency = 1.0f;					//CHANGE HERE TO PUT CUSTOM ONE PASSED FROM mahjong.cpp
+	float alpha = ubo.transparency;				// transparency of the tile
 
 	vec3 albedo = texture(tex, fragUV).rgb;		// main color
 	vec3 MD = albedo;
@@ -45,6 +46,6 @@ void main() {
 	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), ubo.gamma);
 	vec3 Ambient = LA * MA;
 
-	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), 1.0f);
+	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), 0.5f);
 	id = ubo.tileIdx;
 }

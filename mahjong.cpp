@@ -29,6 +29,7 @@ struct TileUniformBlock {
 	alignas(16) glm::mat4 nMat;
 	alignas(4) int tileIdx;
 	alignas(4) int suitIdx;
+	alignas(4) float transparency;
 };
 
 struct BackgroundUniformBlock {
@@ -202,6 +203,7 @@ protected:
 		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
 		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile });
+		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
 
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
@@ -416,11 +418,12 @@ protected:
 			
 			case -1: //menu	
 				//show menu overlay
-				// diable commands?
+				// disable commands?
 				//get clicks to change textures and shaders
 			case 0:
 				//no piece selected
 				//highlight the piece on which the mouse is hoovering
+				DisappearingTileTransparency = 1.0f; //not transparent
 				firstTileIndex = 10; //how to select?
 				gameState = 1;
 			case 1:
@@ -448,7 +451,7 @@ protected:
 				gameState = 0;
 			case 4:
 				//two pieces start to disappear
-				DisappearingTileTransparency = DisappearingTileTransparency - 0.1f * deltaT; //check coefficient 0.1f
+				DisappearingTileTransparency = DisappearingTileTransparency - 0.01f * deltaT; //check coefficient 0.1f
 				if (DisappearingTileTransparency <= 0) {
 					DisappearingTileTransparency = 0;
 					gameState = 5;
@@ -545,15 +548,17 @@ protected:
 
 			World = Tmat * Smat; // translate tile in position
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
-			tileubo[i].amb = 1.0f; tileubo[i].gamma = 180.0f; tileubo[i].sColor = glm::vec3(1.0f);
+			tileubo[i].amb = 1.0f; 
+			tileubo[i].gamma = 200.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
+			tileubo[i].sColor = glm::vec3(1.0f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
+			tileubo[i].transparency = 0.0f;
 			
 			if (disappearedTiles[i]) {
 				tileubo[i].mvpMat = Prj * View * removedTileWorld; 
 				tileubo[i].mMat = removedTileWorld; 
-				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
-				//set transparency to 0
+				tileubo[i].nMat = glm::inverse(glm::transpose(removedTileWorld)); 
 				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0);
 				
 			}
@@ -562,8 +567,10 @@ protected:
 				tileubo[i].mMat = World; 
 				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
 				if (i == firstTileIndex || i == secondTileIndex) {
-					//set highlight of selected tile
 					//set transparency to = DisappearingTileTransparency;
+					tileubo[i].transparency = DisappearingTileTransparency;
+					//set highlight of selected tile
+					
 				}
 				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0); 
 			}
