@@ -404,7 +404,7 @@ protected:
 		int* pixels = reinterpret_cast<int*>(data);
 		int index = y * windowWidth + x;
 		if (y < windowHeight && x < windowWidth) {
-			cout << pixels[index] << "\n";
+			cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
