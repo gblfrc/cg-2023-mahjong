@@ -46,6 +46,6 @@ void main() {
 	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), ubo.gamma);
 	vec3 Ambient = LA * MA;
 
-	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), 0.5f);
+	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), alpha);
 	id = ubo.tileIdx;
 }

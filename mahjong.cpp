@@ -102,7 +102,8 @@ protected:
 	const float initialYaw = glm::radians(0.0f);
 	int gameState;
 	float DisappearingTileTransparency = 1.0f;
-	int firstTileIndex, secondTileIndex;
+	int firstTileIndex = 120;			//initialize at -1
+	int secondTileIndex = 120;
 	const glm::mat4 removedTileWorld = /*glm::translate(glm::mat4(1.0), glm::vec3(100.0f, -20.0f, 0.0f)) * */ 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
@@ -235,7 +236,9 @@ protected:
 		CamRadius = initialCamRadius; //was 4.5f initially
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;
+		gameState = 4;				//CHANGE TO 0
+		firstTileIndex = 120;
+		secondTileIndex = 120;
 	}
 
 	// Here you create your pipelines and Descriptor Sets!
@@ -414,23 +417,27 @@ protected:
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
 
+		std:cout << "\nGameState: " << gameState<<"\n";
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
 				//show menu overlay
 				// disable commands?
 				//get clicks to change textures and shaders
+				break;
 			case 0:
 				//no piece selected
 				//highlight the piece on which the mouse is hoovering
 				DisappearingTileTransparency = 1.0f; //not transparent
 				firstTileIndex = 10; //how to select?
 				gameState = 1;
+				break;
 			case 1:
 				//1 piece selected and highlighted
 				//highlight the piece on which the mouse is hoovering
 				secondTileIndex = 11; //how to select?
 				gameState = 2;
+				break;
 			case 2:
 				//2 pieces selected and highlighted
 				if (game.canRemoveTiles(firstTileIndex,secondTileIndex)) {
@@ -442,6 +449,7 @@ protected:
 					gameState = 3;
 				}
 				DisappearingTileTransparency = 1.0f;
+				break;
 			case 3:
 				//wrong choice of second piece
 				//notify error, how?
@@ -449,13 +457,18 @@ protected:
 				firstTileIndex = -1;
 				secondTileIndex = -1;
 				gameState = 0;
+				break;
 			case 4:
 				//two pieces start to disappear
-				DisappearingTileTransparency = DisappearingTileTransparency - 0.01f * deltaT; //check coefficient 0.1f
+				//std::cout <<"Tile indexes" << firstTileIndex << "  " << secondTileIndex << "\n";
+				//std::cout << "Tinitial:" << DisappearingTileTransparency << "\n";
+				DisappearingTileTransparency = DisappearingTileTransparency - 0.1f * deltaT; //check coefficient 0.1f
+				//std::cout <<"T:" << DisappearingTileTransparency << "\n";	//debug
 				if (DisappearingTileTransparency <= 0) {
 					DisappearingTileTransparency = 0;
-					gameState = 5;
+					//gameState = 5;	//UNCOMMENT THIS
 				}
+				break;
 			case 5:
 				//remove the tile
 				disappearedTiles[firstTileIndex] = true;
@@ -463,6 +476,7 @@ protected:
 				//game.removeTiles(firstTileIndex, secondTileIndex);
 				//go back to initial state
 				gameState = 0;
+				break;
 
 		}
 
@@ -553,7 +567,7 @@ protected:
 			tileubo[i].sColor = glm::vec3(1.0f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
-			tileubo[i].transparency = 0.0f;
+			tileubo[i].transparency = 1.0f;
 			
 			if (disappearedTiles[i]) {
 				tileubo[i].mvpMat = Prj * View * removedTileWorld; 
@@ -569,6 +583,7 @@ protected:
 				if (i == firstTileIndex || i == secondTileIndex) {
 					//set transparency to = DisappearingTileTransparency;
 					tileubo[i].transparency = DisappearingTileTransparency;
+					std::cout <<"\ntransparency of tile\n" <<i<<": "<< tileubo[i].transparency<<"\n--------\n";
 					//set highlight of selected tile
 					
 				}
