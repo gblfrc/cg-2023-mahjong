@@ -74,4 +74,5 @@ void main() {
 
 	
 	outColor = vec4(clamp(0.95 * (DiffSpec) * lightColor.rgb + Ambient,0.0,1.0), 1.0f);
+	id = -1;
 }

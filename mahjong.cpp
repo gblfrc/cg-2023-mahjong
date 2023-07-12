@@ -30,6 +30,8 @@ struct TileUniformBlock {
 	alignas(4) int tileIdx;
 	alignas(4) int suitIdx;
 	alignas(4) float transparency;
+	alignas(4) int hoverIdx;
+	alignas(4) int selectedIdx;
 };
 
 struct BackgroundUniformBlock {
@@ -408,8 +410,10 @@ protected:
 		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data);
 		int* pixels = reinterpret_cast<int*>(data);
 		int index = y * windowWidth + x;
+		int hoverIndex = 0;
 		if (y < windowHeight && x < windowWidth) {
 			cout << x << ", " << y << " ---> " << pixels[index] << "\n";
+			hoverIndex = pixels[index];
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
@@ -417,7 +421,7 @@ protected:
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
 
-		std:cout << "\nGameState: " << gameState<<"\n";
+		//std:cout << "\nGameState: " << gameState<<"\n";
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
@@ -428,6 +432,7 @@ protected:
 			case 0:
 				//no piece selected
 				//highlight the piece on which the mouse is hoovering
+				hoverIndex = 
 				DisappearingTileTransparency = 1.0f; //not transparent
 				firstTileIndex = 10; //how to select?
 				gameState = 1;
@@ -568,6 +573,7 @@ protected:
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
+			tileubo[i].hoverIdx = hoverIndex;
 			
 			if (disappearedTiles[i]) {
 				tileubo[i].mvpMat = Prj * View * removedTileWorld; 
@@ -583,7 +589,7 @@ protected:
 				if (i == firstTileIndex || i == secondTileIndex) {
 					//set transparency to = DisappearingTileTransparency;
 					tileubo[i].transparency = DisappearingTileTransparency;
-					std::cout <<"\ntransparency of tile\n" <<i<<": "<< tileubo[i].transparency<<"\n--------\n";
+					//std::cout <<"\ntransparency of tile\n" <<i<<": "<< tileubo[i].transparency<<"\n--------\n";
 					//set highlight of selected tile
 					
 				}

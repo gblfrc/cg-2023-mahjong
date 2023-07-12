@@ -25,6 +25,8 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	int tileIdx;
 	int suitIdx;
 	float transparency;
+	int hoverIdx;
+	int selectedIdx;
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;
@@ -46,6 +48,12 @@ void main() {
 	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), ubo.gamma);
 	vec3 Ambient = LA * MA;
 
-	outColor = vec4(clamp(Lambert + Blinn + Ambient,0.0f, 1.0f), alpha);
+
+	vec3 MHover = vec3(0.0f);
+	if(ubo.hoverIdx==ubo.tileIdx) MHover = vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
+	
+	//vec3 MHover = (1+ubo.hoverIdx)*vec3(77.0f, 77.0f, 255.0f); //blue color
+
+	outColor = vec4(clamp((Lambert + Blinn + Ambient)+MHover,0.0f, 1.0f), alpha);
 	id = ubo.tileIdx;
 }
