@@ -845,8 +845,7 @@ protected:
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.sampleRateShading = VK_TRUE;
-		// needed for writable buffer storage
-		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+		deviceFeatures.independentBlend = VK_TRUE;
 		
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -2783,19 +2782,13 @@ void Pipeline::create() {
 			VK_COLOR_COMPONENT_G_BIT |
 			VK_COLOR_COMPONENT_B_BIT |
 			VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachments[1].blendEnable = transp ? VK_TRUE : VK_FALSE;
-	colorBlendAttachments[1].srcColorBlendFactor =
-			transp ? VK_BLEND_FACTOR_SRC_ALPHA : VK_BLEND_FACTOR_ONE;
-	colorBlendAttachments[1].dstColorBlendFactor =
-			transp ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachments[1].colorBlendOp =
-			VK_BLEND_OP_ADD; // Optional
-	colorBlendAttachments[1].srcAlphaBlendFactor =
-			VK_BLEND_FACTOR_ONE; // Optional
-	colorBlendAttachments[1].dstAlphaBlendFactor =
-			VK_BLEND_FACTOR_ZERO; // Optional
-	colorBlendAttachments[1].alphaBlendOp =
-			VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachments[1].blendEnable = VK_FALSE;
+	colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachments[1].colorBlendOp =	VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
 	colorBlending.sType =
