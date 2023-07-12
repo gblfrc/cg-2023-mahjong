@@ -56,22 +56,22 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 }
 
 void main() {
-	const float betaPoint = 4.0f;	// decay exponent of the pointlight
-	const float gPoint = 6;
+	const float betaPoint = 1.0f;	// decay exponent of the pointlight
+	const float gPoint = 10.0f;
 	vec3 Norm = normalize(fragNorm);
 	vec3 EyeDir = normalize(gubo.eyePos - fragPos);
 	
-	vec3 lightDir = gubo.DlightDir;
+	//vec3 lightDir = gubo.DlightDir;
 	//vec3 lightColor = gubo.DlightColor.rgb;
-
-	vec3 DiffSpec = BRDF(EyeDir, Norm, lightDir, texture(tex, fragUV).rgb, 1.1f);
-	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
+	vec3 lightPosition = vec3(0.0f, 10.0f, 0.0f);
 
 	//pointlight
-	vec3 L = (gubo.DlightDir - fragPos)/length(gubo.DlightDir - fragPos);
-	vec3 lightColor = vec3( gubo.DlightColor*pow( gPoint / length(gubo.DlightDir - fragPos) , betaPoint) );
+	vec3 L = (lightPosition - fragPos)/length(lightPosition - fragPos);
+	vec3 lightColor = vec3( gubo.DlightColor*pow( gPoint / length(lightPosition - fragPos) , betaPoint) );
+
+	vec3 DiffSpec = BRDF(EyeDir, Norm, L, texture(tex, fragUV).rgb, 1.1f);
+	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
 
 	
 	outColor = vec4(clamp(0.95 * (DiffSpec) * lightColor.rgb + Ambient,0.0,1.0), 1.0f);
-	id = -1;
 }
