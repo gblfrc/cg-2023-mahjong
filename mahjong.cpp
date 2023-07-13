@@ -81,28 +81,37 @@ protected:
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexMesh> MBackground;
 	Model<VertexMesh> MTile;
+	Model<VertexMesh> MWall;
+	Model<VertexMesh> MFloor;
+	Model<VertexMesh> MCeiling;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
 	DescriptorSet DSTile[144];
-	//DescriptorSet DSTile;
+	DescriptorSet DSWall;
+	DescriptorSet DSFloor;
+	DescriptorSet DSCeiling;
 
-	//Texture TPoolCloth, TWhiteTiles;
 	Texture TPoolCloth;
 	Texture TWhiteTiles;
+	Texture TWallDragon;
+	Texture TFloor;
+	Texture TCeiling;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
-	//TileUniformBlock tileubo;
 	BackgroundUniformBlock bgubo;
 	GlobalUniformBlock gubo;
+	BackgroundUniformBlock wallubo;
+	BackgroundUniformBlock floorubo;
+	BackgroundUniformBlock ceilingubo;
 
 	// Other application parameters
 	float CamH, CamRadius, CamPitch, CamYaw;
-	const float initialCamRadius = 8.5f;
-	const float initialPitch = glm::radians(90.0f);
+	const float initialCamRadius = 0.3f;
+	const float initialPitch = glm::radians(60.0f);
 	const float initialYaw = glm::radians(0.0f);
-	int gameState;
+	int gameState = 0;
 	float DisappearingTileTransparency = 1.0f;
 	int firstTileIndex = -1;			//initialize at -1
 	int secondTileIndex = -1;
@@ -120,9 +129,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 146;
-		texturesInPool = 145;
-		setsInPool = 146;
+		uniformBlocksInPool = 151;
+		texturesInPool = 150;
+		setsInPool = 151;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -216,15 +225,80 @@ protected:
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 		// Create Background model manually
-		float side = 18.0f;
+		float side = 0.25f;
+		float baseHeight = 1.0f;
 		MBackground.vertices = {
-			{{-side, 0.0f, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
-			{{side, 0.0f, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
-			{{side, 0.0f, -side},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f}},
-			{{-side, 0.0f, -side},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f}},
+			{{-side, baseHeight, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
+			{{side, baseHeight, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
+			{{side, baseHeight, -side},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f}},
+			{{-side, baseHeight, -side},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f}},
 		};
 		MBackground.indices = { 0, 1, 2,    0, 2, 3 };
 		MBackground.initMesh(this, &VMesh);
+		// Create walls
+		float roomHeight = 3.0f;
+		float roomHalfWidth = 2.0f;
+		vector<VertexMesh> wallVertices;
+		vector<unsigned int> wallIndices;
+		int vertexIndex = 0;
+		// walls are defined separately because uvs have to change order for each wall
+		// left wall
+		float x = -roomHalfWidth;
+		for (float z : {roomHalfWidth, -roomHalfWidth}) {
+			for (float y : {roomHeight, 0.0f}) {
+				wallVertices.push_back({ {x,y,z}, {1.0f,0.0f,0.0f}, {vertexIndex / 2, vertexIndex % 2} });
+				vertexIndex++;
+			}
+		}
+		// right wall
+		x = roomHalfWidth;
+		vertexIndex = 0;
+		for (float z : {-roomHalfWidth, roomHalfWidth}) {
+			for (float y : {roomHeight, 0.0f}) {
+				wallVertices.push_back({ {x,y,z}, {-1.0f,0.0f,0.0f}, {vertexIndex / 2, vertexIndex % 2} });
+				vertexIndex++;
+			}
+		}
+		// third wall
+		float z = -roomHalfWidth;
+		vertexIndex = 0;
+		for (float x : {-roomHalfWidth, roomHalfWidth}) {
+			for (float y : {roomHeight, 0.0f}) {
+				wallVertices.push_back({ {x,y,z}, {0.0f,0.0f,1.0f}, {vertexIndex / 2, vertexIndex % 2} });
+				vertexIndex++;
+			}
+		}
+		MWall.vertices = wallVertices;
+		for (int i = 0; i < wallVertices.size(); i+=4) {
+			wallIndices.push_back(i + 0); wallIndices.push_back(i + 1); wallIndices.push_back(i + 2);
+			wallIndices.push_back(i + 1); wallIndices.push_back(i + 3); wallIndices.push_back(i + 2);
+		}
+		MWall.indices = wallIndices;
+		MWall.initMesh(this, &VMesh);
+		// Create floor
+		vector<VertexMesh> floorVertices;
+		vertexIndex = 0;
+		for (float z : {-roomHalfWidth, roomHalfWidth}) {
+			for (float x : {-roomHalfWidth, roomHalfWidth}) {
+				floorVertices.push_back({ {x, 0.0f, z}, {0.0f,1.0f,0.0f}, {vertexIndex / 2, vertexIndex % 2} });
+				vertexIndex++;
+			}
+		};
+		MFloor.vertices = floorVertices;
+		MFloor.indices = { 0, 2, 1,    1, 2, 3 };
+		MFloor.initMesh(this, &VMesh);
+		// Create ceiling
+		vector<VertexMesh> ceilingVertices;
+		vertexIndex = 0;
+		for (float z : {-roomHalfWidth, roomHalfWidth}) {
+			for (float x : {-roomHalfWidth, roomHalfWidth}) {
+				ceilingVertices.push_back({ {x, roomHeight, z}, {0.0f,-1.0f,0.0f}, {vertexIndex / 2, vertexIndex % 2} });
+				vertexIndex++;
+			}
+		};
+		MCeiling.vertices = ceilingVertices;
+		MCeiling.indices = { 0, 1, 2,    2, 1, 3 };
+		MCeiling.initMesh(this, &VMesh);
 		// Import Tile model
 		MTile.init(this, &VMesh, "Models/Tile.obj", OBJ);
 
@@ -232,13 +306,16 @@ protected:
 		// The second parameter is the file name
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
 		TWhiteTiles.init(this, "textures/tiles/tiles_white.png");
+		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
+		TFloor.init(this, "textures/room/floor.png");
+		TCeiling.init(this, "textures/room/ceiling.jpg");
 
 		// Init local variables
 		CamH = 1.0f;
-		CamRadius = initialCamRadius; //was 4.5f initially
+		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;				//CHANGE TO 0
+		gameState = 0;
 		firstTileIndex = 120;
 		secondTileIndex = 120;
 	}
@@ -272,6 +349,20 @@ protected:
 					{1, TEXTURE, 0, &TPoolCloth}
 			});
 
+		DSWall.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TWallDragon}
+			});
+
+		DSFloor.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TFloor}
+			});
+
+		DSCeiling.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TCeiling}
+			});
 
 	}
 
@@ -288,6 +379,9 @@ protected:
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].cleanup();
 		}
+		DSWall.cleanup();
+		DSFloor.cleanup();
+		DSCeiling.cleanup();
 
 	}
 
@@ -299,10 +393,16 @@ protected:
 		// Cleanup textures
 		TPoolCloth.cleanup();
 		TWhiteTiles.cleanup();
+		TWallDragon.cleanup();
+		TFloor.cleanup();
+		TCeiling.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
 		MTile.cleanup();
+		MWall.cleanup();
+		MFloor.cleanup();
+		MCeiling.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -319,47 +419,29 @@ protected:
 	// with their buffers and textures
 
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-		// sets global uniforms (see below fro parameters explanation)
-
-		/*
-		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);				//????
-
-		// binds the pipeline
-		PMesh.bind(commandBuffer);
-		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
-		*/
-
-
-		// binds the model
-		//MTile.bind(commandBuffer);
-		// For a Model object, this command binds the corresponing index and vertex buffer
-		// to the command buffer passed in its parameter
-
-		// binds the data set
-		//for (int i = 0; i < 144; i++) {
-		//	DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
-		//	// For a Dataset object, this command binds the corresponing dataset
-		//	// to the command buffer and pipeline passed in its first and second parameters.
-		//	// The third parameter is the number of the set being bound
-		//	// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
-		//	// This is done automatically in file Starter.hpp, however the command here needs also the index
-		//	// of the current image in the swap chain, passed in its last parameter
-
-		//	// record the drawing command in the command buffer
-		//	vkCmdDrawIndexed(commandBuffer,
-		//		static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
-		//	// the second parameter is the number of indexes to be drawn. For a Model object,
-		//	// this can be retrieved with the .indices.size() method.
-		//}
-		//
-
 		// Background pipeline binding
+		// Background
 		PBackground.bind(commandBuffer);
 		MBackground.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PBackground, 0, currentImage);
 		DSBackground.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MBackground.indices.size()), 1, 0, 0, 0);
+		// FLR Walls
+		MWall.bind(commandBuffer);
+		DSWall.bind(commandBuffer, PBackground, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MWall.indices.size()), 1, 0, 0, 0);
+		// Floor
+		MFloor.bind(commandBuffer);
+		DSFloor.bind(commandBuffer, PBackground, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MFloor.indices.size()), 1, 0, 0, 0);
+		// Ceiling
+		MCeiling.bind(commandBuffer);
+		DSCeiling.bind(commandBuffer, PBackground, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MCeiling.indices.size()), 1, 0, 0, 0);
 		// Tile pipeline binding
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
@@ -369,7 +451,6 @@ protected:
 			vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 		}
-
 	}
 
 	// Here is where you update the uniforms.
@@ -379,8 +460,6 @@ protected:
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
-
-		
 		// Integration with the timers and the controllers
 		float deltaT;
 		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
@@ -419,7 +498,7 @@ protected:
 		int index = y * windowWidth + x;
 		int hoverIndex = 0;
 		if (y < windowHeight && x < windowWidth) {
-			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";	//DEBUG PRINT
+			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
 		}
 		vkUnmapMemory(device, entityImageMemory);
@@ -503,16 +582,16 @@ protected:
 		const float nearPlane = 0.1f;
 		const float farPlane = 100.0f;
 		const float rotSpeed = glm::radians(90.0f);
-		const float movSpeed = 10.0f;
+		const float movSpeed = 1.0f;
 
 
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 7.8f, 20.0f); //minumum and maximum zoom of the cam
+		CamRadius = glm::clamp(CamRadius, 0.25f, 20.0f); //minumum and maximum zoom of the cam
 
 
 		CamPitch -= r.x * rotSpeed * deltaT;
-		CamPitch = glm::clamp(CamPitch, glm::radians(30.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
+		CamPitch = glm::clamp(CamPitch, glm::radians(0.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
 
 		CamYaw += r.y * rotSpeed * deltaT;
 
@@ -543,7 +622,7 @@ protected:
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
-		glm::vec3 camTarget = glm::vec3(0, 0, 0);
+		glm::vec3 camTarget = glm::vec3(0, 1, 0);
 
 		//c  da vedere
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
@@ -551,7 +630,7 @@ protected:
 
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
 
-		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
+		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
@@ -571,13 +650,38 @@ protected:
 		bgubo.nMat = glm::inverse(glm::transpose(World));
 		DSBackground.map(currentImage, &bgubo, sizeof(bgubo), 0);
 
+		// Matrix setup for walls
+		World = glm::mat4(1);
+		wallubo.amb = 1.0f; wallubo.gamma = 180.0f; wallubo.sColor = glm::vec3(1.0f);
+		wallubo.mvpMat = Prj * View * World;
+		wallubo.mMat = World;
+		wallubo.nMat = glm::inverse(glm::transpose(World));
+		DSWall.map(currentImage, &wallubo, sizeof(wallubo), 0);
+
+		// Matrix setup for floor
+		World = glm::mat4(1);
+		floorubo.amb = 1.0f; floorubo.gamma = 180.0f; floorubo.sColor = glm::vec3(1.0f);
+		floorubo.mvpMat = Prj * View * World;
+		floorubo.mMat = World;
+		floorubo.nMat = glm::inverse(glm::transpose(World));
+		DSFloor.map(currentImage, &floorubo, sizeof(floorubo), 0);
+
+		// Matrix setup for ceiling
+		World = glm::mat4(1);
+		ceilingubo.amb = 1.0f; ceilingubo.gamma = 180.0f; ceilingubo.sColor = glm::vec3(1.0f);
+		ceilingubo.mvpMat = Prj * View * World;
+		ceilingubo.mMat = World;
+		ceilingubo.nMat = glm::inverse(glm::transpose(World));
+		DSCeiling.map(currentImage, &ceilingubo, sizeof(ceilingubo), 0);
+
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
-			double scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 50.0f;
-			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * 50.0f); // matrix for translation
+			float scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 1.0f;
+			glm::mat4 Tbase = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 
-			World = Tmat * Smat; // translate tile in position
+			World = Tbase * Tmat * Smat; // translate tile in position
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; 
 			tileubo[i].gamma = 200.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
