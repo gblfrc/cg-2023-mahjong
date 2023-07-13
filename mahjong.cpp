@@ -104,8 +104,8 @@ protected:
 	const float initialYaw = glm::radians(0.0f);
 	int gameState;
 	float DisappearingTileTransparency = 1.0f;
-	int firstTileIndex = 120;			//initialize at -1
-	int secondTileIndex = 120;
+	int firstTileIndex = -1;			//initialize at -1
+	int secondTileIndex = -1;
 	const glm::mat4 removedTileWorld = /*glm::translate(glm::mat4(1.0), glm::vec3(100.0f, -20.0f, 0.0f)) * */ 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
@@ -238,7 +238,7 @@ protected:
 		CamRadius = initialCamRadius; //was 4.5f initially
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 4;				//CHANGE TO 0
+		gameState = 0;				//CHANGE TO 0
 		firstTileIndex = 120;
 		secondTileIndex = 120;
 	}
@@ -380,12 +380,15 @@ protected:
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 
-		//FIRE TO GO BACK TO INITIAL POSITION
+		
 		// Integration with the timers and the controllers
 		float deltaT;
 		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
 		bool fire = false;
-		getSixAxis(deltaT, m, r, fire);
+		bool click = false;
+		getSixAxis(deltaT, m, r, fire, click);
+		//std::cout << "\nclicked is :" << clicked<<"\n";
+		
 		// getSixAxis() is defined in Starter.hpp in the base class.
 		// It fills the float point variable passed in its first parameter with the time
 		// since the last call to the procedure.
@@ -401,6 +404,10 @@ protected:
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
 
+		static bool wasClick = false; 
+		bool handleClick = (wasClick && (!click)); 
+		wasClick = click; 
+
 		double mousex, mousey;
 		glfwGetCursorPos(window, &mousex, &mousey);
 		int x = int(mousex);
@@ -412,16 +419,17 @@ protected:
 		int index = y * windowWidth + x;
 		int hoverIndex = 0;
 		if (y < windowHeight && x < windowWidth) {
-			cout << x << ", " << y << " ---> " << pixels[index] << "\n";
+			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";	//DEBUG PRINT
 			hoverIndex = pixels[index];
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
+		if(handleClick) std::cout << "\nClick on tile: " << pixels[index]<<"\n";
 
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
 
-		//std:cout << "\nGameState: " << gameState<<"\n";
+		//std:cout << "\nGameState: " << gameState<<"\n";	//DEBUG PRINT
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
@@ -431,17 +439,21 @@ protected:
 				break;
 			case 0:
 				//no piece selected
-				//highlight the piece on which the mouse is hoovering
-				hoverIndex = 
+				firstTileIndex = -1;
+				secondTileIndex = -1;
 				DisappearingTileTransparency = 1.0f; //not transparent
-				firstTileIndex = 10; //how to select?
-				gameState = 1;
+				if (handleClick & hoverIndex > -1) {
+					firstTileIndex = hoverIndex;
+					gameState = 1;
+				}
+				
 				break;
 			case 1:
 				//1 piece selected and highlighted
-				//highlight the piece on which the mouse is hoovering
-				secondTileIndex = 11; //how to select?
-				gameState = 2;
+				if (handleClick & hoverIndex>-1) {
+					secondTileIndex = hoverIndex;
+					gameState = 2;
+				}
 				break;
 			case 2:
 				//2 pieces selected and highlighted
@@ -458,6 +470,7 @@ protected:
 			case 3:
 				//wrong choice of second piece
 				//notify error, how?
+				std::cout << "\n ERROR: tiles cannot be removed together \n";
 				//deselect tiles
 				firstTileIndex = -1;
 				secondTileIndex = -1;
@@ -465,13 +478,13 @@ protected:
 				break;
 			case 4:
 				//two pieces start to disappear
-				//std::cout <<"Tile indexes" << firstTileIndex << "  " << secondTileIndex << "\n";
+				std::cout <<"\nTile indexes: " << firstTileIndex << ", " << secondTileIndex << "are disappearing with T= << DisappearingTileTransparency\n";
 				//std::cout << "Tinitial:" << DisappearingTileTransparency << "\n";
 				DisappearingTileTransparency = DisappearingTileTransparency - 0.1f * deltaT; //check coefficient 0.1f
 				//std::cout <<"T:" << DisappearingTileTransparency << "\n";	//debug
 				if (DisappearingTileTransparency <= 0) {
 					DisappearingTileTransparency = 0;
-					//gameState = 5;	//UNCOMMENT THIS
+					gameState = 5;
 				}
 				break;
 			case 5:
@@ -573,7 +586,21 @@ protected:
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
+
+			//highlight the piece on which the mouse is hoovering
 			tileubo[i].hoverIdx = hoverIndex;
+
+			//highlight the first selected piece
+			if (i==firstTileIndex) {
+				tileubo[i].selectedIdx = firstTileIndex;
+			}
+			//highlight the first selected piece
+			else if (i == secondTileIndex) {
+				tileubo[i].selectedIdx = secondTileIndex;
+			}
+			else {
+				tileubo[i].selectedIdx = -1;
+			}
 			
 			if (disappearedTiles[i]) {
 				tileubo[i].mvpMat = Prj * View * removedTileWorld; 
@@ -586,7 +613,7 @@ protected:
 				tileubo[i].mvpMat = Prj * View * World; 
 				tileubo[i].mMat = World; 
 				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
-				if (i == firstTileIndex || i == secondTileIndex) {
+				if (gameState==4 & (i == firstTileIndex || i == secondTileIndex)) {
 					//set transparency to = DisappearingTileTransparency;
 					tileubo[i].transparency = DisappearingTileTransparency;
 					//std::cout <<"\ntransparency of tile\n" <<i<<": "<< tileubo[i].transparency<<"\n--------\n";

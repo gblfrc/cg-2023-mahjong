@@ -51,9 +51,12 @@ void main() {
 
 	vec3 MHover = vec3(0.0f);
 	if(ubo.hoverIdx==ubo.tileIdx) MHover = vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
+
+	vec3 MSelected = vec3(0.0f);
+	if(ubo.selectedIdx==ubo.tileIdx) MSelected = vec3(255.0f/255.0f, 103.0f/255.0f, 102.0f/255.0f);
 	
 	//vec3 MHover = (1+ubo.hoverIdx)*vec3(77.0f, 77.0f, 255.0f); //blue color
 
-	outColor = vec4(clamp((Lambert + Blinn + Ambient)+MHover,0.0f, 1.0f), alpha);
+	outColor = vec4(clamp((Lambert + Blinn + Ambient)+MHover+MSelected,0.0f, 1.0f), alpha);
 	id = ubo.tileIdx;
 }
