@@ -489,6 +489,7 @@ protected:
 				break;
 			case 5:
 				//remove the tile
+				game.removeTiles(firstTileIndex, secondTileIndex);
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
 				//game.removeTiles(firstTileIndex, secondTileIndex);

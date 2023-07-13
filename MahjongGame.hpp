@@ -73,9 +73,11 @@ public:
 	bool canRemoveTiles(int idx0, int idx1) {
 		Tile tile0 = tiles[idx0];
 		Tile tile1 = tiles[idx1];
-		return (((idx0 < 40 && idx1 == idx0) ||
+		bool result = (((idx0 < 40 && idx1 == idx0) ||
 			(idx0 >= 40 && idx0 < 44 && idx1 >= 40 && idx1 < 44) ||
 			(idx0 >= 44 && idx0 < 48 && idx1 >= 44 && idx1 < 48)) && tile0.isOpen() && tile1.isOpen());
+		std::cout << "\nResult of check on 2 tiles: "<< result<<"\n";
+		return result;
 	}
 
 	void removeTiles(int idx0, int idx1) {
