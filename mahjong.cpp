@@ -106,7 +106,7 @@ protected:
 	float DisappearingTileTransparency = 1.0f;
 	int firstTileIndex = -1;			//initialize at -1
 	int secondTileIndex = -1;
-	const glm::mat4 removedTileWorld = /*glm::translate(glm::mat4(1.0), glm::vec3(100.0f, -20.0f, 0.0f)) * */ 
+	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
 
@@ -478,10 +478,8 @@ protected:
 				break;
 			case 4:
 				//two pieces start to disappear
-				std::cout <<"\nTile indexes: " << firstTileIndex << ", " << secondTileIndex << "are disappearing with T= << DisappearingTileTransparency\n";
-				//std::cout << "Tinitial:" << DisappearingTileTransparency << "\n";
-				DisappearingTileTransparency = DisappearingTileTransparency - 0.1f * deltaT; //check coefficient 0.1f
-				//std::cout <<"T:" << DisappearingTileTransparency << "\n";	//debug
+				//std::cout <<"\nTile indexes: " << firstTileIndex << ", " << secondTileIndex << "are disappearing with T= "<< DisappearingTileTransparency<<"\n";
+				DisappearingTileTransparency = DisappearingTileTransparency - 2.5f * deltaT; //check coefficient 0.1f
 				if (DisappearingTileTransparency <= 0) {
 					DisappearingTileTransparency = 0;
 					gameState = 5;
@@ -604,7 +602,7 @@ protected:
 			}
 			
 			if (disappearedTiles[i]) {
-				tileubo[i].mvpMat = Prj * View * removedTileWorld; 
+				tileubo[i].mvpMat = Prj * View * removedTileWorld;
 				tileubo[i].mMat = removedTileWorld; 
 				tileubo[i].nMat = glm::inverse(glm::transpose(removedTileWorld)); 
 				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0);

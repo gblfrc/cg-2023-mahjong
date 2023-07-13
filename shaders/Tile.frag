@@ -53,7 +53,7 @@ void main() {
 	if(ubo.hoverIdx==ubo.tileIdx) MHover = vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
 
 	vec3 MSelected = vec3(0.0f);
-	if(ubo.selectedIdx==ubo.tileIdx) MSelected = 2*vec3(255.0f/255.0f, 103.0f/255.0f, 102.0f/255.0f);
+	if(ubo.selectedIdx==ubo.tileIdx) MSelected = 1.3f*vec3(255.0f/255.0f, 103.0f/255.0f, 102.0f/255.0f);
 	
 	//vec3 MHover = (1+ubo.hoverIdx)*vec3(77.0f, 77.0f, 255.0f); //blue color
 

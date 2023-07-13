@@ -73,10 +73,15 @@ public:
 	bool canRemoveTiles(int idx0, int idx1) {
 		Tile tile0 = tiles[idx0];
 		Tile tile1 = tiles[idx1];
-		bool result = (((idx0 < 40 && idx1 == idx0) ||
-			(idx0 >= 40 && idx0 < 44 && idx1 >= 40 && idx1 < 44) ||
-			(idx0 >= 44 && idx0 < 48 && idx1 >= 44 && idx1 < 48)) && tile0.isOpen() && tile1.isOpen());
-		std::cout << "\nResult of check on 2 tiles: "<< result<<"\n";
+		int suitIdx0 = tile0.suitIdx;
+		int suitIdx1 = tile1.suitIdx;
+		bool result = (((suitIdx0 < 40 && suitIdx1 == suitIdx0) ||
+			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
+			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen());
+		
+		//DEBUG:
+		std::cout << "\nResult of check on 2 tiles: " << result << "\n";
+		
 		return result;
 	}
 
@@ -84,10 +89,12 @@ public:
 		// access tiles
 		Tile tile0 = tiles[idx0];
 		Tile tile1 = tiles[idx1];
+		int suitIdx0 = tile0.suitIdx;
+		int suitIdx1 = tile1.suitIdx;
 		// check on suit idx
-		if (((idx0 < 40 && idx1 == idx0) ||
-			(idx0 >= 40 && idx0 < 44 && idx1 >= 40 && idx1 < 44) ||
-			(idx0 >= 44 && idx0 < 48 && idx1 >= 44 && idx1 < 48)) && tile0.isOpen() && tile1.isOpen()) {
+		if (((suitIdx0 < 40 && suitIdx1 == suitIdx0) ||
+			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
+			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen()) {
 			// for each tile, remove its index from neighbours
 			for (Tile tile : {tile0, tile1}) {
 				// remove current tile index from neighbors
