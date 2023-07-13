@@ -84,6 +84,7 @@ protected:
 	Model<VertexMesh> MWall;
 	Model<VertexMesh> MFloor;
 	Model<VertexMesh> MCeiling;
+	Model<VertexMesh> MTable;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -91,12 +92,14 @@ protected:
 	DescriptorSet DSWall;
 	DescriptorSet DSFloor;
 	DescriptorSet DSCeiling;
+	DescriptorSet DSTable;
 
 	Texture TPoolCloth;
 	Texture TWhiteTiles;
 	Texture TWallDragon;
 	Texture TFloor;
 	Texture TCeiling;
+	Texture TTable;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
@@ -105,6 +108,7 @@ protected:
 	BackgroundUniformBlock wallubo;
 	BackgroundUniformBlock floorubo;
 	BackgroundUniformBlock ceilingubo;
+	BackgroundUniformBlock tableubo;
 
 	// Other application parameters
 	float CamH, CamRadius, CamPitch, CamYaw;
@@ -129,9 +133,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 151;
-		texturesInPool = 150;
-		setsInPool = 151;
+		uniformBlocksInPool = 150;
+		texturesInPool = 149;
+		setsInPool = 150;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -226,7 +230,7 @@ protected:
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 		// Create Background model manually
 		float side = 0.25f;
-		float baseHeight = 1.0f;
+		float baseHeight = 0.6f;
 		MBackground.vertices = {
 			{{-side, baseHeight, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
 			{{side, baseHeight, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
@@ -301,6 +305,7 @@ protected:
 		MCeiling.initMesh(this, &VMesh);
 		// Import Tile model
 		MTile.init(this, &VMesh, "Models/Tile.obj", OBJ);
+		MTable.init(this, &VMesh, "Models/Table.obj", OBJ);
 
 		// Create the textures
 		// The second parameter is the file name
@@ -309,6 +314,7 @@ protected:
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
 		TCeiling.init(this, "textures/room/ceiling.jpg");
+		TTable.init(this, "textures/room/table.jpg");
 
 		// Init local variables
 		CamH = 1.0f;
@@ -364,6 +370,11 @@ protected:
 					{1, TEXTURE, 0, &TCeiling}
 			});
 
+		DSTable.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TTable}
+			});
+
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -382,6 +393,7 @@ protected:
 		DSWall.cleanup();
 		DSFloor.cleanup();
 		DSCeiling.cleanup();
+		DSTable.cleanup();
 
 	}
 
@@ -396,6 +408,7 @@ protected:
 		TWallDragon.cleanup();
 		TFloor.cleanup();
 		TCeiling.cleanup();
+		TTable.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -403,6 +416,7 @@ protected:
 		MWall.cleanup();
 		MFloor.cleanup();
 		MCeiling.cleanup();
+		MTable.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -442,6 +456,11 @@ protected:
 		DSCeiling.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MCeiling.indices.size()), 1, 0, 0, 0);
+		// Table
+		MTable.bind(commandBuffer);
+		DSTable.bind(commandBuffer, PBackground, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MTable.indices.size()), 1, 0, 0, 0);
 		// Tile pipeline binding
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
@@ -622,7 +641,7 @@ protected:
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
-		glm::vec3 camTarget = glm::vec3(0, 1, 0);
+		glm::vec3 camTarget = glm::vec3(0, 0.6f, 0);
 
 		//c  da vedere
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
@@ -674,10 +693,18 @@ protected:
 		ceilingubo.nMat = glm::inverse(glm::transpose(World));
 		DSCeiling.map(currentImage, &ceilingubo, sizeof(ceilingubo), 0);
 
+		// Matrix setup for table
+		World = glm::mat4(1);
+		tableubo.amb = 1.0f; tableubo.gamma = 180.0f; tableubo.sColor = glm::vec3(1.0f);
+		tableubo.mvpMat = Prj * View * World;
+		tableubo.mMat = World;
+		tableubo.nMat = glm::inverse(glm::transpose(World));
+		DSTable.map(currentImage, &tableubo, sizeof(tableubo), 0);
+
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
 			float scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 1.0f;
-			glm::mat4 Tbase = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::mat4 Tbase = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 
