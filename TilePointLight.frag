@@ -10,8 +10,9 @@ layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 DlightDir;		// direction of the direct light
-	vec3 PlightPos;		//position of the point light
 	vec3 DlightColor;	// color of the direct light
+	vec3 PlightPos;		//position of the point light
+	vec3 PlightColor;	// color of the point light
 	vec3 AmbLightColor;	// ambient light
 	vec3 eyePos;		// position of the viewer
 } gubo;
@@ -51,7 +52,7 @@ void main() {
 
 	//pointlight
 	vec3 L = (lightPosition - fragPos)/length(lightPosition - fragPos);
-	vec3 lightColor = vec3( gubo.DlightColor*pow( gPoint / length(lightPosition - fragPos) , betaPoint) );
+	vec3 lightColor = vec3( gubo.PlightColor*pow( gPoint / length(lightPosition - fragPos) , betaPoint) );
 
 	//lambert diffuse
 	vec3 Lambert = MD * clamp(dot(L,N),0.0f,1.0f);

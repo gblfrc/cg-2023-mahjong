@@ -9,11 +9,12 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
-	vec3 DlightDir;			// direction of the direct light
-	vec3 PlightPos;			//position of the point light
-	vec3 DlightColor;		// color of the direct light
-	vec3 AmbLightColor;		// ambient light
-	vec3 eyePos;			// position of the viewer
+	vec3 DlightDir;		// direction of the direct light
+	vec3 DlightColor;	// color of the direct light
+	vec3 PlightPos;		//position of the point light
+	vec3 PlightColor;	// color of the point light
+	vec3 AmbLightColor;	// ambient light
+	vec3 eyePos;		// position of the viewer
 } gubo;
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
@@ -57,24 +58,28 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 }
 
 void main() {
-	const float betaPoint = 1.0f;	// decay exponent of the pointlight
-	const float gPoint = 10.0f;
+	const float betaPoint = 0.5f;	// decay exponent of the pointlight
+	const float gPoint = 0.4f;
 	vec3 Norm = normalize(fragNorm);
 	vec3 EyeDir = normalize(gubo.eyePos - fragPos);
 	
 	//vec3 lightDir = gubo.DlightDir;
 	//vec3 lightColor = gubo.DlightColor.rgb;
 	//vec3 lightPosition = vec3(0.0f, 10.0f, 0.0f);
-	vec3 lightPosition = gubo.PlightPos;
+	vec3 lightPosition1 = gubo.PlightPos;
+	vec3 lightPosition2 = gubo.PlightPos;
 
 	//pointlight
-	vec3 L = (lightPosition - fragPos)/length(lightPosition - fragPos);
-	vec3 lightColor = vec3( gubo.DlightColor*pow( gPoint / length(lightPosition - fragPos) , betaPoint) );
+	vec3 L1 = (lightPosition1 - fragPos)/length(lightPosition1 - fragPos);
+	vec3 lightColor1 = vec3( gubo.PlightColor*pow( gPoint / length(lightPosition1 - fragPos) , betaPoint) );
+	vec3 L2 = (lightPosition2 - fragPos)/length(lightPosition2 - fragPos);
+	vec3 lightColor2 = vec3( gubo.PlightColor*pow( gPoint / length(lightPosition2 - fragPos) , betaPoint) );
 
-	vec3 DiffSpec = BRDF(EyeDir, Norm, L, texture(tex, fragUV).rgb, 1.1f);
+	vec3 DiffSpec1 = BRDF(EyeDir, Norm, L1, texture(tex, fragUV).rgb, 1.1f);
+	vec3 DiffSpec2 = BRDF(EyeDir, Norm, L2, texture(tex, fragUV).rgb, 1.1f);
 	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
 
 	
-	outColor = vec4(clamp(0.95 * (DiffSpec) * lightColor.rgb + Ambient,0.0,1.0), 1.0f);
+	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor1.rgb + Ambient,0.0,1.0), 1.0f);
 	id = -1;
 }

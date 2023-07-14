@@ -54,8 +54,9 @@ struct BackgroundUniformBlock {
 
 struct GlobalUniformBlock {
 	alignas(16) glm::vec3 DlightDir;
-	alignas(16) glm::vec3 PlightPos;
 	alignas(16) glm::vec3 DlightColor;
+	alignas(16) glm::vec3 PlightPos;
+	alignas(16) glm::vec3 PlightColor;
 	alignas(16) glm::vec3 AmbLightColor;
 	alignas(16) glm::vec3 eyePos;
 };
@@ -731,7 +732,8 @@ protected:
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.PlightPos = glm::vec3(0.0f, 10.0f, 0.0f);	
+		gubo.PlightPos = glm::vec3(0.0f, 5.0f, 0.0f);	
+		gubo.PlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
 
