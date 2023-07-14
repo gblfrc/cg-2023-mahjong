@@ -253,6 +253,7 @@ struct Texture {
 							);
 
 	void init(BaseProject *bp, const char * file, VkFormat Fmt, bool initSampler);
+	void initFour(BaseProject *bp, const char * files[4]);
 	void initCubic(BaseProject *bp, const char * files[6]);
 	void cleanup();
 };
@@ -2571,7 +2572,7 @@ void Texture::createTextureImageView(VkFormat Fmt = VK_FORMAT_R8G8B8A8_SRGB) {
 									   Fmt,
 									   VK_IMAGE_ASPECT_COLOR_BIT,
 									   mipLevels,
-									   imgs == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
+									   imgs == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : imgs == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY,
 									   imgs);
 }
 	
@@ -2624,6 +2625,13 @@ void Texture::init(BaseProject *bp, const char *  file, VkFormat Fmt = VK_FORMAT
 	}
 }
 
+void Texture::initFour(BaseProject* bp, const char* files[4]) {
+	BP = bp;
+	imgs = 4;
+	createTextureImage(files);
+	createTextureImageView();
+	createTextureSampler();
+}
 
 void Texture::initCubic(BaseProject *bp, const char * files[6]) {
 	BP = bp;
@@ -2632,7 +2640,6 @@ void Texture::initCubic(BaseProject *bp, const char * files[6]) {
 	createTextureImageView();
 	createTextureSampler();
 }
-
 
 void Texture::cleanup() {
    	vkDestroySampler(BP->device, textureSampler, nullptr);

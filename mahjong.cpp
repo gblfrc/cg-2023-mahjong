@@ -77,6 +77,7 @@ protected:
 	DescriptorSetLayout DSLGubo;
 	DescriptorSetLayout DSLTile;
 	DescriptorSetLayout DSLBackground;
+	DescriptorSetLayout DSLTextureOnly;
 
 	// Vertex formats
 	VertexDescriptor VMesh;
@@ -98,6 +99,7 @@ protected:
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
 	DescriptorSet DSTile[144];
+	DescriptorSet DSTileTexture;
 	DescriptorSet DSWall;
 	DescriptorSet DSFloor;
 	DescriptorSet DSCeiling;
@@ -107,9 +109,7 @@ protected:
 
 	Texture TPoolCloth;
 	// Tile textures
-	Texture TWhiteTiles;
-	Texture TDarkTiles;
-	Texture TLuckyTiles;
+	Texture TTile;
 	// Other textures
 	Texture TWallDragon;
 	Texture TFloor;
@@ -160,15 +160,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-<<<<<<< Updated upstream
-		uniformBlocksInPool = 150;
-		texturesInPool = 144*3 + 5;
-		setsInPool = 150;
-=======
-		uniformBlocksInPool = 160;
-		texturesInPool = 160;
-		setsInPool = 160;
->>>>>>> Stashed changes
+		uniformBlocksInPool = 152;
+		texturesInPool = 7;
+		setsInPool = 153;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -192,15 +186,16 @@ protected:
 			//                  using the corresponding Vulkan constant
 			// third  element : the pipeline stage where it will be used
 			//                  using the corresponding Vulkan constant
-			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-			{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
-			{3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 			});
 
 		DSLBackground.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			});
+
+		DSLTextureOnly.init(this, {
+					{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			});
 
 		DSLGubo.init(this, {
@@ -253,7 +248,7 @@ protected:
 		//PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
 		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
 		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
-		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile });
+		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
 
 
@@ -280,12 +275,12 @@ protected:
 		float side = 0.25f;
 		float baseHeight = 0.6f;
 		MBackground.vertices = {
-			{{-side, baseHeight, side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
-			{{side, baseHeight, side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
-			{{side, baseHeight, -side},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f}},
-			{{-side, baseHeight, -side},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f}},
+			{{-side, baseHeight, -side},{0.0f, 1.0f, 0.0f},{0.0f, 0.0f}},
+			{{side, baseHeight, -side},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f}},
+			{{side, baseHeight, side},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f}},
+			{{-side, baseHeight, side},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f}},
 		};
-		MBackground.indices = { 0, 1, 2,    0, 2, 3 };
+		MBackground.indices = { 0, 2, 1,   0,3,2};
 		MBackground.initMesh(this, &VMesh);
 		// Create walls
 		float roomHeight = 3.0f;
@@ -358,9 +353,13 @@ protected:
 		// Create the textures
 		// The second parameter is the file name
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
-		TWhiteTiles.init(this, "textures/tiles/tiles_white_resized.png");
-		TDarkTiles.init(this, "textures/tiles/tiles_dark_resized.png");
-		TLuckyTiles.init(this, "textures/tiles/tiles_lucky_resized.png");
+		const char* tileTextureFiles[4] = {
+			"textures/tiles/tiles_white_resized.png",
+			"textures/tiles/tiles_dark_resized.png",
+			"textures/tiles/tiles_lucky_resized.png",
+			"textures/tiles/tiles_white_resized.png",
+		};
+		TTile.initFour(this, tileTextureFiles);
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
@@ -392,12 +391,14 @@ protected:
 				// second element : UNIFORM or TEXTURE (an enum) depending on the type
 				// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
 				// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-							{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-							{1, TEXTURE, 0, &TWhiteTiles},
-							{2, TEXTURE, 0, &TDarkTiles},
-							{3, TEXTURE, 0, &TLuckyTiles}
+							{0, UNIFORM, sizeof(TileUniformBlock), nullptr}
 				});
 		}
+
+		// Texture-only descriptor sets
+		DSTileTexture.init(this, &DSLTextureOnly, {
+					{0, TEXTURE, 0, &TTile}
+			});
 
 		DSGubo.init(this, &DSLGubo, {
 			{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
@@ -431,7 +432,6 @@ protected:
 		//menu
 		DSHTile.init(this, &DSLTile, {
 						{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-						{1, TEXTURE, 0, &TWhiteTiles}
 			});
 
 		DSHome.init(this, &DSLBackground, {
@@ -458,6 +458,7 @@ protected:
 		DSFloor.cleanup();
 		DSCeiling.cleanup();
 		DSTable.cleanup();
+		DSTileTexture.cleanup();
 
 		//menu
 		DSHTile.cleanup();
@@ -472,9 +473,7 @@ protected:
 	void localCleanup() {
 		// Cleanup textures
 		TPoolCloth.cleanup();
-		TWhiteTiles.cleanup();
-		TDarkTiles.cleanup();
-		TLuckyTiles.cleanup();
+		TTile.cleanup();
 		TWallDragon.cleanup();
 		TFloor.cleanup();
 		TCeiling.cleanup();
@@ -493,6 +492,7 @@ protected:
 		DSLTile.cleanup();
 		DSLBackground.cleanup();
 		DSLGubo.cleanup();
+		DSLTextureOnly.cleanup();
 
 		// Destroys the pipelines
 		PTile.destroy();
@@ -541,6 +541,7 @@ protected:
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PTile, 0, currentImage);
+		DSTileTexture.bind(commandBuffer, PTile, 2, currentImage);
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].bind(commandBuffer, PTile, 1, currentImage);
 			vkCmdDrawIndexed(commandBuffer,
@@ -599,7 +600,7 @@ protected:
 		if (y < windowHeight && x < windowWidth) {
 			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
-			//tileTextureIdx = hoverIndex % 3;
+			//tileTextureIdx = hoverIndex % 4;
 		}
 		vkUnmapMemory(device, entityImageMemory);
 

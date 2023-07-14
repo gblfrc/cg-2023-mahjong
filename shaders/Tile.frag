@@ -30,9 +30,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	int textureIdx;
 } ubo;
 
-layout(set = 1, binding = 1) uniform sampler2D whiteTileTex;
-layout(set = 1, binding = 2) uniform sampler2D darkTileTex;
-layout(set = 1, binding = 3) uniform sampler2D luckyTileTex;
+layout(set = 2, binding = 0) uniform sampler2DArray tex;
 
 void main() {
 
@@ -42,18 +40,7 @@ void main() {
 	vec3 H = normalize(L + V);					// half vector for Blinn BRDF
 	float alpha = ubo.transparency;				// transparency of the tile
 
-	vec3 albedo;
-	switch(ubo.textureIdx){
-		case 0:
-			albedo = texture(whiteTileTex, fragUV).rgb;
-			break;
-		case 1:
-			albedo = texture(darkTileTex, fragUV).rgb;
-			break;
-		case 2:
-			albedo = texture(luckyTileTex, fragUV).rgb;
-			break;
-	}
+	vec3 albedo = texture(tex, vec3(fragUV, ubo.textureIdx)).rgb;
 	vec3 MD = albedo;
 	vec3 MS = ubo.sColor;
 	vec3 MA = albedo * ubo.amb;
