@@ -67,7 +67,7 @@ void main() {
 	//vec3 lightColor = gubo.DlightColor.rgb;
 	//vec3 lightPosition = vec3(0.0f, 10.0f, 0.0f);
 	vec3 lightPosition1 = gubo.PlightPos;
-	vec3 lightPosition2 = gubo.PlightPos;
+	vec3 lightPosition2 = vec3(10.0f, 0.0f, -1.0f);	//hard coded for now, maybe in the future put a second PlightPos in the UBO
 
 	//pointlight
 	vec3 L1 = (lightPosition1 - fragPos)/length(lightPosition1 - fragPos);
@@ -80,6 +80,6 @@ void main() {
 	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
 
 	
-	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor1.rgb + Ambient,0.0,1.0), 1.0f);
+	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor2.rgb + Ambient,0.0,1.0), 1.0f);
 	id = -1;
 }

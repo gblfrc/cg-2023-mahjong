@@ -152,7 +152,7 @@ protected:
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
-	const glm::mat4 homeMenuPosition = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.001f));
+	const glm::mat4 homeMenuPosition = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 0.0f));
 
 
 	// Here you set the main application parameters
