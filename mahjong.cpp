@@ -93,6 +93,7 @@ protected:
 	Model<VertexMesh> MFloor;
 	Model<VertexMesh> MCeiling;
 	Model<VertexMesh> MTable;
+	Model<VertexMesh> MHome;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -101,6 +102,8 @@ protected:
 	DescriptorSet DSFloor;
 	DescriptorSet DSCeiling;
 	DescriptorSet DSTable;
+	DescriptorSet DSHTile;
+	DescriptorSet DSHome;
 
 	Texture TPoolCloth;
 	// Tile textures
@@ -113,6 +116,7 @@ protected:
 	Texture TCeiling;
 	Texture TTable;
 
+
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
 	BackgroundUniformBlock bgubo;
@@ -121,6 +125,8 @@ protected:
 	BackgroundUniformBlock floorubo;
 	BackgroundUniformBlock ceilingubo;
 	BackgroundUniformBlock tableubo;
+	BackgroundUniformBlock hubo; //home
+	TileUniformBlock tileHubo; //home tile
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -154,9 +160,15 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
+<<<<<<< Updated upstream
 		uniformBlocksInPool = 150;
 		texturesInPool = 144*3 + 5;
 		setsInPool = 150;
+=======
+		uniformBlocksInPool = 160;
+		texturesInPool = 160;
+		setsInPool = 160;
+>>>>>>> Stashed changes
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -252,6 +264,19 @@ protected:
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 		// Create Background model manually
+		//menu coordinates
+		float a = 1.0f;
+		float b = 1.0f;
+		MHome.vertices = {
+			{{-a, b, 0.0f}, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }},
+			{ {a, b, 0.0f},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f} },
+			{ {a, -b, 0.0f},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f} },
+			{ {-a, -b, 0.0f},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f} },
+		};
+		MHome.indices = { 0, 1, 2,    0, 2, 3 };
+		MHome.initMesh(this, &VMesh);
+
+		//room coordinates
 		float side = 0.25f;
 		float baseHeight = 0.6f;
 		MBackground.vertices = {
@@ -347,9 +372,9 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;
-		firstTileIndex = 120;
-		secondTileIndex = 120;
+		gameState = -1;
+		firstTileIndex = -1;
+		secondTileIndex = -1;
 	}
 
 	// Here you create your pipelines and Descriptor Sets!
@@ -403,6 +428,17 @@ protected:
 					{1, TEXTURE, 0, &TTable}
 			});
 
+		//menu
+		DSHTile.init(this, &DSLTile, {
+						{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
+						{1, TEXTURE, 0, &TWhiteTiles}
+			});
+
+		DSHome.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TPoolCloth}
+			});
+
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -422,6 +458,10 @@ protected:
 		DSFloor.cleanup();
 		DSCeiling.cleanup();
 		DSTable.cleanup();
+
+		//menu
+		DSHTile.cleanup();
+		DSHome.cleanup();
 
 	}
 
@@ -447,6 +487,7 @@ protected:
 		MFloor.cleanup();
 		MCeiling.cleanup();
 		MTable.cleanup();
+		MHome.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -491,6 +532,11 @@ protected:
 		DSTable.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MTable.indices.size()), 1, 0, 0, 0);
+		//home
+		MHome.bind(commandBuffer);
+		DSHome.bind(commandBuffer, PBackground, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MHome.indices.size()), 1, 0, 0, 0);
 		// Tile pipeline binding
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
@@ -500,6 +546,10 @@ protected:
 			vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 		}
+		//tile in home
+		DSHTile.bind(commandBuffer, PTile, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer, 
+				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 	}
 
 	// Here is where you update the uniforms.
@@ -671,7 +721,6 @@ protected:
 		//c  da vedere
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
 
-
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
@@ -686,6 +735,32 @@ protected:
 		// the third parameter is its size
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
+
+		//
+		//home screen
+		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
+		hubo.amb = 1.0f; hubo.gamma = 180.0f; hubo.sColor = glm::vec3(1.0f);
+		hubo.mvpMat = Prj * View * WorldH;
+		hubo.mMat = WorldH;
+		hubo.nMat = glm::inverse(glm::transpose(WorldH));
+		DSHome.map(currentImage, &hubo, sizeof(hubo), 0);
+		
+		
+		//rotating tile
+		static float ang = 0.0f;
+		float ROT_SPEED = glm::radians(65.0f);
+		ang += ROT_SPEED * deltaT;
+		tileHubo.transparency = 1.0f;
+		glm::mat4 rotTile = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.25f, -1.15f)) *
+			glm::rotate(glm::mat4(1.0f) * glm::scale(glm::mat4(1), glm::vec3(1) * 3.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		tileHubo.amb = 1.0f; tileHubo.gamma = 180.0f; tileHubo.sColor = glm::vec3(1.0f);
+		tileHubo.mvpMat = Prj * View * rotTile;
+		tileHubo.mMat = rotTile;
+		tileHubo.nMat = glm::inverse(glm::transpose(rotTile));
+		DSHTile.map(currentImage, &tileHubo, sizeof(tileHubo), 0);
+		//
+		
+		
 		// Matrix setup for background
 		glm::mat4 World = glm::mat4(1);
 		bgubo.amb = 1.0f; bgubo.gamma = 180.0f; bgubo.sColor = glm::vec3(1.0f);
