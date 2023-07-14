@@ -4,9 +4,16 @@
 #include <glm/ext/vector_common.hpp>
 #include <glm/ext/scalar_common.hpp>
 #include "MahjongGame.hpp"
+#include <iostream>
+#include <windows.h>
+#include <mmsystem.h>
+#include <string>
 
-// The uniform buffer objects data structures
-// Remember to use the correct alignas(...) value
+//link windows multimedia library to our program
+#pragma comment(lib, "winmm.lib")
+
+
+// correct alignas(...) values for uniform buffer objects data structures:
 //        float : alignas(4)
 //        vec2  : alignas(8)
 //        vec3  : alignas(16)
@@ -569,6 +576,7 @@ protected:
 				//wrong choice of second piece
 				//notify error, how?
 				std::cout << "\n ERROR: tiles cannot be removed together \n";
+				PlaySound(TEXT("sounds/game_error_tone_1.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				//deselect tiles
 				firstTileIndex = -1;
 				secondTileIndex = -1;
