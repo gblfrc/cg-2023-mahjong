@@ -77,7 +77,7 @@ public:
 		int suitIdx1 = tile1.suitIdx;
 		bool result = (((suitIdx0 < 40 && suitIdx1 == suitIdx0) ||
 			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
-			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen());
+			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen() && idx0!=idx1);
 		
 		//DEBUG:
 		std::cout << "\nResult of check on 2 tiles: " << result << "\n";
@@ -94,7 +94,7 @@ public:
 		// check on suit idx
 		if (((suitIdx0 < 40 && suitIdx1 == suitIdx0) ||
 			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
-			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen()) {
+			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen() && idx0 != idx1) {
 			// for each tile, remove its index from neighbours
 			for (Tile tile : {tile0, tile1}) {
 				// remove current tile index from neighbors
@@ -104,7 +104,7 @@ public:
 				}
 				for (int rightIdx : tile.right) {
 					Tile rightTile = tiles[rightIdx];
-					rightTile.right.erase(remove(rightTile.left.begin(), rightTile.left.end(), tile.tileIdx), rightTile.left.end());
+					rightTile.left.erase(remove(rightTile.left.begin(), rightTile.left.end(), tile.tileIdx), rightTile.left.end());
 				}
 				for (int underIdx : tile.under) {
 					Tile underTile = tiles[underIdx];
