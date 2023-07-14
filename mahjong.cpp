@@ -87,6 +87,7 @@ protected:
 	// Pipelines [Shader couples]
 	Pipeline PTile;
 	Pipeline PBackground;
+	Pipeline PMenu;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -260,7 +261,11 @@ protected:
 		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
-		PBackground.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+		//PBackground.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+		PMenu.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/MenuTransparencyFrag.spv", { &DSLGubo, &DSLBackground });
+		PMenu.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+
+
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -410,6 +415,7 @@ protected:
 		// This creates a new pipeline (with the current surface), using its shaders
 		PBackground.create();
 		PTile.create();
+		PMenu.create();
 
 		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
 		for (int i = 0; i < 144; i++) {
@@ -481,6 +487,7 @@ protected:
 		// Cleanup pipelines
 		PBackground.cleanup();
 		PTile.cleanup();
+		PMenu.cleanup();
 
 		// Cleanup datasets
 		DSGubo.cleanup();
@@ -534,6 +541,7 @@ protected:
 		// Destroys the pipelines
 		PTile.destroy();
 		PBackground.destroy();
+		PMenu.destroy();
 	}
 
 	// Here it is the creation of the command buffer:
@@ -542,7 +550,8 @@ protected:
 
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// Background pipeline binding
-		// Background
+		// PBackground
+
 		PBackground.bind(commandBuffer);
 		MBackground.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PBackground, 0, currentImage);
@@ -580,13 +589,7 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MHome.indices.size()), 1, 0, 0, 0);
 
-		//Game title
-		MGameTitle.bind(commandBuffer);
-		DSGameTitle.bind(commandBuffer, PBackground, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
-
-		//TILES
+		//PTILES
 		
 		// Tile pipeline binding
 		PTile.bind(commandBuffer);
@@ -603,6 +606,18 @@ protected:
 		DSHTile.bind(commandBuffer, PTile, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer, 
 				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
+
+		//PMENU
+
+		PMenu.bind(commandBuffer);
+
+		//Game title
+		MGameTitle.bind(commandBuffer);
+		DSGubo.bind(commandBuffer, PMenu, 0, currentImage);
+		DSGameTitle.bind(commandBuffer, PMenu, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
+
 	}
 
 	// Here is where you update the uniforms.
