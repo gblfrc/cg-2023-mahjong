@@ -12,7 +12,6 @@
 //link windows multimedia library to our program
 #pragma comment(lib, "winmm.lib")
 
-
 // correct alignas(...) values for uniform buffer objects data structures:
 //        float : alignas(4)
 //        vec2  : alignas(8)
@@ -90,6 +89,7 @@ protected:
 	Pipeline PBackground;
 	Pipeline PMenu;
 	Pipeline PWindow;
+	Pipeline PLandscape;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -102,6 +102,7 @@ protected:
 	Model<VertexMesh> MHome;
 	Model<VertexMesh> MWindow;
 	Model<VertexMesh> MGameTitle;
+	Model<VertexMesh> MLandscape;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -116,6 +117,7 @@ protected:
 	DescriptorSet DSHTile;
 	DescriptorSet DSHome;
 	DescriptorSet DSGameTitle;
+	DescriptorSet DSLandscape;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -125,6 +127,7 @@ protected:
 	Texture TTable;
 	Texture TWindow;
 	Texture TGameTitle;
+	Texture TLandscape;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
@@ -138,6 +141,7 @@ protected:
 	BackgroundUniformBlock hubo; //home
 	TileUniformBlock tileHubo; //home tile
 	BackgroundUniformBlock gameTitleubo;
+	UniformBufferObject landscapeubo;
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -175,9 +179,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 160;//153;
-		texturesInPool = 10; // 8;
-		setsInPool = 161; // 154;
+		uniformBlocksInPool = 157;
+		texturesInPool = 10;
+		setsInPool = 159;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -269,12 +273,9 @@ protected:
 		//PBackground.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
 		PMenu.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/MenuTransparencyFrag.spv", { &DSLGubo, &DSLBackground });
 		PMenu.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
-
-
-
 		PWindow.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/WindowFrag.spv", { &DSLGubo, &DSLWindow, &DSLTextureOnly });
 		PWindow.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
-
+		PLandscape.init(this, &VMesh, "shaders/LandscapeVert.spv", "shaders/LandscapeFrag.spv", { &DSLBackground });
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
 		// Create models
@@ -308,7 +309,7 @@ protected:
 		MGameTitle.indices = { 0, 2, 1,    0, 3, 2 };
 		MGameTitle.initMesh(this, &VMesh);
 
-		//room coordinates
+		// Background
 		float side = 0.25f;
 		float baseHeight = 0.6f;
 		MBackground.vertices = {
@@ -320,6 +321,14 @@ protected:
 		MBackground.indices = { 0, 2, 1,   0,3,2};
 		MBackground.initMesh(this, &VMesh);
 		// Landscape (requires scale and translation in place)
+		MLandscape.vertices = {
+			{{-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 0.0f}},
+			{{1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f}},
+			{{1.0f, -1.0f, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f}},
+			{{-1.0f, -1.0f, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f}},
+		};
+		MLandscape.indices = { 0, 2, 1,   0,3,2 };
+		MLandscape.initMesh(this, &VMesh);
 		// Create walls
 		float roomHeight = 3.0f;
 		float roomHalfWidth = 2.0f;
@@ -398,8 +407,6 @@ protected:
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
 
-
-
 		// Create the TEXTURES
 		// The second parameter is the file name
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
@@ -417,8 +424,7 @@ protected:
 		TTable.init(this, "textures/room/table.jpg");
 		TWindow.init(this, "textures/room/window.png");
 		TGameTitle.init(this, "textures/title_brush.png");
-
-
+		TLandscape.init(this, "textures/room/landscape.jpg");
 
 		// Init local variables
 		CamH = 1.0f;
@@ -437,6 +443,7 @@ protected:
 		PTile.create();
 		PMenu.create();
 		PWindow.create();
+		PLandscape.create();
 
 		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
 		for (int i = 0; i < 144; i++) {
@@ -499,6 +506,10 @@ protected:
 					{0, TEXTURE, 0, &TWindow}
 			});
 
+		DSLandscape.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+					{1, TEXTURE, 0, &TLandscape}
+			});
 
 		//menu
 		DSHTile.init(this, &DSLTile, {
@@ -525,6 +536,7 @@ protected:
 		PTile.cleanup();
 		PMenu.cleanup();
 		PWindow.cleanup();
+		PLandscape.cleanup();
 
 		// Cleanup datasets
 		DSGubo.cleanup();
@@ -541,6 +553,7 @@ protected:
 		DSWindow3.cleanup();
 		DSTileTexture.cleanup();
 		DSWindowTexture.cleanup();
+		DSLandscape.cleanup();
 
 		//menu
 		DSHTile.cleanup();
@@ -563,6 +576,7 @@ protected:
 		TTable.cleanup();
 		TWindow.cleanup();
 		TGameTitle.cleanup();
+		TLandscape.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -574,6 +588,7 @@ protected:
 		MHome.cleanup();
 		MWindow.cleanup();
 		MGameTitle.cleanup();
+		MLandscape.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -587,6 +602,7 @@ protected:
 		PBackground.destroy();
 		PMenu.destroy();
 		PWindow.destroy();
+		PLandscape.destroy();
 	}
 
 	// Here it is the creation of the command buffer:
@@ -604,7 +620,7 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MBackground.indices.size()), 1, 0, 0, 0);
 
-		// FLR Walls
+		// Walls
 		MWall.bind(commandBuffer);
 		DSWall.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -676,6 +692,13 @@ protected:
 		DSWindow3.bind(commandBuffer, PWindow, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
+
+		// PLANDSCAPE
+		PLandscape.bind(commandBuffer);
+		MLandscape.bind(commandBuffer);
+		DSLandscape.bind(commandBuffer, PLandscape, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MLandscape.indices.size()), 1, 0, 0, 0);
 
 	}
 
@@ -984,6 +1007,16 @@ protected:
 		window3ubo.mMat = World;
 		window3ubo.nMat = glm::inverse(glm::transpose(World));
 		DSWindow3.map(currentImage, &window3ubo, sizeof(window3ubo), 0);
+
+		// Matrix setup for landscape
+		World = glm::mat4(1);
+		glm::mat4 TransLandscape = glm::translate(glm::mat4(1), glm::vec3(0.0f,1.57f,-1.99f));
+		glm::mat4 ScaleLandscape = glm::scale(glm::mat4(1), glm::vec3(1.49f,0.75f,1.0f));
+		World = TransLandscape * ScaleLandscape;
+		landscapeubo.mvpMat = Prj * View * World;
+		landscapeubo.mMat = World;
+		landscapeubo.nMat = glm::inverse(glm::transpose(World));
+		DSLandscape.map(currentImage, &landscapeubo, sizeof(landscapeubo), 0);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
