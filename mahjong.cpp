@@ -97,6 +97,7 @@ protected:
 	Model<VertexMesh> MCeiling;
 	Model<VertexMesh> MTable;
 	Model<VertexMesh> MHome;
+	Model<VertexMesh> MGameTitle;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -108,6 +109,7 @@ protected:
 	DescriptorSet DSTable;
 	DescriptorSet DSHTile;
 	DescriptorSet DSHome;
+	DescriptorSet DSGameTitle;
 
 	Texture TPoolCloth;
 	// Tile textures
@@ -117,6 +119,7 @@ protected:
 	Texture TFloor;
 	Texture TCeiling;
 	Texture TTable;
+	Texture TGameTitle;
 
 
 	// C++ storage for uniform variables
@@ -129,6 +132,7 @@ protected:
 	BackgroundUniformBlock tableubo;
 	BackgroundUniformBlock hubo; //home
 	TileUniformBlock tileHubo; //home tile
+	BackgroundUniformBlock gameTitleubo;
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -152,7 +156,8 @@ protected:
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
-	const glm::mat4 homeMenuPosition = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 0.0f));
+	const glm::vec3 homeMenuPosition = glm::vec3(30.0f, 0.0f, 0.0f);
+	const glm::mat4 homeMenuWorld = glm::translate(glm::mat4(1.0f), homeMenuPosition);
 
 
 	// Here you set the main application parameters
@@ -165,9 +170,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 152;
-		texturesInPool = 7;
-		setsInPool = 153;
+		uniformBlocksInPool = 160;//153;
+		texturesInPool = 10; // 8;
+		setsInPool = 161; // 154;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -255,7 +260,7 @@ protected:
 		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
-
+		PBackground.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -269,13 +274,26 @@ protected:
 		float a = 2.0f;
 		float b = 3.0f;
 		MHome.vertices = {
-			{{-a, b, 0.0f}, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f }},
-			{ {a, b, 0.0f},{0.0f, 0.0f, -1.0f},{1.0f, 0.0f} },
-			{ {a, -b, 0.0f},{0.0f, 0.0f, -1.0f},{1.0f, 1.0f} },
-			{ {-a, -b, 0.0f},{0.0f, 0.0f, -1.0f},{0.0f, 1.0f} },
+			{{-a, b, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }},
+			{ {a, b, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f} },
+			{ {a, 0.0f, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f} },
+			{ {-a, 0.0f, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f} },
 		};
-		MHome.indices = { 0, 1, 2,    0, 2, 3 };
+		MHome.indices = { 0, 2, 1,    0, 3, 2 };
 		MHome.initMesh(this, &VMesh);
+
+		//Game Title coordinates
+		float c = 1.33f;
+		float hUp = 2.5f;
+		float hDown = 1.5f;
+		MGameTitle.vertices = {
+			{{-c, hUp, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }},
+			{ {c, hUp, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f} },
+			{ {c, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f} },
+			{ {-c, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f} },
+		};
+		MGameTitle.indices = { 0, 2, 1,    0, 3, 2 };
+		MGameTitle.initMesh(this, &VMesh);
 
 		//room coordinates
 		float side = 0.25f;
@@ -356,7 +374,9 @@ protected:
 		MTile.init(this, &VMesh, "Models/Tile.obj", OBJ);
 		MTable.init(this, &VMesh, "Models/Table.obj", OBJ);
 
-		// Create the textures
+
+
+		// Create the TEXTURES
 		// The second parameter is the file name
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
 		const char* tileTextureFiles[4] = {
@@ -371,6 +391,9 @@ protected:
 		TFloor.init(this, "textures/room/floor.png");
 		TCeiling.init(this, "textures/room/ceiling.jpg");
 		TTable.init(this, "textures/room/table.jpg");
+		TGameTitle.init(this, "textures/title_brush.png");
+
+
 
 		// Init local variables
 		CamH = 1.0f;
@@ -445,6 +468,11 @@ protected:
 					{1, TEXTURE, 0, &TPoolCloth}
 			});
 
+		DSGameTitle.init(this, &DSLBackground, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TGameTitle}
+			});
+
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -469,6 +497,7 @@ protected:
 		//menu
 		DSHTile.cleanup();
 		DSHome.cleanup();
+		DSGameTitle.cleanup();
 
 	}
 
@@ -484,6 +513,7 @@ protected:
 		TFloor.cleanup();
 		TCeiling.cleanup();
 		TTable.cleanup();
+		TGameTitle.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -493,6 +523,7 @@ protected:
 		MCeiling.cleanup();
 		MTable.cleanup();
 		MHome.cleanup();
+		MGameTitle.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -518,31 +549,45 @@ protected:
 		DSBackground.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MBackground.indices.size()), 1, 0, 0, 0);
+
 		// FLR Walls
 		MWall.bind(commandBuffer);
 		DSWall.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWall.indices.size()), 1, 0, 0, 0);
+
 		// Floor
 		MFloor.bind(commandBuffer);
 		DSFloor.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MFloor.indices.size()), 1, 0, 0, 0);
+
 		// Ceiling
 		MCeiling.bind(commandBuffer);
 		DSCeiling.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MCeiling.indices.size()), 1, 0, 0, 0);
+
 		// Table
 		MTable.bind(commandBuffer);
 		DSTable.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MTable.indices.size()), 1, 0, 0, 0);
+
 		//home
 		MHome.bind(commandBuffer);
 		DSHome.bind(commandBuffer, PBackground, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MHome.indices.size()), 1, 0, 0, 0);
+
+		//Game title
+		MGameTitle.bind(commandBuffer);
+		DSGameTitle.bind(commandBuffer, PBackground, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
+
+		//TILES
+		
 		// Tile pipeline binding
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
@@ -553,6 +598,7 @@ protected:
 			vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 		}
+
 		//tile in home
 		DSHTile.bind(commandBuffer, PTile, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer, 
@@ -589,6 +635,7 @@ protected:
 		bool handleFire = (wasFire && (!fire));
 		wasFire = fire;
 
+		// To debounce the pressing of the mouse left click, and start the event when the key is released
 		static bool wasClick = false; 
 		bool handleClick = (wasClick && (!click)); 
 		wasClick = click; 
@@ -719,14 +766,33 @@ protected:
 			CamRadius = initialCamRadius;
 			CamPitch = initialPitch;
 			CamYaw = initialYaw;
+			
+			/*
+			//not final to start game
+			if (gameState == -1) {
+				gameState = 0;
+			}
+			*/
 		}
+		
+		/*
+		if (gameState == -1) {
+			CamRadius = 5.0f;
+			CamPitch = 0.0f;
+			CamYaw = 0.0f;
+		}
+		*/
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
 		glm::vec3 camTarget = glm::vec3(0, 0.6f, 0);
+		if (gameState == -1) {
+			camTarget = homeMenuPosition + glm::vec3(0, 1.2f, 0);
+		}
 
 		//c
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
+
 
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
 
@@ -747,7 +813,7 @@ protected:
 
 		//
 		//Matrix setup for home (menu) screen
-		glm::mat4 WorldH = homeMenuPosition * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //* glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0,1,0));
+		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.5f, 0.0f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 4.0f);
 		hubo.amb = 1.0f; hubo.gamma = 180.0f; hubo.sColor = glm::vec3(1.0f);
 		hubo.mvpMat = Prj * View * WorldH;
 		hubo.mMat = WorldH;
@@ -760,14 +826,23 @@ protected:
 		float ROT_SPEED = glm::radians(65.0f);
 		ang += ROT_SPEED * deltaT;
 		tileHubo.transparency = 1.0f;
-		glm::mat4 rotTile = homeMenuPosition * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.25f, -1.15f)) *
-			glm::rotate(glm::mat4(1.0f) * glm::scale(glm::mat4(1), glm::vec3(1) * 3.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::mat4 rotTile = homeMenuWorld * glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, 1.0f, 0.2f)) * 
+			glm::rotate(glm::mat4(1.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f))
+			* glm::scale(glm::mat4(1), glm::vec3(1) * 22.0f);
 		tileHubo.amb = 1.0f; tileHubo.gamma = 180.0f; tileHubo.sColor = glm::vec3(1.0f);
 		tileHubo.mvpMat = Prj * View * rotTile;
 		tileHubo.mMat = rotTile;
 		tileHubo.nMat = glm::inverse(glm::transpose(rotTile));
 		DSHTile.map(currentImage, &tileHubo, sizeof(tileHubo), 0);
-		
+
+		//Matrix setup for Game Title
+		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.1f)) * homeMenuWorld; //* glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 1, 0));
+			//* glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
+		gameTitleubo.amb = 1.0f; gameTitleubo.gamma = 180.0f; gameTitleubo.sColor = glm::vec3(1.0f);
+		gameTitleubo.mvpMat = Prj * View * WorldTitle;
+		gameTitleubo.mMat = WorldTitle;
+		gameTitleubo.nMat = glm::inverse(glm::transpose(WorldTitle));
+		DSGameTitle.map(currentImage, &gameTitleubo, sizeof(gameTitleubo), 0);
 		
 		// Matrix setup for background
 		glm::mat4 World = glm::mat4(1);
