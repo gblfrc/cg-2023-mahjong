@@ -10,6 +10,7 @@ layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 DlightDir;		// direction of the direct light
+	vec3 PlightPos;		//position of the point light
 	vec3 DlightColor;	// color of the direct light
 	vec3 AmbLightColor;	// ambient light
 	vec3 eyePos;		// position of the viewer
@@ -34,9 +35,11 @@ void main() {
 	//vec3 L = normalize(gubo.DlightDir);			// light direction for direct light
 	
 	float transparency = 1.0f;						//CHANGE HERE TO PUT CUSTOM ONE PASSED FROM mahjong.cpp
-	vec3 lightPosition = vec3(5.0f, 10.0f, 5.0f);	//light position
 	const float betaPoint = 2.0f;					// decay exponent of the pointlight
 	const float gPoint = 8.0f;
+
+	//vec3 lightPosition = gubo.PlightPos;
+	vec3 lightPosition = vec3(5.0f, 10.0f, 5.0f);	//light position
 
 
 	vec3 albedo = texture(tex, fragUV).rgb;		// main color

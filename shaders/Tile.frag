@@ -9,10 +9,11 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
-	vec3 DlightDir;		// direction of the direct light
-	vec3 DlightColor;	// color of the direct light
-	vec3 AmbLightColor;	// ambient light
-	vec3 eyePos;		// position of the viewer
+	vec3 DlightDir;			// direction of the direct light
+	vec3 PlightPos;			//position of the point light
+	vec3 DlightColor;		// color of the direct light
+	vec3 AmbLightColor;		// ambient light
+	vec3 eyePos;			// position of the viewer
 } gubo;
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {

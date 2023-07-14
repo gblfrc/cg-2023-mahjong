@@ -54,6 +54,7 @@ struct BackgroundUniformBlock {
 
 struct GlobalUniformBlock {
 	alignas(16) glm::vec3 DlightDir;
+	alignas(16) glm::vec3 PlightPos;
 	alignas(16) glm::vec3 DlightColor;
 	alignas(16) glm::vec3 AmbLightColor;
 	alignas(16) glm::vec3 eyePos;
@@ -141,6 +142,8 @@ protected:
 	const float initialPitch = glm::radians(60.0f);
 	//const float initialPitch = glm::radians(90.0f);
 	const float initialYaw = glm::radians(0.0f);
+	
+	//other parameters
 	int gameState = 0;
 	float DisappearingTileTransparency = 1.0f;
 	int firstTileIndex = -1;			//initialize at -1
@@ -148,6 +151,7 @@ protected:
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
+	const glm::mat4 homeMenuPosition = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.001f));
 
 
 	// Here you set the main application parameters
@@ -259,14 +263,15 @@ protected:
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
 		// Create Background model manually
-		//menu coordinates
-		float a = 1.0f;
-		float b = 1.0f;
+		 
+		//home menu coordinates
+		float a = 2.0f;
+		float b = 3.0f;
 		MHome.vertices = {
-			{{-a, b, 0.0f}, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }},
-			{ {a, b, 0.0f},{0.0f, 1.0f, 0.0f},{1.0f, 0.0f} },
-			{ {a, -b, 0.0f},{0.0f, 1.0f, 0.0f},{1.0f, 1.0f} },
-			{ {-a, -b, 0.0f},{0.0f, 1.0f, 0.0f},{0.0f, 1.0f} },
+			{{-a, b, 0.0f}, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f }},
+			{ {a, b, 0.0f},{0.0f, 0.0f, -1.0f},{1.0f, 0.0f} },
+			{ {a, -b, 0.0f},{0.0f, 0.0f, -1.0f},{1.0f, 1.0f} },
+			{ {-a, -b, 0.0f},{0.0f, 0.0f, -1.0f},{0.0f, 1.0f} },
 		};
 		MHome.indices = { 0, 1, 2,    0, 2, 3 };
 		MHome.initMesh(this, &VMesh);
@@ -719,13 +724,14 @@ protected:
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
 		glm::vec3 camTarget = glm::vec3(0, 0.6f, 0);
 
-		//c  da vedere
+		//c
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
 
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		gubo.PlightPos = glm::vec3(0.0f, 10.0f, 0.0f);	
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
 
@@ -738,8 +744,8 @@ protected:
 
 
 		//
-		//home screen
-		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
+		//Matrix setup for home (menu) screen
+		glm::mat4 WorldH = homeMenuPosition * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //* glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0,1,0));
 		hubo.amb = 1.0f; hubo.gamma = 180.0f; hubo.sColor = glm::vec3(1.0f);
 		hubo.mvpMat = Prj * View * WorldH;
 		hubo.mMat = WorldH;
@@ -747,19 +753,18 @@ protected:
 		DSHome.map(currentImage, &hubo, sizeof(hubo), 0);
 		
 		
-		//rotating tile
+		//Matrix setup for rotating tile
 		static float ang = 0.0f;
 		float ROT_SPEED = glm::radians(65.0f);
 		ang += ROT_SPEED * deltaT;
 		tileHubo.transparency = 1.0f;
-		glm::mat4 rotTile = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.25f, -1.15f)) *
+		glm::mat4 rotTile = homeMenuPosition * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.25f, -1.15f)) *
 			glm::rotate(glm::mat4(1.0f) * glm::scale(glm::mat4(1), glm::vec3(1) * 3.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		tileHubo.amb = 1.0f; tileHubo.gamma = 180.0f; tileHubo.sColor = glm::vec3(1.0f);
 		tileHubo.mvpMat = Prj * View * rotTile;
 		tileHubo.mMat = rotTile;
 		tileHubo.nMat = glm::inverse(glm::transpose(rotTile));
 		DSHTile.map(currentImage, &tileHubo, sizeof(tileHubo), 0);
-		//
 		
 		
 		// Matrix setup for background
