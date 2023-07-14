@@ -58,8 +58,10 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 }
 
 void main() {
-	const float betaPoint = 0.5f;	// decay exponent of the pointlight
-	const float gPoint = 0.4f;
+	const float betaPoint1 = 0.2f;	// decay exponent of the pointlight
+	const float gPoint1 = 0.6f;
+	const float betaPoint2 = 0.1f;	// decay exponent of the pointlight
+	const float gPoint2 = 0.8f;
 	vec3 Norm = normalize(fragNorm);
 	vec3 EyeDir = normalize(gubo.eyePos - fragPos);
 	
@@ -67,13 +69,13 @@ void main() {
 	//vec3 lightColor = gubo.DlightColor.rgb;
 	//vec3 lightPosition = vec3(0.0f, 10.0f, 0.0f);
 	vec3 lightPosition1 = gubo.PlightPos;
-	vec3 lightPosition2 = vec3(30.0f, 0.0f, 2.0f);	//hard coded for now, maybe in the future put a second PlightPos in the UBO
+	vec3 lightPosition2 = vec3(30.0f, 1.0f, 1.5f);	//hard coded for now, maybe in the future put a second PlightPos in the UBO
 
 	//pointlight
 	vec3 L1 = (lightPosition1 - fragPos)/length(lightPosition1 - fragPos);
-	vec3 lightColor1 = vec3( gubo.PlightColor*pow( gPoint / length(lightPosition1 - fragPos) , betaPoint) );
+	vec3 lightColor1 = vec3( gubo.PlightColor*pow( gPoint1 / length(lightPosition1 - fragPos) , betaPoint1) );
 	vec3 L2 = (lightPosition2 - fragPos)/length(lightPosition2 - fragPos);
-	vec3 lightColor2 = vec3( gubo.PlightColor*pow( gPoint / length(lightPosition2 - fragPos) , betaPoint) );
+	vec3 lightColor2 = vec3( gubo.PlightColor*pow( gPoint2 / length(lightPosition2 - fragPos) , betaPoint2) );
 
 	vec3 DiffSpec1 = BRDF(EyeDir, Norm, L1, texture(tex, fragUV).rgb, 1.1f);
 	vec3 DiffSpec2 = BRDF(EyeDir, Norm, L2, texture(tex, fragUV).rgb, 1.1f);

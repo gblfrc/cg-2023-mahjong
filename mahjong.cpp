@@ -425,7 +425,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;
+		gameState = 0; // -1;
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -849,13 +849,13 @@ protected:
 			*/
 		}
 		
-		/*
+		
 		if (gameState == -1) {
-			CamRadius = 5.0f;
+			CamRadius = 5.0f; //lower to be closer to green board in the menu
 			CamPitch = 0.0f;
 			CamYaw = 0.0f;
 		}
-		*/
+		
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
