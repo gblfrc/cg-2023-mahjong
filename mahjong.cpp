@@ -39,6 +39,7 @@ struct TileUniformBlock {
 	alignas(4) float transparency;
 	alignas(4) int hoverIdx;
 	alignas(4) int selectedIdx;
+	alignas(4) int textureIdx;
 };
 
 struct BackgroundUniformBlock {
@@ -102,7 +103,11 @@ protected:
 	DescriptorSet DSTable;
 
 	Texture TPoolCloth;
+	// Tile textures
 	Texture TWhiteTiles;
+	Texture TDarkTiles;
+	Texture TLuckyTiles;
+	// Other textures
 	Texture TWallDragon;
 	Texture TFloor;
 	Texture TCeiling;
@@ -118,9 +123,17 @@ protected:
 	BackgroundUniformBlock tableubo;
 
 	// Other application parameters
+	int tileTextureIdx = 0;
+	// Camera parameters
+	const float FOVy = glm::radians(90.0f);
+	const float nearPlane = 0.01f;
+	const float farPlane = 10.0f;
+	const float rotSpeed = glm::radians(90.0f);
+	const float movSpeed = 1.0f;
 	float CamH, CamRadius, CamPitch, CamYaw;
 	const float initialCamRadius = 0.3f;
 	const float initialPitch = glm::radians(60.0f);
+	//const float initialPitch = glm::radians(90.0f);
 	const float initialYaw = glm::radians(0.0f);
 	int gameState = 0;
 	float DisappearingTileTransparency = 1.0f;
@@ -129,6 +142,7 @@ protected:
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
+
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -141,7 +155,7 @@ protected:
 
 		// Descriptor pool sizes
 		uniformBlocksInPool = 150;
-		texturesInPool = 149;
+		texturesInPool = 144*3 + 5;
 		setsInPool = 150;
 
 		// Initialize aspect ratio
@@ -167,7 +181,9 @@ protected:
 			// third  element : the pipeline stage where it will be used
 			//                  using the corresponding Vulkan constant
 			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+			{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+			{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+			{3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 			});
 
 		DSLBackground.init(this, {
@@ -317,7 +333,10 @@ protected:
 		// Create the textures
 		// The second parameter is the file name
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
-		TWhiteTiles.init(this, "textures/tiles/tiles_white.png");
+		TWhiteTiles.init(this, "textures/tiles/tiles_white_resized.png");
+		TDarkTiles.init(this, "textures/tiles/tiles_dark_resized.png");
+		TLuckyTiles.init(this, "textures/tiles/tiles_lucky_resized.png");
+		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
 		TCeiling.init(this, "textures/room/ceiling.jpg");
@@ -349,7 +368,9 @@ protected:
 				// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
 				// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
 							{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
-							{1, TEXTURE, 0, &TWhiteTiles}
+							{1, TEXTURE, 0, &TWhiteTiles},
+							{2, TEXTURE, 0, &TDarkTiles},
+							{3, TEXTURE, 0, &TLuckyTiles}
 				});
 		}
 
@@ -412,6 +433,8 @@ protected:
 		// Cleanup textures
 		TPoolCloth.cleanup();
 		TWhiteTiles.cleanup();
+		TDarkTiles.cleanup();
+		TLuckyTiles.cleanup();
 		TWallDragon.cleanup();
 		TFloor.cleanup();
 		TCeiling.cleanup();
@@ -526,6 +549,7 @@ protected:
 		if (y < windowHeight && x < windowWidth) {
 			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
+			//tileTextureIdx = hoverIndex % 3;
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
@@ -603,13 +627,6 @@ protected:
 
 		}
 
-		// Parameters
-		// Camera FOV-y, Near Plane and Far Plane
-		const float FOVy = glm::radians(90.0f);
-		const float nearPlane = 0.1f;
-		const float farPlane = 100.0f;
-		const float rotSpeed = glm::radians(90.0f);
-		const float movSpeed = 1.0f;
 
 
 		CamH += m.z * movSpeed * deltaT;
@@ -712,6 +729,7 @@ protected:
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
 			float scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 1.0f;
+			//float scaleFactor = 0.0f;
 			glm::mat4 Tbase = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
@@ -724,6 +742,7 @@ protected:
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
+			tileubo[i].textureIdx = tileTextureIdx;
 
 			//highlight the piece on which the mouse is hoovering
 			tileubo[i].hoverIdx = hoverIndex;
