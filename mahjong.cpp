@@ -80,6 +80,7 @@ protected:
 	DescriptorSetLayout DSLTile;
 	DescriptorSetLayout DSLBackground;
 	DescriptorSetLayout DSLTextureOnly;
+	DescriptorSetLayout DSLWindow;
 
 	// Vertex formats
 	VertexDescriptor VMesh;
@@ -88,6 +89,7 @@ protected:
 	Pipeline PTile;
 	Pipeline PBackground;
 	Pipeline PMenu;
+	Pipeline PWindow;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -98,6 +100,7 @@ protected:
 	Model<VertexMesh> MCeiling;
 	Model<VertexMesh> MTable;
 	Model<VertexMesh> MHome;
+	Model<VertexMesh> MWindow;
 	Model<VertexMesh> MGameTitle;
 
 	DescriptorSet DSGubo;
@@ -108,20 +111,20 @@ protected:
 	DescriptorSet DSFloor;
 	DescriptorSet DSCeiling;
 	DescriptorSet DSTable;
+	DescriptorSet DSWindow1, DSWindow2, DSWindow3;
+	DescriptorSet DSWindowTexture;
 	DescriptorSet DSHTile;
 	DescriptorSet DSHome;
 	DescriptorSet DSGameTitle;
 
 	Texture TPoolCloth;
-	// Tile textures
 	Texture TTile;
-	// Other textures
 	Texture TWallDragon;
 	Texture TFloor;
 	Texture TCeiling;
 	Texture TTable;
+	Texture TWindow;
 	Texture TGameTitle;
-
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
@@ -131,6 +134,7 @@ protected:
 	BackgroundUniformBlock floorubo;
 	BackgroundUniformBlock ceilingubo;
 	BackgroundUniformBlock tableubo;
+	BackgroundUniformBlock window1ubo, window2ubo, window3ubo;
 	BackgroundUniformBlock hubo; //home
 	TileUniformBlock tileHubo; //home tile
 	BackgroundUniformBlock gameTitleubo;
@@ -213,6 +217,9 @@ protected:
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 			});
 
+		DSLWindow.init(this, {
+					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+			});
 
 		// Vertex descriptors
 		VMesh.init(this, {
@@ -256,8 +263,6 @@ protected:
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		//PTile.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/TileFrag.spv", {&DSLGubo, &DSLTile});
-		//PBackground.init(this, &VMesh, /**/"shaders/PhongVert.spv"/*TO CHANGE */ , "shaders/LambertON.spv", {&DSLGubo, &DSLBackground});
 		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
@@ -266,6 +271,9 @@ protected:
 		PMenu.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
 
 
+
+		PWindow.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/WindowFrag.spv", { &DSLGubo, &DSLWindow, &DSLTextureOnly });
+		PWindow.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -311,6 +319,7 @@ protected:
 		};
 		MBackground.indices = { 0, 2, 1,   0,3,2};
 		MBackground.initMesh(this, &VMesh);
+		// Landscape (requires scale and translation in place)
 		// Create walls
 		float roomHeight = 3.0f;
 		float roomHalfWidth = 2.0f;
@@ -335,12 +344,21 @@ protected:
 				vertexIndex++;
 			}
 		}
-		// third wall
+		// front wall
 		float z = -roomHalfWidth;
 		vertexIndex = 0;
 		for (float x : {-roomHalfWidth, roomHalfWidth}) {
 			for (float y : {roomHeight, 0.0f}) {
 				wallVertices.push_back({ {x,y,z}, {0.0f,0.0f,1.0f}, {vertexIndex / 2, vertexIndex % 2} });
+				vertexIndex++;
+			}
+		}
+		// back wall
+		z = roomHalfWidth;
+		vertexIndex = 0;
+		for (float x : {roomHalfWidth, -roomHalfWidth}) {
+			for (float y : {roomHeight, 0.0f}) {
+				wallVertices.push_back({ {x,y,z}, {0.0f,0.0f,-1.0f}, {vertexIndex / 2, vertexIndex % 2} });
 				vertexIndex++;
 			}
 		}
@@ -376,8 +394,9 @@ protected:
 		MCeiling.indices = { 0, 1, 2,    2, 1, 3 };
 		MCeiling.initMesh(this, &VMesh);
 		// Import Tile model
-		MTile.init(this, &VMesh, "Models/Tile.obj", OBJ);
-		MTable.init(this, &VMesh, "Models/Table.obj", OBJ);
+		MTile.init(this, &VMesh, "models/Tile.obj", OBJ);
+		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
+		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
 
 
 
@@ -396,6 +415,7 @@ protected:
 		TFloor.init(this, "textures/room/floor.png");
 		TCeiling.init(this, "textures/room/ceiling.jpg");
 		TTable.init(this, "textures/room/table.jpg");
+		TWindow.init(this, "textures/room/window.png");
 		TGameTitle.init(this, "textures/title_brush.png");
 
 
@@ -416,6 +436,7 @@ protected:
 		PBackground.create();
 		PTile.create();
 		PMenu.create();
+		PWindow.create();
 
 		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
 		for (int i = 0; i < 144; i++) {
@@ -464,6 +485,21 @@ protected:
 					{1, TEXTURE, 0, &TTable}
 			});
 
+		DSWindow1.init(this, &DSLWindow, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+			});
+		DSWindow2.init(this, &DSLWindow, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+			});
+		DSWindow3.init(this, &DSLWindow, {
+					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+			});
+
+		DSWindowTexture.init(this, &DSLTextureOnly, {
+					{0, TEXTURE, 0, &TWindow}
+			});
+
+
 		//menu
 		DSHTile.init(this, &DSLTile, {
 						{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
@@ -488,6 +524,7 @@ protected:
 		PBackground.cleanup();
 		PTile.cleanup();
 		PMenu.cleanup();
+		PWindow.cleanup();
 
 		// Cleanup datasets
 		DSGubo.cleanup();
@@ -499,7 +536,11 @@ protected:
 		DSFloor.cleanup();
 		DSCeiling.cleanup();
 		DSTable.cleanup();
+		DSWindow1.cleanup();
+		DSWindow2.cleanup();
+		DSWindow3.cleanup();
 		DSTileTexture.cleanup();
+		DSWindowTexture.cleanup();
 
 		//menu
 		DSHTile.cleanup();
@@ -520,6 +561,7 @@ protected:
 		TFloor.cleanup();
 		TCeiling.cleanup();
 		TTable.cleanup();
+		TWindow.cleanup();
 		TGameTitle.cleanup();
 
 		// Cleanup models
@@ -530,6 +572,7 @@ protected:
 		MCeiling.cleanup();
 		MTable.cleanup();
 		MHome.cleanup();
+		MWindow.cleanup();
 		MGameTitle.cleanup();
 
 		// Cleanup descriptor set layouts
@@ -537,11 +580,13 @@ protected:
 		DSLBackground.cleanup();
 		DSLGubo.cleanup();
 		DSLTextureOnly.cleanup();
+		DSLWindow.cleanup();
 
 		// Destroys the pipelines
 		PTile.destroy();
 		PBackground.destroy();
 		PMenu.destroy();
+		PWindow.destroy();
 	}
 
 	// Here it is the creation of the command buffer:
@@ -617,6 +662,20 @@ protected:
 		DSGameTitle.bind(commandBuffer, PMenu, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
+		// Windows
+		PWindow.bind(commandBuffer);
+		MWindow.bind(commandBuffer);
+		DSGubo.bind(commandBuffer, PWindow, 0, currentImage);
+		DSWindowTexture.bind(commandBuffer, PWindow, 2, currentImage);
+		DSWindow1.bind(commandBuffer, PWindow, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
+		DSWindow2.bind(commandBuffer, PWindow, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
+		DSWindow3.bind(commandBuffer, PWindow, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
 
 	}
 
@@ -759,7 +818,7 @@ protected:
 		CamYaw += r.y * rotSpeed * deltaT;
 
 
-		/* da usare insieme a ubo perché servono le matrici
+		/* da usare insieme a ubo perchï¿½ servono le matrici
 		glm::mat4 initalModel = glm::rotate(glm::mat4(1.0f),
 								glm::radians(0.0f),
 								glm::vec3(0.0f, 0.0f, 1.0f));
@@ -898,6 +957,33 @@ protected:
 		tableubo.mMat = World;
 		tableubo.nMat = glm::inverse(glm::transpose(World));
 		DSTable.map(currentImage, &tableubo, sizeof(tableubo), 0);
+
+		// Matrix setup for windows
+		// Window 1
+		World = glm::mat4(1);
+		glm::mat4 TWindowMat = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.5f, -2.0f));
+		World = TWindowMat;
+		window1ubo.amb = 1.0f; window1ubo.gamma = 180.0f; window1ubo.sColor = glm::vec3(1.0f);
+		window1ubo.mvpMat = Prj * View * World;
+		window1ubo.mMat = World;
+		window1ubo.nMat = glm::inverse(glm::transpose(World));
+		DSWindow1.map(currentImage, &window1ubo, sizeof(window1ubo), 0);
+		// Window 2
+		TWindowMat = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.5f, -2.0f));
+		World = TWindowMat;
+		window2ubo.amb = 1.0f; window2ubo.gamma = 180.0f; window2ubo.sColor = glm::vec3(1.0f);
+		window2ubo.mvpMat = Prj * View * World;
+		window2ubo.mMat = World;
+		window2ubo.nMat = glm::inverse(glm::transpose(World));
+		DSWindow2.map(currentImage, &window2ubo, sizeof(window2ubo), 0);
+		// Window 3
+		TWindowMat = glm::translate(glm::mat4(1), glm::vec3(1.0f, 1.5f, -2.0f));
+		World = TWindowMat;
+		window3ubo.amb = 1.0f; window3ubo.gamma = 180.0f; window3ubo.sColor = glm::vec3(1.0f);
+		window3ubo.mvpMat = Prj * View * World;
+		window3ubo.mMat = World;
+		window3ubo.nMat = glm::inverse(glm::transpose(World));
+		DSWindow3.map(currentImage, &window3ubo, sizeof(window3ubo), 0);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
