@@ -20,10 +20,11 @@
 //        mat3  : alignas(16)
 //        mat4  : alignas(16)
 
-struct UniformBufferObject {
+struct PlainUniformBlock {
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
+	alignas(4) float transparency;
 };
 
 struct TileUniformBlock {
@@ -75,11 +76,11 @@ protected:
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo;
-	DescriptorSetLayout DSLTile;
-	DescriptorSetLayout DSLBackground;
-	DescriptorSetLayout DSLTextureOnly;
-	DescriptorSetLayout DSLWindow;
+	DescriptorSetLayout DSLGubo;		// DSL for GlobalUniformBufferObject
+	DescriptorSetLayout DSLTile;		// DSL for Tile objects
+	DescriptorSetLayout DSLGeneric;		// DSL with 1 UNIFORM and 1 TEXTURE
+	DescriptorSetLayout DSLTextureOnly;	// DSL with only 1 TEXTURE
+	DescriptorSetLayout DSLWindow;		// Same as DSL generic but with transparency
 
 	// Vertex formats
 	VertexDescriptor VMesh;
@@ -87,9 +88,8 @@ protected:
 	// Pipelines [Shader couples]
 	Pipeline PTile;
 	Pipeline PBackground;
-	Pipeline PMenu;
+	Pipeline PPlain;
 	Pipeline PWindow;
-	Pipeline PLandscape;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -130,6 +130,9 @@ protected:
 	Texture TLandscape;
 
 	// C++ storage for uniform variables
+	PlainUniformBlock landscapeubo;
+	PlainUniformBlock hubo; //home
+	PlainUniformBlock gameTitleubo;
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
 	BackgroundUniformBlock bgubo;
 	GlobalUniformBlock gubo;
@@ -138,10 +141,7 @@ protected:
 	BackgroundUniformBlock ceilingubo;
 	BackgroundUniformBlock tableubo;
 	BackgroundUniformBlock window1ubo, window2ubo, window3ubo;
-	BackgroundUniformBlock hubo; //home
 	TileUniformBlock tileHubo; //home tile
-	BackgroundUniformBlock gameTitleubo;
-	UniformBufferObject landscapeubo;
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -197,63 +197,28 @@ protected:
 	// Here you load and setup all your Vulkan Models and Textures.
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
-		// Descriptor Layouts [what will be passed to the shaders]
+		// Descriptor Set Layouts
 		DSLTile.init(this, {
-			// this array contains the bindings:
-			// first  element : the binding number
-			// second element : the type of element (buffer or texture)
-			//                  using the corresponding Vulkan constant
-			// third  element : the pipeline stage where it will be used
-			//                  using the corresponding Vulkan constant
 			{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 			});
-
-		DSLBackground.init(this, {
+		DSLGeneric.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 			});
-
 		DSLTextureOnly.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
 			});
-
 		DSLGubo.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 			});
-
+		// REMOVABLE
 		DSLWindow.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 			});
-
 		// Vertex descriptors
 		VMesh.init(this, {
-			// this array contains the bindings
-			// first  element : the binding number
-			// second element : the stride of this binging
-			// third  element : whether this parameter change per vertex or per instance
-			//                  using the corresponding Vulkan constant
 			{0, sizeof(VertexMesh), VK_VERTEX_INPUT_RATE_VERTEX}
 			}, {
-				// this array contains the location
-				// first  element : the binding number
-				// second element : the location number
-				// third  element : the offset of this element in the memory record
-				// fourth element : the data type of the element
-				//                  using the corresponding Vulkan constant
-				// fifth  elmenet : the size in byte of the element
-				// sixth  element : a constant defining the element usage
-				//                   POSITION - a vec3 with the position
-				//                   NORMAL   - a vec3 with the normal vector
-				//                   UV       - a vec2 with a UV coordinate
-				//                   COLOR    - a vec4 with a RGBA color
-				//                   TANGENT  - a vec4 with the tangent vector
-				//                   OTHER    - anything else
-				//
-				// ***************** DOUBLE CHECK ********************
-				//    That the Vertex data structure you use in the "offsetoff" and
-				//	in the "sizeof" in the previous array, refers to the correct one,
-				//	if you have more than one vertex format!
-				// ***************************************************
 				{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, pos),
 					   sizeof(glm::vec3), POSITION},
 				{0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, norm),
@@ -262,28 +227,20 @@ protected:
 					   sizeof(glm::vec2), UV}
 			});
 
-		// Pipelines [Shader couples]
-		// The second parameter is the pointer to the vertex definition
-		// Third and fourth parameters are respectively the vertex and fragment shaders
-		// The last array, is a vector of pointer to the layouts of the sets that will
-		// be used in this pipeline. The first element will be set 0, and so on..
-		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLBackground });
+		// Pipelines 
+		// PPlain --> Pipeline for elements that have to be 'copied' from textures
+		PPlain.init(this, &VMesh, "shaders/PlainVert.spv", "shaders/PlainFrag.spv", {&DSLGeneric});
+		PPlain.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+		// 
+		PBackground.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/BackgroundFrag.spv", { &DSLGubo, &DSLGeneric });
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
 		//PBackground.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
-		PMenu.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/MenuTransparencyFrag.spv", { &DSLGubo, &DSLBackground });
-		PMenu.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
 		PWindow.init(this, &VMesh, "shaders/BackgroundVert.spv", "shaders/WindowFrag.spv", { &DSLGubo, &DSLWindow, &DSLTextureOnly });
 		PWindow.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true); //default values except for last one that is transparency
-		PLandscape.init(this, &VMesh, "shaders/LandscapeVert.spv", "shaders/LandscapeFrag.spv", { &DSLBackground });
+		
+		
 		// Models, textures and Descriptors (values assigned to the uniforms)
-
-		// Create models
-		// The second parameter is the pointer to the vertex definition for this model
-		// The third parameter is the file name
-		// The last is a constant specifying the file type: currently only OBJ or GLTF
-		// Create Background model manually
-		 
 		//home menu coordinates
 		float a = 2.0f;
 		float b = 3.0f;
@@ -295,7 +252,6 @@ protected:
 		};
 		MHome.indices = { 0, 2, 1,    0, 3, 2 };
 		MHome.initMesh(this, &VMesh);
-
 		//Game Title coordinates
 		float c = 1.33f;
 		float hUp = 2.5f;
@@ -431,7 +387,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0; // -1;
+		gameState = 0;
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -441,19 +397,12 @@ protected:
 		// This creates a new pipeline (with the current surface), using its shaders
 		PBackground.create();
 		PTile.create();
-		PMenu.create();
+		PPlain.create();
 		PWindow.create();
-		PLandscape.create();
 
 		// Here you define the data set			//MADE A CYCLE FOR THE 144 DS
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].init(this, &DSLTile, {
-				// the second parameter, is a pointer to the Uniform Set Layout of this set
-				// the last parameter is an array, with one element per binding of the set.
-				// first  elmenet : the binding number
-				// second element : UNIFORM or TEXTURE (an enum) depending on the type
-				// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-				// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
 							{0, UNIFORM, sizeof(TileUniformBlock), nullptr}
 				});
 		}
@@ -467,27 +416,27 @@ protected:
 			{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 			});
 
-		DSBackground.init(this, &DSLBackground, {
+		DSBackground.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TPoolCloth}
 			});
 
-		DSWall.init(this, &DSLBackground, {
+		DSWall.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TWallDragon}
 			});
 
-		DSFloor.init(this, &DSLBackground, {
+		DSFloor.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TFloor}
 			});
 
-		DSCeiling.init(this, &DSLBackground, {
+		DSCeiling.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TCeiling}
 			});
 
-		DSTable.init(this, &DSLBackground, {
+		DSTable.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TTable}
 			});
@@ -506,8 +455,8 @@ protected:
 					{0, TEXTURE, 0, &TWindow}
 			});
 
-		DSLandscape.init(this, &DSLBackground, {
-					{0, UNIFORM, sizeof(UniformBufferObject), nullptr},
+		DSLandscape.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(PlainUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TLandscape}
 			});
 
@@ -516,13 +465,13 @@ protected:
 						{0, UNIFORM, sizeof(TileUniformBlock), nullptr},
 			});
 
-		DSHome.init(this, &DSLBackground, {
-					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+		DSHome.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(PlainUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TPoolCloth}
 			});
 
-		DSGameTitle.init(this, &DSLBackground, {
-					{0, UNIFORM, sizeof(BackgroundUniformBlock), nullptr},
+		DSGameTitle.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(PlainUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TGameTitle}
 			});
 
@@ -534,9 +483,8 @@ protected:
 		// Cleanup pipelines
 		PBackground.cleanup();
 		PTile.cleanup();
-		PMenu.cleanup();
+		PPlain.cleanup();
 		PWindow.cleanup();
-		PLandscape.cleanup();
 
 		// Cleanup datasets
 		DSGubo.cleanup();
@@ -592,7 +540,7 @@ protected:
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
-		DSLBackground.cleanup();
+		DSLGeneric.cleanup();
 		DSLGubo.cleanup();
 		DSLTextureOnly.cleanup();
 		DSLWindow.cleanup();
@@ -600,9 +548,8 @@ protected:
 		// Destroys the pipelines
 		PTile.destroy();
 		PBackground.destroy();
-		PMenu.destroy();
+		PPlain.destroy();
 		PWindow.destroy();
-		PLandscape.destroy();
 	}
 
 	// Here it is the creation of the command buffer:
@@ -610,6 +557,26 @@ protected:
 	// with their buffers and textures
 
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
+
+		// PPlain
+		PPlain.bind(commandBuffer);
+		// Landscape (out of windows)
+		MLandscape.bind(commandBuffer);
+		DSLandscape.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MLandscape.indices.size()), 1, 0, 0, 0);
+		// Home screen background
+		MHome.bind(commandBuffer);
+		DSHome.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MHome.indices.size()), 1, 0, 0, 0);
+		// Game title
+		MGameTitle.bind(commandBuffer);
+		DSGameTitle.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
+
+
 		// Background pipeline binding
 		// PBackground
 
@@ -644,11 +611,6 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MTable.indices.size()), 1, 0, 0, 0);
 
-		//home
-		MHome.bind(commandBuffer);
-		DSHome.bind(commandBuffer, PBackground, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MHome.indices.size()), 1, 0, 0, 0);
 
 		//PTILES
 		
@@ -668,16 +630,8 @@ protected:
 		vkCmdDrawIndexed(commandBuffer, 
 				static_cast<uint32_t>(MTile.indices.size()), 1, 0, 0, 0);
 
-		//PMENU
 
-		PMenu.bind(commandBuffer);
 
-		//Game title
-		MGameTitle.bind(commandBuffer);
-		DSGubo.bind(commandBuffer, PMenu, 0, currentImage);
-		DSGameTitle.bind(commandBuffer, PMenu, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
 		// Windows
 		PWindow.bind(commandBuffer);
 		MWindow.bind(commandBuffer);
@@ -692,13 +646,6 @@ protected:
 		DSWindow3.bind(commandBuffer, PWindow, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
-
-		// PLANDSCAPE
-		PLandscape.bind(commandBuffer);
-		MLandscape.bind(commandBuffer);
-		DSLandscape.bind(commandBuffer, PLandscape, 0, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MLandscape.indices.size()), 1, 0, 0, 0);
 
 	}
 
@@ -907,14 +854,12 @@ protected:
 		// the third parameter is its size
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
-
-		//
 		//Matrix setup for home (menu) screen
 		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.5f, 0.0f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 4.0f);
-		hubo.amb = 1.0f; hubo.gamma = 180.0f; hubo.sColor = glm::vec3(1.0f);
 		hubo.mvpMat = Prj * View * WorldH;
 		hubo.mMat = WorldH;
 		hubo.nMat = glm::inverse(glm::transpose(WorldH));
+		hubo.transparency = 0.0f;
 		DSHome.map(currentImage, &hubo, sizeof(hubo), 0);
 		
 		
@@ -923,9 +868,11 @@ protected:
 		float ROT_SPEED = glm::radians(65.0f);
 		ang += ROT_SPEED * deltaT;
 		tileHubo.transparency = 1.0f;
-		glm::mat4 rotTile = homeMenuWorld * glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, 1.0f, 0.2f)) * 
-			glm::rotate(glm::mat4(1.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f))
-			* glm::scale(glm::mat4(1), glm::vec3(1) * 22.0f);
+		glm::mat4 rotTile = homeMenuWorld * 
+			glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, 1.0f, 0.2f)) * 
+			glm::rotate(glm::mat4(1.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
+			glm::rotate(glm::mat4(1.0f), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(1) * 22.0f);
 		tileHubo.amb = 1.0f; tileHubo.gamma = 180.0f; tileHubo.sColor = glm::vec3(1.0f);
 		tileHubo.mvpMat = Prj * View * rotTile;
 		tileHubo.mMat = rotTile;
@@ -935,10 +882,10 @@ protected:
 		//Matrix setup for Game Title
 		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.1f)) * homeMenuWorld; //* glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0, 1, 0));
 			//* glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
-		gameTitleubo.amb = 1.0f; gameTitleubo.gamma = 180.0f; gameTitleubo.sColor = glm::vec3(1.0f);
 		gameTitleubo.mvpMat = Prj * View * WorldTitle;
 		gameTitleubo.mMat = WorldTitle;
 		gameTitleubo.nMat = glm::inverse(glm::transpose(WorldTitle));
+		gameTitleubo.transparency = 1.0f;
 		DSGameTitle.map(currentImage, &gameTitleubo, sizeof(gameTitleubo), 0);
 		
 		// Matrix setup for background
@@ -1016,6 +963,7 @@ protected:
 		landscapeubo.mvpMat = Prj * View * World;
 		landscapeubo.mMat = World;
 		landscapeubo.nMat = glm::inverse(glm::transpose(World));
+		landscapeubo.transparency = 0.0f;
 		DSLandscape.map(currentImage, &landscapeubo, sizeof(landscapeubo), 0);
 
 		// Matrix setup for tiles
