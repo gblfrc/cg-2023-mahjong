@@ -24,6 +24,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 mvpMat;
 	mat4 mMat;
 	mat4 nMat;
+	float transparency;
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;
@@ -81,9 +82,9 @@ void main() {
 	vec3 DiffSpec2 = BRDF(EyeDir, Norm, L2, texture(tex, fragUV).rgb, 1.1f);
 	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
 
+	float alpha = ubo.transparency * texture(tex, fragUV).a + (1-ubo.transparency);
 	
-	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor2.rgb + Ambient,0.0,1.0), 1.0f);
-	//outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor2.rgb + Ambient,0.0,1.0), texture(tex,fragUV).a);
+	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor2.rgb + Ambient,0.0,1.0), alpha);
 	id = -1;
 
 }
