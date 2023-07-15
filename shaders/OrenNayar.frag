@@ -8,7 +8,22 @@ layout(location = 2) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out int id;
 
-layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
+layout(set = 0, binding = 0) uniform CommonUniformBufferObject {
+	mat4 mvpMat;
+	mat4 mMat;
+	mat4 nMat;
+	float transparency;
+} cubo;
+
+layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {
+	float amb;
+	float gamma;
+	vec3 sColor;
+} subo;
+
+layout(set = 0, binding = 2) uniform sampler2D tex;
+
+layout(set = 1, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 DlightDir;		// direction of the direct light
 	vec3 DlightColor;	// color of the direct light
 	vec3 PlightPos;		//position of the point light
@@ -17,17 +32,6 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	vec3 eyePos;		// position of the viewer
 } gubo;
 
-layout(set = 1, binding = 0) uniform UniformBufferObject {
-	float amb;
-	float gamma;
-	vec3 sColor;
-	mat4 mvpMat;
-	mat4 mMat;
-	mat4 nMat;
-	float transparency;
-} ubo;
-
-layout(set = 1, binding = 1) uniform sampler2D tex;
 
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 	//vec3 V  - direction of the viewer
@@ -82,7 +86,7 @@ void main() {
 	vec3 DiffSpec2 = BRDF(EyeDir, Norm, L2, texture(tex, fragUV).rgb, 1.1f);
 	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
 
-	float alpha = ubo.transparency * texture(tex, fragUV).a + (1-ubo.transparency);
+	float alpha = cubo.transparency * texture(tex, fragUV).a + (1-cubo.transparency);
 	
 	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor2.rgb + Ambient,0.0,1.0), alpha);
 	id = -1;
