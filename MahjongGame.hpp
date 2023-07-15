@@ -75,6 +75,38 @@ public:
 		Tile tile1 = tiles[idx1];
 		int suitIdx0 = tile0.suitIdx;
 		int suitIdx1 = tile1.suitIdx;
+		cout << "Tile0 - left\n";
+		for (int suit : tile0.left) {
+			cout << suit << "\n";
+		}
+		cout << "Tile0 - right\n";
+		for (int suit : tile0.right) {
+			cout << suit << "\n";
+		}
+		cout << "Tile0 - over\n";
+		for (int suit : tile0.over) {
+			cout << suit << "\n";
+		}
+		cout << "Tile0 - under\n";
+		for (int suit : tile0.under) {
+			cout << suit << "\n";
+		}
+		cout << "Tile1 - left\n";
+		for (int suit : tile1.left) {
+			cout << suit << "\n";
+		}
+		cout << "Tile1 - right\n";
+		for (int suit : tile1.right) {
+			cout << suit << "\n";
+		}
+		cout << "Tile1 - over\n";
+		for (int suit : tile1.over) {
+			cout << suit << "\n";
+		}
+		cout << "Tile1 - under\n";
+		for (int suit : tile1.under) {
+			cout << suit << "\n";
+		}
 		bool result = (((suitIdx0 < 40 && suitIdx1 == suitIdx0) ||
 			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
 			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen() && idx0!=idx1);
@@ -99,18 +131,15 @@ public:
 			for (Tile tile : {tile0, tile1}) {
 				// remove current tile index from neighbors
 				for (int leftIdx : tile.left) {
-					Tile leftTile = tiles[leftIdx];
-					leftTile.right.erase(remove(leftTile.right.begin(), leftTile.right.end(), tile.tileIdx), leftTile.right.end());
+					tiles[leftIdx].right.erase(remove(tiles[leftIdx].right.begin(), tiles[leftIdx].right.end(), tile.tileIdx), tiles[leftIdx].right.end());
 				}
 				for (int rightIdx : tile.right) {
-					Tile rightTile = tiles[rightIdx];
-					rightTile.left.erase(remove(rightTile.left.begin(), rightTile.left.end(), tile.tileIdx), rightTile.left.end());
+					tiles[rightIdx].left.erase(remove(tiles[rightIdx].left.begin(), tiles[rightIdx].left.end(), tile.tileIdx), tiles[rightIdx].left.end());
 				}
 				for (int underIdx : tile.under) {
-					Tile underTile = tiles[underIdx];
-					underTile.over.erase(remove(underTile.over.begin(), underTile.over.end(), tile.tileIdx), underTile.over.end());
+					tiles[underIdx].over.erase(remove(tiles[underIdx].over.begin(), tiles[underIdx].over.end(), tile.tileIdx), tiles[underIdx].over.end());
 				}
-				// remove all neightbors from current tile
+				// remove all neighbors from current tile
 				tile.left.clear();
 				tile.right.clear();
 				tile.under.clear();

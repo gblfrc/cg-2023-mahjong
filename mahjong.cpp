@@ -397,7 +397,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;
+		gameState = 0;
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -558,6 +558,7 @@ protected:
 		DSLGeneric.cleanup();
 		DSLGubo.cleanup();
 		DSLTextureOnly.cleanup();
+		DSLPlain.cleanup();
 
 		// Destroys the pipelines
 		PTile.destroy();
@@ -719,15 +720,14 @@ protected:
 				firstTileIndex = -1;
 				secondTileIndex = -1;
 				DisappearingTileTransparency = 1.0f; //not transparent
-				if (handleClick & hoverIndex > -1) {
+				if (handleClick && hoverIndex > -1) {
 					firstTileIndex = hoverIndex;
 					gameState = 1;
 				}
-				
 				break;
 			case 1:
 				//1 piece selected and highlighted
-				if (handleClick & hoverIndex>-1) {
+				if (handleClick && hoverIndex>-1) {
 					secondTileIndex = hoverIndex;
 					gameState = 2;
 				}
@@ -765,7 +765,9 @@ protected:
 				break;
 			case 5:
 				//remove the tile
+				cout << "Entered state 5\n";
 				game.removeTiles(firstTileIndex, secondTileIndex);
+				cout << "Removed tiles";
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
 				//game.removeTiles(firstTileIndex, secondTileIndex);
@@ -842,7 +844,7 @@ protected:
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.PlightPos = glm::vec3(0.0f, 5.0f, 0.0f);	
+		gubo.PlightPos = glm::vec3(0.0f, 3.0f, 0.0f);	
 		gubo.PlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
@@ -859,11 +861,7 @@ protected:
 		// [5-7] - Windows
 		// [8] - Landscape
 		// [9] - Home screen background
-		// [10] - Rotating tile
-		// [11] - Game title
-		CommonUniformBlock commonubo[12];
-
-
+		// [10] - Game title
 
 		// Home screen background
 		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.5f, 0.0f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 4.0f);
@@ -901,6 +899,8 @@ protected:
 		
 		// Matrix setup for background
 		glm::mat4 World = glm::mat4(1);
+		World = glm::translate(glm::mat4(1), glm::vec3(0.04f, 0.0f, 0.0f)) * 
+				glm::scale(glm::mat4(1), glm::vec3(3.55f, 1.0f, 1.4f));
 		bgubo.amb = 1.0f; bgubo.gamma = 180.0f; bgubo.sColor = glm::vec3(1.0f);
 		commonubo[0].mvpMat = Prj * View * World;
 		commonubo[0].mMat = World;
