@@ -142,4 +142,12 @@ public:
 		}
 		return true;
 	}
+
+	bool isWon() {
+		for (Tile tile : tiles) {
+			if (!tile.isRemoved()) return false;
+		}
+		return true;
+	}
+
 };
