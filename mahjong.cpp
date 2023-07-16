@@ -64,10 +64,21 @@ struct GlobalUniformBlock {
 	alignas(16) glm::vec3 eyePos;
 };
 
+struct UIUniformBlock {
+	alignas(4) float visible;
+	alignas(4) float transparency;
+	alignas(4) int objectIdx;
+};
+
 // The vertices data structures
 struct VertexMesh {
 	glm::vec3 pos;
 	glm::vec3 norm;
+	glm::vec2 UV;
+};
+
+struct VertexUI {
+	glm::vec3 pos;
 	glm::vec2 UV;
 };
 
@@ -87,11 +98,13 @@ protected:
 
 	// Vertex formats
 	VertexDescriptor VMesh;
+	VertexDescriptor VUI;
 
 	// Pipelines [Shader couples]
 	Pipeline PPlain;
 	Pipeline PTile;
 	Pipeline PRoughSurfaces;
+	Pipeline PUI;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -105,6 +118,8 @@ protected:
 	Model<VertexMesh> MWindow;
 	Model<VertexMesh> MGameTitle;
 	Model<VertexMesh> MLandscape;
+	Model<VertexUI> MGameOver;
+	Model<VertexUI> MYouWin;
 	Model<VertexMesh> MButton;
 
 	DescriptorSet DSGubo;
@@ -120,6 +135,9 @@ protected:
 	DescriptorSet DSHome;
 	DescriptorSet DSGameTitle;
 	DescriptorSet DSLandscape;
+	// Descriptor sets for UI elements
+	DescriptorSet DSGameOver;
+	DescriptorSet DSYouWin;
 	DescriptorSet DSButton1, DSButton2, DSButton3;
 
 	Texture TPoolCloth;
@@ -131,6 +149,8 @@ protected:
 	Texture TWindow;
 	Texture TGameTitle;
 	Texture TLandscape;
+	Texture TGameOver;
+	Texture TYouWin;
 	//Buttons
 	Texture TButton;
 
@@ -143,6 +163,8 @@ protected:
 	RoughSurfaceUniformBlock ceilingubo;
 	RoughSurfaceUniformBlock tableubo;
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
+	UIUniformBlock gameoverubo;
+	UIUniformBlock youwinubo;
 	TileUniformBlock tileHubo; //rotating tile in home menu screen
 
 	// Geometry blocks for objects different from tiles
@@ -196,9 +218,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 168;
-		texturesInPool = 15;
-		setsInPool = 162;
+		uniformBlocksInPool = 170;
+		texturesInPool = 17;
+		setsInPool = 163;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -221,7 +243,6 @@ protected:
 		DSLPlain.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// common block
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}	// texture
-
 			});
 		DSLGeneric.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// common block
@@ -245,11 +266,23 @@ protected:
 				{0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexMesh, UV),
 					   sizeof(glm::vec2), UV}
 			});
+		VUI.init(this, {
+			{0, sizeof(VertexUI), VK_VERTEX_INPUT_RATE_VERTEX}
+			}, {
+				{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexUI, pos),
+					   sizeof(glm::vec3), POSITION},
+				{0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexUI, UV),
+					   sizeof(glm::vec2), UV}
+			});
+
 
 		// Pipelines 
 		// PPlain --> Pipeline for elements that have to be 'copied' from textures
 		PPlain.init(this, &VMesh, "shaders/PlainVert.spv", "shaders/PlainFrag.spv", { &DSLPlain });
 		PPlain.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+		// PUI --> Pipeline for UI elements
+		PUI.init(this, &VUI, "shaders/UIVert.spv", "shaders/UIFrag.spv", { &DSLPlain });
+		PUI.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, true);
 		// PTile --> Pipeline for objects representing Mahjong tiles
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
@@ -394,6 +427,22 @@ protected:
 		MCeiling.vertices = ceilingVertices;
 		MCeiling.indices = { 0, 1, 2,    2, 1, 3 };
 		MCeiling.initMesh(this, &VMesh);
+		// UI object models
+		// Game over message
+		float gameOverHalfX = 0.5f;
+		float gameOverHalfY = 0.45f;
+		MGameOver.vertices = {
+			{{-gameOverHalfX, -gameOverHalfY, 0.1f},{0.0f, 0.0f}},
+			{{gameOverHalfX, -gameOverHalfY, 0.1f},{1.0f, 0.0f}},
+			{{-gameOverHalfX, gameOverHalfY, 0.1f},{0.0f, 1.0f}},
+			{{gameOverHalfX, gameOverHalfY, 0.1f},{1.0f, 1.0f}},
+		};
+		MGameOver.indices = { 0, 1, 2,    1, 2, 3 };
+		MGameOver.initMesh(this, &VUI);
+		// You win message
+		MYouWin.vertices = MGameOver.vertices;
+		MYouWin.indices = MGameOver.indices;
+		MYouWin.initMesh(this, &VUI);
 		// Import Tile model
 		MTile.init(this, &VMesh, "models/Tile.obj", OBJ);
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
@@ -419,6 +468,8 @@ protected:
 		TWindow.init(this, "textures/room/window.png");
 		TGameTitle.init(this, "textures/title_brush.png");
 		TLandscape.init(this, "textures/room/landscape.jpg");
+		TGameOver.init(this, "textures/ui/gameover.png");
+		TYouWin.init(this, "textures/ui/youwin.png");
 		TButton.init(this, "textures/buttons/button_rounded_edges.png");
 
 		//-------------------------------
@@ -427,7 +478,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;				//INITIAL GAME STATE <-----
+		gameState = 0;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -438,8 +489,19 @@ protected:
 		PRoughSurfaces.create();
 		PTile.create();
 		PPlain.create();
+		PUI.create();
 
 		// Descriptor Sets
+
+		// UI
+		DSGameOver.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(UIUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TGameOver}
+			});
+		DSYouWin.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(UIUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TYouWin}
+			});
 		
 		// Plain
 		DSLandscape.init(this, &DSLPlain, {
@@ -543,8 +605,9 @@ protected:
 		PRoughSurfaces.cleanup();
 		PTile.cleanup();
 		PPlain.cleanup();
+		PUI.cleanup();
 
-		// Cleanup datasets
+		// Cleanup descriptor sets
 		DSGubo.cleanup();
 		DSBackground.cleanup();
 		for (int i = 0; i < 144; i++) {
@@ -559,6 +622,7 @@ protected:
 		DSWindow3.cleanup();
 		DSTileTexture.cleanup();
 		DSLandscape.cleanup();
+
 		//menu
 		DSHTile.cleanup();
 		DSHome.cleanup();
@@ -567,6 +631,8 @@ protected:
 		DSButton2.cleanup();
 		DSButton3.cleanup();
 
+		DSGameOver.cleanup();
+		DSYouWin.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -584,6 +650,8 @@ protected:
 		TWindow.cleanup();
 		TGameTitle.cleanup();
 		TLandscape.cleanup();
+		TGameOver.cleanup();
+		TYouWin.cleanup();
 		TButton.cleanup();
 
 		// Cleanup models
@@ -597,6 +665,8 @@ protected:
 		MWindow.cleanup();
 		MGameTitle.cleanup();
 		MLandscape.cleanup();
+		MGameOver.cleanup();
+		MYouWin.cleanup();
 		MButton.cleanup();
 
 		// Cleanup descriptor set layouts
@@ -610,6 +680,7 @@ protected:
 		PTile.destroy();
 		PRoughSurfaces.destroy();
 		PPlain.destroy();
+		PUI.destroy();
 	}
 
 	// Here it is the creation of the command buffer:
@@ -647,8 +718,6 @@ protected:
 		DSButton3.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
-
-
 
 		// PTile
 		//
@@ -709,6 +778,18 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
 
+		// PUI
+		PUI.bind(commandBuffer);
+		// Game over
+		MGameOver.bind(commandBuffer);
+		DSGameOver.bind(commandBuffer, PUI, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MGameOver.indices.size()), 1, 0, 0, 0);
+		// You win!
+		MYouWin.bind(commandBuffer);
+		DSYouWin.bind(commandBuffer, PUI, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MYouWin.indices.size()), 1, 0, 0, 0);
 	}
 
 	// Here is where you update the uniforms.
@@ -827,7 +908,18 @@ protected:
 			case 5:
 				//remove the tile
 				game.removeTiles(firstTileIndex, secondTileIndex);
-				cout << "GAME OVER: " << game.isGameOver() << "\n";
+				if (game.isGameOver()) {
+					gameoverubo.visible = 1.0f;
+					youwinubo.visible = 0.0f;
+				} else {
+					gameoverubo.visible = 0.0f;
+					if (game.isWon()) {
+						youwinubo.visible = 1.0f;
+					}
+					else {
+						youwinubo.visible = 0.0f;
+					}
+				}
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
 				//game.removeTiles(firstTileIndex, secondTileIndex);
@@ -912,6 +1004,16 @@ protected:
 
 		// Writes value to the GPU
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
+
+		// UI elements
+		// Game over message
+		gameoverubo.transparency = 1.0f;
+		gameoverubo.objectIdx = -1;		
+		DSGameOver.map(currentImage, &gameoverubo, sizeof(gameoverubo), 0);
+		// Victory message
+		youwinubo.transparency = 1.0f;
+		youwinubo.objectIdx = -1;
+		DSYouWin.map(currentImage, &youwinubo, sizeof(youwinubo), 0);
 
 		// Indices for commonubo
 		// [0] - Background
