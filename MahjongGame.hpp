@@ -70,7 +70,6 @@ public:
 			tiles.push_back(newTile);
 			suitVectors[newTile.getSuitVectorIndex()].push_back(tileIdx);
 		}
-		printSuitVectors();
 	}
 
 	//returns true if the two tiles whose tile_indexes are passed as parameters can be removed from the game together

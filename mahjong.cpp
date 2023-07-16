@@ -120,6 +120,7 @@ protected:
 	Model<VertexMesh> MLandscape;
 	Model<VertexUI> MGameOver;
 	Model<VertexUI> MYouWin;
+	Model<VertexMesh> MButton;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -137,6 +138,7 @@ protected:
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
+	DescriptorSet DSButton1, DSButton2, DSButton3;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -149,9 +151,11 @@ protected:
 	Texture TLandscape;
 	Texture TGameOver;
 	Texture TYouWin;
+	//Buttons
+	Texture TButton;
 
 	// C++ storage for uniform variables
-	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock
+	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
 	RoughSurfaceUniformBlock bgubo;
 	GlobalUniformBlock gubo;
 	RoughSurfaceUniformBlock wallubo;
@@ -159,9 +163,9 @@ protected:
 	RoughSurfaceUniformBlock ceilingubo;
 	RoughSurfaceUniformBlock tableubo;
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
-	TileUniformBlock tileHubo; // rotating tile in home screen
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
+	TileUniformBlock tileHubo; //rotating tile in home menu screen
 
 	// Geometry blocks for objects different from tiles
 	// [0] - Background
@@ -173,7 +177,10 @@ protected:
 	// [8] - Landscape
 	// [9] - Home screen background
 	// [10] - Game title
-	CommonUniformBlock commonubo[11];
+	// [11] - Button1
+	// [12] - Button1
+	// [13] - Button1
+	CommonUniformBlock commonubo[14];
 
 	// Other application parameters
 	int tileTextureIdx = 3;
@@ -211,9 +218,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 167;
-		texturesInPool = 14;
-		setsInPool = 160;
+		uniformBlocksInPool = 170;
+		texturesInPool = 17;
+		setsInPool = 163;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -283,8 +290,14 @@ protected:
 		PRoughSurfaces.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/OrenNayarFrag.spv", { &DSLGeneric, &DSLGubo });
 		PRoughSurfaces.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
 
+		//----------------------------
 		// Models, textures and Descriptors (values assigned to the uniforms)
-		//home menu coordinates
+		
+
+		//----------------------------
+		// MODELS CREATION
+		
+		//home menu base coordinates
 		float a = 2.0f;
 		float b = 3.0f;
 		MHome.vertices = {
@@ -295,18 +308,31 @@ protected:
 		};
 		MHome.indices = { 0, 2, 1,    0, 3, 2 };
 		MHome.initMesh(this, &VMesh);
-		//Game Title coordinates
-		float c = 1.33f;
+		//Game Title base coordinates
+		float half_width_for_vert = 1.33f; 
 		float hUp = 2.5f;
 		float hDown = 1.5f;
-		MGameTitle.vertices = {
-			{{-c, hUp, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }},
-			{ {c, hUp, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f} },
-			{ {c, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f} },
-			{ {-c, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f} },
+		MGameTitle.vertices = { 
+			{{-half_width_for_vert, hUp, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, 
+			{ {half_width_for_vert, hUp, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f} }, 
+			{ {half_width_for_vert, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f} }, 
+			{ {-half_width_for_vert, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f} }, 
 		};
 		MGameTitle.indices = { 0, 2, 1,    0, 3, 2 };
 		MGameTitle.initMesh(this, &VMesh);
+
+		// Button base coordinates
+		half_width_for_vert = 1.0f; 
+		hUp = 1.0f;
+		hDown = 0.0f;
+		MButton.vertices = { 
+			{{-half_width_for_vert, hUp, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, 
+			{ {half_width_for_vert, hUp, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f} }, 
+			{ {half_width_for_vert, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f} },
+			{ {-half_width_for_vert, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f} },
+		};
+		MButton.indices = { 0, 2, 1,    0, 3, 2 };
+		MButton.initMesh(this, &VMesh);
 
 		// Background
 		float side = 0.25f;
@@ -422,7 +448,9 @@ protected:
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
 
+		//----------------------------
 		// Create the TEXTURES
+		
 		// The second parameter is the file name
 		TPoolCloth.init(this, "textures/background/poolcloth.png");
 		const char* tileTextureFiles[4] = {
@@ -442,13 +470,15 @@ protected:
 		TLandscape.init(this, "textures/room/landscape.jpg");
 		TGameOver.init(this, "textures/ui/gameover.png");
 		TYouWin.init(this, "textures/ui/youwin.png");
+		TButton.init(this, "textures/buttons/button_rounded_edges.png");
 
+		//-------------------------------
 		// Init local variables
 		CamH = 1.0f;
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;
+		gameState = 0;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -485,6 +515,18 @@ protected:
 		DSGameTitle.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TGameTitle}
+			});
+		DSButton1.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TButton}
+			});
+		DSButton2.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TButton}
+			});
+		DSButton3.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TButton}
 			});
 
 		// Tile
@@ -580,9 +622,15 @@ protected:
 		DSWindow3.cleanup();
 		DSTileTexture.cleanup();
 		DSLandscape.cleanup();
+
+		//menu
 		DSHTile.cleanup();
 		DSHome.cleanup();
 		DSGameTitle.cleanup();
+		DSButton1.cleanup();
+		DSButton2.cleanup();
+		DSButton3.cleanup();
+
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 	}
@@ -604,6 +652,7 @@ protected:
 		TLandscape.cleanup();
 		TGameOver.cleanup();
 		TYouWin.cleanup();
+		TButton.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -618,6 +667,7 @@ protected:
 		MLandscape.cleanup();
 		MGameOver.cleanup();
 		MYouWin.cleanup();
+		MButton.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -640,6 +690,7 @@ protected:
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
 		// PPlain
+		//
 		PPlain.bind(commandBuffer);
 		// Landscape (out of windows)
 		MLandscape.bind(commandBuffer);
@@ -656,8 +707,20 @@ protected:
 		DSGameTitle.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
+		//Button1
+		MButton.bind(commandBuffer);
+		DSButton1.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+		DSButton2.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+		DSButton3.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
 
 		// PTile
+		//
 		// Tiles in main structure
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
@@ -675,6 +738,7 @@ protected:
 
 
 		// PRoughSurfaces
+		//
 		PRoughSurfaces.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PRoughSurfaces, 1, currentImage);
 		// Background for game
@@ -902,7 +966,7 @@ protected:
 			CamYaw = initialYaw;
 			
 			/*
-			//not final to start game
+			//not final, to start game with fire button?
 			if (gameState == -1) {
 				gameState = 0;
 			}
@@ -910,6 +974,7 @@ protected:
 		}
 		
 		
+		//if in menu, fix the camera at a certain point
 		if (gameState == -1) {
 			CamRadius = 5.0f; //lower to be closer to green board in the menu
 			CamPitch = 0.0f;
@@ -960,6 +1025,7 @@ protected:
 		// [8] - Landscape
 		// [9] - Home screen background
 		// [10] - Game title
+		// [11] - Button1
 
 		// Home screen background
 		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.5f, 0.0f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 4.0f);
@@ -968,6 +1034,30 @@ protected:
 		commonubo[9].nMat = glm::inverse(glm::transpose(WorldH));
 		commonubo[9].transparency = 0.0f;
 		DSHome.map(currentImage, &commonubo[9], sizeof(commonubo[9]), 0);
+
+		//Button1
+		glm::mat4 WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 1.0f, 0.1f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		commonubo[11].mvpMat = Prj * View * WorldB;
+		commonubo[11].mMat = WorldB;
+		commonubo[11].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[11].transparency = 1.0f;
+		DSButton1.map(currentImage, &commonubo[11], sizeof(commonubo[11]), 0);
+
+		//Button2
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.1f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		commonubo[12].mvpMat = Prj * View * WorldB;
+		commonubo[12].mMat = WorldB;
+		commonubo[12].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[12].transparency = 1.0f;
+		DSButton2.map(currentImage, &commonubo[12], sizeof(commonubo[12]), 0);
+
+		//Button3
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.0f, 0.1f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		commonubo[13].mvpMat = Prj * View * WorldB;
+		commonubo[13].mMat = WorldB;
+		commonubo[13].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[13].transparency = 1.0f;
+		DSButton3.map(currentImage, &commonubo[13], sizeof(commonubo[13]), 0);
 		
 		
 		//Matrix setup for rotating tile
