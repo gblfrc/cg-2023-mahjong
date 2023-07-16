@@ -930,7 +930,7 @@ protected:
 
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 0.25f, 20.0f); //minumum and maximum zoom of the cam
+		CamRadius = glm::clamp(CamRadius, 0.20f, 20.0f); //minumum and maximum zoom of the cam
 
 
 		CamPitch -= r.x * rotSpeed * deltaT;

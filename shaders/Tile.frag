@@ -52,14 +52,17 @@ void main() {
 	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), ubo.gamma);
 	vec3 Ambient = LA * MA;
 
-
-	vec3 MHover = vec3(0.0f);
-	if(ubo.hoverIdx==ubo.tileIdx) MHover = vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
-
-	vec3 MSelected = vec3(0.0f);
-	if(ubo.selectedIdx==ubo.tileIdx) MSelected = 1.3f*vec3(255.0f/255.0f, 103.0f/255.0f, 102.0f/255.0f);
-	
-	//vec3 MHover = (1+ubo.hoverIdx)*vec3(77.0f, 77.0f, 255.0f); //blue color
+	// Compute hover coefficient:
+	// Subtract the tile idx from the hover idx: only if they coincide, the subtraction will return 0
+	// Normalize the result to fit into the [-1,1] range (included the case in which mouse hovers on -1)
+	// Compute absolute value. Values are now in the [0,1] range, 0 only if hoverIdx == tileIdx
+	// Compute ceiling: all non-zero values will become 1
+	// Invert to have 1 when hovering and 0 otherwise
+	float hoverCoeff = 1-ceil(abs((ubo.hoverIdx-ubo.tileIdx)/144.0f)); 
+	vec3 MHover = hoverCoeff * vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
+	// Similar procedure as for hover coefficient
+	float selectCoeff = 1-ceil(abs((ubo.selectedIdx - ubo.tileIdx)/144.0f));
+	vec3 MSelected = selectCoeff * 1.3f * vec3(255.0f/255.0f, 103.0f/255.0f, 102.0f/255.0f);
 
 	outColor = vec4(clamp((Lambert + Blinn + Ambient)+MHover+MSelected,0.0f, 1.0f), alpha);
 	id = ubo.tileIdx;
