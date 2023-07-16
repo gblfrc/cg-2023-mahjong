@@ -35,4 +35,11 @@ class Tile {
 		bool isRemoved() {
 			return (left.size() == 0 && right.size() == 0 && under.size() == 0 && over.size() == 0);
 		}
+
+		int getSuitVectorIndex() {
+			if (suitIdx < 37) return suitIdx - suitIdx / 10;
+			if (suitIdx >= 40 && suitIdx < 44) return 34;
+			//if (tileIdx >= 44) 
+			return 35;
+		}
 };

@@ -154,7 +154,7 @@ protected:
 	CommonUniformBlock commonubo[11];
 
 	// Other application parameters
-	int tileTextureIdx = 0;
+	int tileTextureIdx = 3;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -380,7 +380,7 @@ protected:
 			"textures/tiles/tiles_white_resized.png",
 			"textures/tiles/tiles_dark_resized.png",
 			"textures/tiles/tiles_lucky_resized.png",
-			"textures/tiles/tiles_white_resized.png",
+			"textures/tiles/tiles_botanical_resized.png",
 		};
 		TTile.initFour(this, tileTextureFiles);
 		// Initialize other textures
@@ -765,9 +765,8 @@ protected:
 				break;
 			case 5:
 				//remove the tile
-				cout << "Entered state 5\n";
 				game.removeTiles(firstTileIndex, secondTileIndex);
-				cout << "Removed tiles";
+				cout << "GAME OVER: " << game.isGameOver() << "\n";
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
 				//game.removeTiles(firstTileIndex, secondTileIndex);

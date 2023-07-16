@@ -14,6 +14,7 @@ class MahjongGame {
 public:
 	vector<Tile> tiles;
 	bool isInitialized;
+	vector<int> suitVectors[36];
 
 	MahjongGame(string path) {
 		isInitialized = true;
@@ -65,8 +66,11 @@ public:
 				coords.push_back(coord.value());
 			}
 			glm::vec3 position = glm::vec3(coords[0], coords[1], coords[2]);
-			tiles.push_back(Tile(tileIdx, suits[tileIdx], over, under, left, right, position));
+			Tile newTile = Tile(tileIdx, suits[tileIdx], over, under, left, right, position);
+			tiles.push_back(newTile);
+			suitVectors[newTile.getSuitVectorIndex()].push_back(tileIdx);
 		}
+		printSuitVectors();
 	}
 
 	//returns true if the two tiles whose tile_indexes are passed as parameters can be removed from the game together
@@ -75,38 +79,6 @@ public:
 		Tile tile1 = tiles[idx1];
 		int suitIdx0 = tile0.suitIdx;
 		int suitIdx1 = tile1.suitIdx;
-		cout << "Tile0 - left\n";
-		for (int suit : tile0.left) {
-			cout << suit << "\n";
-		}
-		cout << "Tile0 - right\n";
-		for (int suit : tile0.right) {
-			cout << suit << "\n";
-		}
-		cout << "Tile0 - over\n";
-		for (int suit : tile0.over) {
-			cout << suit << "\n";
-		}
-		cout << "Tile0 - under\n";
-		for (int suit : tile0.under) {
-			cout << suit << "\n";
-		}
-		cout << "Tile1 - left\n";
-		for (int suit : tile1.left) {
-			cout << suit << "\n";
-		}
-		cout << "Tile1 - right\n";
-		for (int suit : tile1.right) {
-			cout << suit << "\n";
-		}
-		cout << "Tile1 - over\n";
-		for (int suit : tile1.over) {
-			cout << suit << "\n";
-		}
-		cout << "Tile1 - under\n";
-		for (int suit : tile1.under) {
-			cout << suit << "\n";
-		}
 		bool result = (((suitIdx0 < 40 && suitIdx1 == suitIdx0) ||
 			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
 			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen() && idx0!=idx1);
@@ -143,8 +115,31 @@ public:
 				tile.left.clear();
 				tile.right.clear();
 				tile.under.clear();
+				// remove current tile from related suit vector
+				int svi = tile.getSuitVectorIndex();
+				suitVectors[svi].erase(remove(suitVectors[svi].begin(), suitVectors[svi].end(), tile.tileIdx), suitVectors[svi].end());
 			}
 		}
 	}
 
+	void printSuitVectors() {
+		for (int i = 0; i < 36; i++) {
+			cout << "Vector " << i << ": [";
+			for (int index : suitVectors[i]) {
+				cout << index << ", ";
+			}
+			cout << "]\n";
+		}
+	}
+
+	bool isGameOver() {
+		for (vector<int> suitVector : suitVectors) {
+			int count = 0;
+			for (int index : suitVector) {
+				if (tiles[index].isOpen()) count++;
+			}
+			if (count > 1) return false;
+		}
+		return true;
+	}
 };
