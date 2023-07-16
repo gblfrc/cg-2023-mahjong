@@ -11,6 +11,7 @@ class Tile {
 		std::vector<int> left;
 		std::vector<int> right;
 		glm::vec3 position;
+		bool isRemoved = false;
 
 		Tile(int tileIdx, int suitIdx,
 			std::vector<int> over,
@@ -30,10 +31,6 @@ class Tile {
 
 		bool isOpen() {
 			return (over.size() == 0 && (left.size() == 0 ||right.size() == 0));
-		}
-
-		bool isRemoved() {
-			return (left.size() == 0 && right.size() == 0 && under.size() == 0 && over.size() == 0);
 		}
 
 		int getSuitVectorIndex() {

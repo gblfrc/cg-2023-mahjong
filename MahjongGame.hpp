@@ -114,6 +114,8 @@ public:
 				tile.left.clear();
 				tile.right.clear();
 				tile.under.clear();
+				// set current tile as removed
+				tile.isRemoved = true;
 				// remove current tile from related suit vector
 				int svi = tile.getSuitVectorIndex();
 				suitVectors[svi].erase(remove(suitVectors[svi].begin(), suitVectors[svi].end(), tile.tileIdx), suitVectors[svi].end());
@@ -144,7 +146,7 @@ public:
 
 	bool isWon() {
 		for (Tile tile : tiles) {
-			if (!tile.isRemoved()) return false;
+			if (!tile.isRemoved) return false;
 		}
 		return true;
 	}
