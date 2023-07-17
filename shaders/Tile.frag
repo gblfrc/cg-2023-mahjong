@@ -9,9 +9,9 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out int id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
-	vec3 DlightDir;		// direction of the direct light
-	vec3 DlightColor;	// color of the direct light
-	vec3 PlightPos;		//position of the point light
+	float beta;			// decay factor for point light
+	float g;			// distance parameter for point light
+	vec3 PlightPos;		// position of the point light
 	vec3 PlightColor;	// color of the point light
 	vec3 AmbLightColor;	// ambient light
 	vec3 eyePos;		// position of the viewer
@@ -36,11 +36,13 @@ layout(set = 2, binding = 0) uniform sampler2DArray tex;
 
 void main() {
 
-	vec3 N = normalize(fragNorm);				// surface normal
-	vec3 V = normalize(gubo.eyePos - fragPos);	// viewer direction
-	vec3 L = normalize(gubo.DlightDir);			// light direction
-	vec3 H = normalize(L + V);					// half vector for Blinn BRDF
-	float alpha = ubo.transparency;				// transparency of the tile
+	vec3 N = normalize(fragNorm);								// surface normal
+	vec3 V = normalize(gubo.eyePos - fragPos);					// viewer direction
+	vec3 L = normalize(gubo.PlightPos - fragPos);				// light direction
+	vec3 H = normalize(L + V);									// half vector for Blinn BRDF
+	float intensityCoeff = pow((gubo.g/length(gubo.PlightPos - fragPos)), gubo.beta);
+	vec3 I = intensityCoeff * gubo.PlightColor;					// Light intensity
+	float alpha = ubo.transparency;								// transparency of the tile
 
 	vec3 albedo = texture(tex, vec3(fragUV, ubo.textureIdx)).rgb;
 	vec3 MD = albedo;

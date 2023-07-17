@@ -56,12 +56,12 @@ struct SmoothSurfaceUniformBlock {
 };
 
 struct GlobalUniformBlock {
-	alignas(16) glm::vec3 DlightDir;
-	alignas(16) glm::vec3 DlightColor;
-	alignas(16) glm::vec3 PlightPos;
-	alignas(16) glm::vec3 PlightColor;
-	alignas(16) glm::vec3 AmbLightColor;
-	alignas(16) glm::vec3 eyePos;
+	alignas(4) float beta;					// decay factor of the point light
+	alignas(4) float g;						// distance parameter for point light
+	alignas(16) glm::vec3 PlightPos;		// point light position
+	alignas(16) glm::vec3 PlightColor;		// original color of the point light
+	alignas(16) glm::vec3 AmbLightColor;	// ambient color
+	alignas(16) glm::vec3 eyePos;			// viewer position
 };
 
 struct UIUniformBlock {
@@ -505,7 +505,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;				//INITIAL GAME STATE <-----
+		gameState = 0;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -1115,10 +1115,10 @@ protected:
 		//BUFFERS FILLING
 		//--------------------------
 
-		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
-		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.PlightPos = glm::vec3(0.0f, 3.0f, 0.0f);	
-		gubo.PlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		gubo.PlightColor = glm::vec3(10.0f);
+		gubo.beta = 2.0f;
+		gubo.g = 1.0f;
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
 
@@ -1379,8 +1379,8 @@ protected:
 			World = Tbase * Tmat * Smat; // translate tile in position
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; 
-			tileubo[i].gamma = 200.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
-			tileubo[i].sColor = glm::vec3(1.0f);
+			tileubo[i].gamma = 300.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
+			tileubo[i].sColor = glm::vec3(0.4f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;

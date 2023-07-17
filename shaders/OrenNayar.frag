@@ -24,9 +24,9 @@ layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {
 layout(set = 0, binding = 2) uniform sampler2D tex;
 
 layout(set = 1, binding = 0) uniform GlobalUniformBufferObject {
-	vec3 DlightDir;		// direction of the direct light
-	vec3 DlightColor;	// color of the direct light
-	vec3 PlightPos;		//position of the point light
+	float beta;			// decay factor for point light
+	float g;			// distance parameter for point light
+	vec3 PlightPos;		// position of the point light
 	vec3 PlightColor;	// color of the point light
 	vec3 AmbLightColor;	// ambient light
 	vec3 eyePos;		// position of the viewer
@@ -55,40 +55,23 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 	vec3 elle = Md*clamp(dotLN, 0.0f, 1.0f);
 	vec3 fDiffuseON = elle*(a+b*g*sin(alpha)*tan(beta));
 
-	//Lambert 
-	vec3 fDiffuseLambert = Md * max(dot(L, N), 0.0f);
-	
-	//return vec3(1,0,0);
-	return (fDiffuseLambert + fDiffuseON);
+	return fDiffuseON;
 }
 
 void main() {
-	const float betaPoint1 = 0.2f;	// decay exponent of the pointlight
-	const float gPoint1 = 0.6f;
-	const float betaPoint2 = 0.1f;	// decay exponent of the pointlight
-	const float gPoint2 = 0.8f;
-	vec3 Norm = normalize(fragNorm);
-	vec3 EyeDir = normalize(gubo.eyePos - fragPos);
-	
-	//vec3 lightDir = gubo.DlightDir;
-	//vec3 lightColor = gubo.DlightColor.rgb;
-	//vec3 lightPosition = vec3(0.0f, 10.0f, 0.0f);
-	vec3 lightPosition1 = gubo.PlightPos;
-	vec3 lightPosition2 = vec3(30.0f, 1.0f, 1.5f);	//hard coded for now, maybe in the future put a second PlightPos in the UBO
 
-	//pointlight
-	vec3 L1 = (lightPosition1 - fragPos)/length(lightPosition1 - fragPos);
-	vec3 lightColor1 = vec3( gubo.PlightColor*pow( gPoint1 / length(lightPosition1 - fragPos) , betaPoint1) );
-	vec3 L2 = (lightPosition2 - fragPos)/length(lightPosition2 - fragPos);
-	vec3 lightColor2 = vec3( gubo.PlightColor*pow( gPoint2 / length(lightPosition2 - fragPos) , betaPoint2) );
+	vec3 N = normalize(fragNorm);
+	vec3 V = normalize(gubo.eyePos - fragPos);
+	vec3 L = normalize(gubo.PlightPos - fragPos);
+	// point light intensity
+	vec3 I = gubo.PlightColor * pow(gubo.g/length(gubo.PlightPos - fragPos), gubo.beta);
 
-	vec3 DiffSpec1 = BRDF(EyeDir, Norm, L1, texture(tex, fragUV).rgb, 1.1f);
-	vec3 DiffSpec2 = BRDF(EyeDir, Norm, L2, texture(tex, fragUV).rgb, 1.1f);
-	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
+	vec3 diffuseON = BRDF(V, N, L, texture(tex, fragUV).rgb, 1.1f);
+	vec3 Ambient = texture(tex, fragUV).rgb;
 
 	float alpha = cubo.transparency * texture(tex, fragUV).a + (1-cubo.transparency);
 	
-	outColor = vec4(clamp(0.95*(DiffSpec1)*lightColor1.rgb + 0.95*(DiffSpec2)*lightColor2.rgb + Ambient,0.0,1.0), alpha);
+	outColor = vec4(clamp(0.95*(diffuseON)*I.rgb + Ambient * 0.05f,0.0,1.0), alpha);
 	id = -1;
 
 }
