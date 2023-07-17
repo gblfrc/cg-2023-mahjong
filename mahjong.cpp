@@ -142,6 +142,7 @@ protected:
 	DescriptorSet DSButton1, DSButton2, DSButton3;
 	DescriptorSet DSArrowButton1_left, DSArrowButton2_left, DSArrowButton3_left;
 	DescriptorSet DSArrowButton1_right, DSArrowButton2_right, DSArrowButton3_right;
+	DescriptorSet DSPlayButton;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -157,6 +158,7 @@ protected:
 	//Buttons
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
+	Texture TPlayButton;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
@@ -190,7 +192,8 @@ protected:
 	// [17] - Arrow Right 1
 	// [18] - Arrow Right 2
 	// [19] - Arrow Right 3
-	CommonUniformBlock commonubo[20];
+	// [20] - Play button
+	CommonUniformBlock commonubo[21];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -228,9 +231,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 300; //176;
-		texturesInPool = 40;//18;
-		setsInPool = 300;// 169;
+		uniformBlocksInPool = 300; //177;
+		texturesInPool = 40;//19;
+		setsInPool = 300;// 170;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -494,6 +497,7 @@ protected:
 		TButton.init(this, "textures/buttons/button_rounded_edges.png");
 		TArrowButtonLeft.init(this, "textures/buttons/arrow_button_left.png");
 		TArrowButtonRight.init(this, "textures/buttons/arrow_button_right.png");
+		TPlayButton.init(this, "textures/buttons/button_with_plant.png");	//TO CHANGE
 		
 		//-------------------------------
 		// Init local variables
@@ -576,7 +580,10 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TArrowButtonRight}
 			});
-
+		DSPlayButton.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TPlayButton}
+			});
 		// Tile
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].init(this, &DSLTile, {
@@ -684,6 +691,7 @@ protected:
 		DSArrowButton1_right.cleanup();
 		DSArrowButton2_right.cleanup();
 		DSArrowButton3_right.cleanup();
+		DSPlayButton.cleanup();
 
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
@@ -709,6 +717,7 @@ protected:
 		TButton.cleanup();
 		TArrowButtonLeft.cleanup();
 		TArrowButtonRight.cleanup();
+		TPlayButton.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -795,6 +804,11 @@ protected:
 		DSArrowButton3_right.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
+		//Play button
+		MButton.bind(commandBuffer);
+		DSPlayButton.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
 
 		// PTile
 		//
@@ -1109,6 +1123,7 @@ protected:
 		// [17] - Arrow Right 1
 		// [18] - Arrow Right 2
 		// [19] - Arrow Right 3
+		// [20] - Play button
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1191,6 +1206,14 @@ protected:
 		commonubo[19].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[19].transparency = 1.0f;
 		DSArrowButton3_right.map(currentImage, &commonubo[19], sizeof(commonubo[19]), 0);
+
+		//Play button
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.5f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.5f);
+		commonubo[20].mvpMat = Prj * View * WorldB;
+		commonubo[20].mMat = WorldB;
+		commonubo[20].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[20].transparency = 1.0f;
+		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
 		
 		//Matrix setup for rotating tile
@@ -1199,7 +1222,7 @@ protected:
 		ang += ROT_SPEED * deltaT;
 		tileHubo.transparency = 1.0f;
 		glm::mat4 rotTile = translateUp * homeMenuWorld *
-			glm::translate(glm::mat4(1.0f), glm::vec3(-2.2f, -0.0f, 0.2f)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.0f, 0.2f)) *
 			glm::rotate(glm::mat4(1.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
 			glm::rotate(glm::mat4(1.0f), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(1) * 35.0f);
