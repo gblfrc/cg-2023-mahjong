@@ -1016,6 +1016,16 @@ protected:
 				//remove the tile
 				game.removeTiles(firstTileIndex, secondTileIndex);
 				cout << "Game over: " << game.isGameOver() << endl;
+				if (game.isWon() || game.isGameOver()) {
+					gameState = 6;
+				}
+				disappearedTiles[firstTileIndex] = true;
+				disappearedTiles[secondTileIndex] = true;
+				//game.removeTiles(firstTileIndex, secondTileIndex);
+				//go back to initial state
+				gameState = 0;
+				break;
+			case 6:
 				if (game.isWon()) {
 					youwinubo.visible = 1.0f;
 					gameoverubo.visible = 0.0f;
@@ -1027,12 +1037,16 @@ protected:
 					youwinubo.visible = 0.0f;
 					PlaySound(TEXT("sounds/retro_error_long_tone.wav"), NULL, SND_FILENAME | SND_ASYNC);
 					std::cout << "\n------\nYou Lost!\n------\n";
-				} 
-				disappearedTiles[firstTileIndex] = true;
-				disappearedTiles[secondTileIndex] = true;
-				//game.removeTiles(firstTileIndex, secondTileIndex);
-				//go back to initial state
-				gameState = 0;
+				}
+				//PRESS ENTER TO GO BACK TO MENU
+				if (enter) {
+					//go back to menu
+					gameState = -1;
+					//reinitialise game
+					for (int j = 0; j < 144; j++) {
+						disappearedTiles[j] = false;
+					}
+				}
 				break;
 
 		}
