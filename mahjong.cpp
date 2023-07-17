@@ -1019,10 +1019,14 @@ protected:
 				if (game.isWon()) {
 					youwinubo.visible = 1.0f;
 					gameoverubo.visible = 0.0f;
+					PlaySound(TEXT("sounds/clapping_people.wav"), NULL, SND_FILENAME | SND_ASYNC);
+					std::cout << "\n------\nVictory!\n------\n";
 				}
 				else if (game.isGameOver()) {
 					gameoverubo.visible = 1.0f;
 					youwinubo.visible = 0.0f;
+					PlaySound(TEXT("sounds/retro_error_long_tone.wav"), NULL, SND_FILENAME | SND_ASYNC);
+					std::cout << "\n------\nYou Lost!\n------\n";
 				} 
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
