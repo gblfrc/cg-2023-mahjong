@@ -1936,7 +1936,7 @@ protected:
 		}
 	}
 		
-	void getSixAxis(float &deltaT, glm::vec3 &m, glm::vec3 &r, bool &fire, bool &click) {
+	void getSixAxis(float &deltaT, glm::vec3 &m, glm::vec3 &r, bool &fire, bool &click, bool &enter) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
 		static float lastTime = 0.0f;
 		
@@ -1985,6 +1985,9 @@ protected:
 		}
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {	//left click
 			click = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_ENTER)) {		//Press enter
+			enter = true;
 		}
 
 		//Update on mouse scroll

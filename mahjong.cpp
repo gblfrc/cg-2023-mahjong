@@ -886,6 +886,11 @@ protected:
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
+
+		//---------------------
+		//GETTING COMMANDS IMPUTS
+		//---------------------
+
 		// Standard procedure to quit when the ESC key is pressed
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
@@ -895,8 +900,10 @@ protected:
 		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
 		bool fire = false;
 		bool click = false;
-		getSixAxis(deltaT, m, r, fire, click);
+		bool enter = false;
+		getSixAxis(deltaT, m, r, fire, click, enter); 
 		//std::cout << "\nclicked is :" << clicked<<"\n";
+		//std::cout << "\nEnter: " << enter << " \n";
 		
 		// getSixAxis() is defined in Starter.hpp in the base class.
 		// It fills the float point variable passed in its first parameter with the time
@@ -937,15 +944,24 @@ protected:
 
 		if(handleClick) std::cout << "\nClick on tile: " << pixels[index]<<"\n";
 
+
+
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
 
+
+		//--------------------------
+		// STATE MACHINE FOR THE GAME
+		// -------------------------
+		bool enterPressedFirstTime = false;
 		//std:cout << "\nGameState: " << gameState<<"\n";	//DEBUG PRINT
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
-				//show menu overlay
-				// disable commands?
+				if (enter) {
+					gameState = 0;
+					enterPressedFirstTime = true;
+				}
 				//get clicks to change textures and shaders
 				break;
 			case 0:
@@ -1017,17 +1033,34 @@ protected:
 
 		}
 
+		//---------------------------
+		//CAMERA SETTINGS
+		//---------------------------
 
-
+		//Change position accoring to received commands
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 0.20f, 20.0f); //minumum and maximum zoom of the cam
-
+		CamRadius = glm::clamp(CamRadius, 0.20f, 10.0f); //minumum and maximum zoom of the cam //REDUCE MAXIMUM ZOOOM <------------
 
 		CamPitch -= r.x * rotSpeed * deltaT;
 		CamPitch = glm::clamp(CamPitch, glm::radians(0.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
 
 		CamYaw += r.y * rotSpeed * deltaT;
+
+		//Game logic: overwrites coordinates if fire (space) is pressed and released
+		//Bring to initial position
+		if (handleFire || enterPressedFirstTime) { //replace hanfleFire with "wasFire" to have event happen upon pressing and not release of fire key
+			//glm::vec3 
+			CamRadius = initialCamRadius;
+			CamPitch = initialPitch;
+			CamYaw = initialYaw;
+		}
+		//if in menu, fix the camera at a certain point
+		if (gameState == -1) {
+			CamRadius = 4.0f; //lower to be closer to green board in the menu
+			CamPitch = 0.0f;
+			CamYaw = 0.0f;
+		}
 
 
 		/* da usare insieme a ubo perch� servono le matrici
@@ -1042,34 +1075,9 @@ protected:
 						0.1f, 10.0f); ==  glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		ubo.proj[1][1] *= -1;*/
 
+
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
-
-		//Game logic: overwrites coordinates if fire (space) is pressed and released
-		//Bring to initial position
-		if (handleFire) { //replace hanfleFire with "wasFire" to have event happen upon pressing and not release of fire key
-			//glm::vec3 
-			CamRadius = initialCamRadius;
-			CamPitch = initialPitch;
-			CamYaw = initialYaw;
-			
-			/*
-			//not final, to start game with fire button?
-			if (gameState == -1) {
-				gameState = 0;
-			}
-			*/
-		}
-		
-		
-		//if in menu, fix the camera at a certain point
-		
-		if (gameState == -1) {
-			CamRadius = 4.0f; //lower to be closer to green board in the menu
-			CamPitch = 0.0f;
-			CamYaw = 0.0f;
-		}
-		
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
@@ -1083,6 +1091,11 @@ protected:
 
 
 		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0, 1, 0));
+
+
+		//--------------------------
+		//BUFFERS FILLING
+		//--------------------------
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1,2,3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
