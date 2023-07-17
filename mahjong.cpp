@@ -193,7 +193,7 @@ protected:
 	CommonUniformBlock commonubo[20];
 
 	// Other application parameters
-	int tileTextureIdx = 3;
+	int tileTextureIdx = 0;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -224,7 +224,7 @@ protected:
 		windowWidth = 1200;
 		windowHeight = 900;
 		windowTitle = "Mahjong";
-		windowResizable = GLFW_TRUE;
+		windowResizable = GLFW_FALSE;
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
@@ -985,18 +985,15 @@ protected:
 			case 5:
 				//remove the tile
 				game.removeTiles(firstTileIndex, secondTileIndex);
-				if (game.isGameOver()) {
+				cout << "Game over: " << game.isGameOver() << endl;
+				if (game.isWon()) {
+					youwinubo.visible = 1.0f;
+					gameoverubo.visible = 0.0f;
+				}
+				else if (game.isGameOver()) {
 					gameoverubo.visible = 1.0f;
 					youwinubo.visible = 0.0f;
-				} else {
-					gameoverubo.visible = 0.0f;
-					if (game.isWon()) {
-						youwinubo.visible = 1.0f;
-					}
-					else {
-						youwinubo.visible = 0.0f;
-					}
-				}
+				} 
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
 				//game.removeTiles(firstTileIndex, secondTileIndex);
@@ -1010,7 +1007,7 @@ protected:
 
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 0.25f, 20.0f); //minumum and maximum zoom of the cam
+		CamRadius = glm::clamp(CamRadius, 0.20f, 20.0f); //minumum and maximum zoom of the cam
 
 
 		CamPitch -= r.x * rotSpeed * deltaT;
@@ -1316,7 +1313,7 @@ protected:
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
-			float scaleFactor = game.tiles[i].isRemoved() ? 0.0f : 1.0f;
+			float scaleFactor = game.tiles[i].isRemoved ? 0.0f : 1.0f;
 			//float scaleFactor = 0.0f;
 			glm::mat4 Tbase = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation

@@ -1180,9 +1180,8 @@ protected:
 			if (modes[i].width > maxWidth) maxWidth = modes[i].width;
 			if (modes[i].height > maxHeight) maxHeight = modes[i].height;
 		}
-		return maxWidth * maxHeight; // should contain integers, which are 4-byte elements
+		return maxWidth * maxHeight;
 	}
-
 
 	void createColorResources() {
 		// Color image
