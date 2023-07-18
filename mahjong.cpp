@@ -118,7 +118,7 @@ protected:
 	Model<VertexMesh> MLandscape;
 	Model<VertexUI> MGameOver;
 	Model<VertexUI> MYouWin;
-	Model<VertexMesh> MButton;
+	Model<VertexMesh> MPlainRectangle;
 	Model<VertexMesh> MArrowButton;
 
 	DescriptorSet DSGubo;
@@ -142,6 +142,7 @@ protected:
 	DescriptorSet DSArrowButton1_right, DSArrowButton2_right, DSArrowButton3_right;
 	DescriptorSet DSPlayButton;
 	DescriptorSet DSSelection1, DSSelection2, DSSelection3;
+	DescriptorSet DSTileText;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -161,6 +162,7 @@ protected:
 	Texture TSelection1;
 	Texture TSelection2;
 	Texture TSelection3;
+	Texture TTileSelText;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
@@ -173,7 +175,8 @@ protected:
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
-	TileUniformBlock tileHubo; //rotating tile in home menu screen
+	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
+	CommonUniformBlock tileSelTextubo;
 
 	// Geometry blocks for objects different from tiles
 	// [0] - Background
@@ -201,7 +204,7 @@ protected:
 	CommonUniformBlock commonubo[24];
 
 	// Other application parameters
-	int tileTextureIdx = 1;
+	int tileTextureIdx = 0;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -344,14 +347,14 @@ protected:
 		half_width_for_vert = 1.0f; 
 		hUp = 1.0f;
 		hDown = 0.0f;
-		MButton.vertices = { 
+		MPlainRectangle.vertices = { 
 			{{-half_width_for_vert, hUp, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, 
 			{ {half_width_for_vert, hUp, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 0.0f} }, 
 			{ {half_width_for_vert, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{1.0f, 1.0f} },
 			{ {-half_width_for_vert, hDown, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 1.0f} },
 		};
-		MButton.indices = { 0, 2, 1,    0, 3, 2 };
-		MButton.initMesh(this, &VMesh);
+		MPlainRectangle.indices = { 0, 2, 1,    0, 3, 2 };
+		MPlainRectangle.initMesh(this, &VMesh);
 
 		//Arrow base coordinates
 		float squareSide = 1.0f;
@@ -490,6 +493,16 @@ protected:
 			"textures/tiles/tiles_botanical_resized.png",
 		};
 		TTile.initFour(this, tileTextureFiles);
+
+		//Tiles style selcetion names
+		const char* tileNamesTextureFiles[4] = {
+			"textures/buttons/white_tiles_text.png",
+			"textures/buttons/black_tiles_text.png",
+			"textures/buttons/lucky_tiles_text.png",
+			"textures/buttons/botanical_tiles_text.png",
+		};
+		TTileSelText.initFour(this, tileNamesTextureFiles);
+
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
@@ -604,6 +617,10 @@ protected:
 		DSSelection3.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TSelection3}
+			});
+		DSTileText.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TTileSelText}						//ARRAY OF TEXTURES?
 			});
 		// Tile
 		for (int i = 0; i < 144; i++) {
@@ -759,7 +776,7 @@ protected:
 		MLandscape.cleanup();
 		MGameOver.cleanup();
 		MYouWin.cleanup();
-		MButton.cleanup();
+		MPlainRectangle.cleanup();
 		MArrowButton.cleanup();
 
 		// Cleanup descriptor set layouts
@@ -801,28 +818,28 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
 		//Buttons
-		MButton.bind(commandBuffer);
+		MPlainRectangle.bind(commandBuffer);
 		DSButton1.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSButton2.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSButton3.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSSelection1.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSSelection2.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSSelection3.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSPlayButton.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		//Arrow buttons
 		MArrowButton.bind(commandBuffer);
 		DSArrowButton1_left.bind(commandBuffer, PPlain, 0, currentImage);
@@ -996,6 +1013,17 @@ protected:
 					gameState = 0;
 					enterPressedFirstTime = true;
 				}
+				if (handleClick /*&& //button index*/) {
+					tileTextureIdx++;
+					if (tileTextureIdx == 4) tileTextureIdx = 0;
+				}
+				/*
+				if(handleClick /*&& //button index) {
+					tileTextureIdx--;
+					if (tileTextureIdx == -1) tileTextureIdx = 3;
+				}
+				*/
+				std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";
 				//get clicks to change textures and shaders
 				break;
 			case 0:
@@ -1189,8 +1217,11 @@ protected:
 		// [18] - Arrow Right 2
 		// [19] - Arrow Right 3
 		// [20] - Play button
+		// [21] - Game setting
+		// [22] - Tile type selection title
+		// [23] - Board design selection title
 
-		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.5f));
+		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
 		// Home screen background
 		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.5f, 0.0f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 4.0f);
@@ -1307,7 +1338,7 @@ protected:
 		//Matrix setup for rotating tile
 		static float ang = 0.0f;
 		ang += homeTileRotSpeed * deltaT;
-		tileHubo.transparency = 1.0f;
+		tileHomeubo.transparency = 1.0f;
 		glm::mat4 rotTile = translateUp * homeMenuWorld *
 			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.4f, 0.2f)) *
 			glm::rotate(glm::mat4(1), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
@@ -1316,16 +1347,16 @@ protected:
 			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
 			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.00675f, 0.0f));
-		tileHubo.amb = 10.0f;
-		tileHubo.gamma = 300.0f;
-		tileHubo.sColor = glm::vec3(0.4f);
-		tileHubo.mvpMat = Prj * View * rotTile;
-		tileHubo.mMat = rotTile;
-		tileHubo.nMat = glm::inverse(glm::transpose(rotTile));
-		tileHubo.tileIdx = -1;
-		tileHubo.suitIdx = 10;
-		tileHubo.textureIdx = tileTextureIdx;
-		DSHTile.map(currentImage, &tileHubo, sizeof(tileHubo), 0);
+		tileHomeubo.amb = 10.0f;
+		tileHomeubo.gamma = 300.0f;
+		tileHomeubo.sColor = glm::vec3(0.4f);
+		tileHomeubo.mvpMat = Prj * View * rotTile;
+		tileHomeubo.mMat = rotTile;
+		tileHomeubo.nMat = glm::inverse(glm::transpose(rotTile));
+		tileHomeubo.tileIdx = -2;
+		tileHomeubo.suitIdx = 10;
+		tileHomeubo.textureIdx = tileTextureIdx;
+		DSHTile.map(currentImage, &tileHomeubo, sizeof(tileHomeubo), 0);
 
 		//Matrix setup for Game Title
 		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.6f);
