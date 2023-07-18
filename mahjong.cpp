@@ -211,6 +211,7 @@ protected:
 
 	// Other application parameters
 	int tileTextureIdx = 0;
+	int boardTextureIdx = 0;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -530,7 +531,6 @@ protected:
 		TSelection1.init(this, "textures/buttons/settings.png");
 		TSelection2.init(this, "textures/buttons/tileDesign.png");
 		TSelection3.init(this, "textures/buttons/boardStyle.png");
-		TPlayButton.init(this, "textures/buttons/button_with_plant.png");	//TO CHANGE
 		TLion.init(this, "textures/room/lion.png");
 		
 		//-------------------------------
@@ -755,9 +755,8 @@ protected:
 		DSSelection1.cleanup();
 		DSSelection2.cleanup();
 		DSSelection3.cleanup();
+		DSTileText.cleanup();
 
-		DSGameOver.cleanup();
-		DSYouWin.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -785,6 +784,7 @@ protected:
 		TSelection2.cleanup();
 		TSelection3.cleanup();
 		TLion.cleanup();
+		TTileSelText.cleanup(); 
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -1048,14 +1048,22 @@ protected:
 					gameState = 0;
 					enterPressedFirstTime = true;
 				}
-				if (handleClick /*&& //button index*/) {
+				if (handleClick /*&& //Arrow 1 right button index*/) {
 					tileTextureIdx++;
 					if (tileTextureIdx == 4) tileTextureIdx = 0;
 				}
 				/*
-				if(handleClick /*&& //button index) {
+				if(handleClick /*&& //Arrow 1 left button index) {
 					tileTextureIdx--;
 					if (tileTextureIdx == -1) tileTextureIdx = 3;
+				}
+				if (handleClick /*&& //Arrow 1 right button index) {
+					boardTextureIdx++;
+					if (boardTextureIdx == 4) tileTextureIdx = 0;
+				}
+				if (handleClick /*&& //Arrow 1 left button index) {
+					boardTextureIdx--;
+					if (boardTextureIdx == -1) tileTextureIdx = 3;
 				}
 				*/
 				std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";
