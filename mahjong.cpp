@@ -1067,26 +1067,26 @@ protected:
 				}
 
 				//get clicks to change textures and shaders
-				/*
-				if (handleClick /*&& //Arrow 1 right button index) {
+				
+				if (handleClick && hoverIndex==-42) {
 					tileTextureIdx++;
 					if (tileTextureIdx == 4) tileTextureIdx = 0;
 				}
-				/*
-				if(handleClick /*&& //Arrow 1 left button index) {
+				
+				if(handleClick && hoverIndex == -41) {
 					tileTextureIdx--;
 					if (tileTextureIdx == -1) tileTextureIdx = 3;
-				}*/
-				if (handleClick /*&& //Arrow 1 right button index*/) {
+				}
+				if (handleClick && hoverIndex == -44) {
 					
 					boardTextureIdx++;
 					if (boardTextureIdx == 4) boardTextureIdx = 0;
 				}
-				/*
-				if (handleClick /*&& //Arrow 1 left button index) {
+				
+				if (handleClick && hoverIndex == -43) {
 					boardTextureIdx--;
 					if (boardTextureIdx == -1) boardTextureIdx = 3;
-				}*/
+				}
 				/**/
 				//std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";						//DEBUG
 				//std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
