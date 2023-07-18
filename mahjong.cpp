@@ -44,9 +44,7 @@ struct TileUniformBlock {
 
 struct RoughSurfaceUniformBlock {
 	alignas(4) float amb;
-	alignas(4) float gamma;
-	alignas(16) glm::vec3 sColor;
-	alignas(4) float transparency;
+	alignas(4) float sigma;
 };
 
 struct SmoothSurfaceUniformBlock {
@@ -196,7 +194,7 @@ protected:
 	CommonUniformBlock commonubo[21];
 
 	// Other application parameters
-	int tileTextureIdx = 0;
+	int tileTextureIdx = 1;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -212,6 +210,7 @@ protected:
 	//other parameters
 	int gameState = 0;
 	float DisappearingTileTransparency = 1.0f;
+	const float homeTileRotSpeed = glm::radians(100.0f);
 	int firstTileIndex = -1;
 	int secondTileIndex = -1;
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
@@ -505,7 +504,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;				//INITIAL GAME STATE <-----
+		gameState = -1;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -587,7 +586,7 @@ protected:
 		// Tile
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].init(this, &DSLTile, {
-							{0, UNIFORM, sizeof(TileUniformBlock), nullptr}
+						{0, UNIFORM, sizeof(TileUniformBlock), nullptr}
 				});
 		}
 		DSHTile.init(this, &DSLTile, {
@@ -1117,8 +1116,8 @@ protected:
 
 		gubo.PlightPos = glm::vec3(0.0f, 3.0f, 0.0f);	
 		gubo.PlightColor = glm::vec3(10.0f);
-		gubo.beta = 2.0f;
-		gubo.g = 1.0f;
+		gubo.beta = 1.0f;
+		gubo.g = 0.5f;
 		gubo.AmbLightColor = glm::vec3(0.1f);
 		gubo.eyePos = camPos;
 
@@ -1156,7 +1155,7 @@ protected:
 		// [19] - Arrow Right 3
 		// [20] - Play button
 
-		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
+		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.5f));
 
 		// Home screen background
 		glm::mat4 WorldH = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -4.5f, 0.0f)) * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 4.0f);
@@ -1246,21 +1245,27 @@ protected:
 		commonubo[20].transparency = 1.0f;
 		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
-		
 		//Matrix setup for rotating tile
 		static float ang = 0.0f;
-		float ROT_SPEED = glm::radians(65.0f);
-		ang += ROT_SPEED * deltaT;
+		ang += homeTileRotSpeed * deltaT;
 		tileHubo.transparency = 1.0f;
 		glm::mat4 rotTile = translateUp * homeMenuWorld *
-			glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.0f, 0.2f)) *
-			glm::rotate(glm::mat4(1.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
-			glm::rotate(glm::mat4(1.0f), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(1) * 35.0f);
-		tileHubo.amb = 1.0f; tileHubo.gamma = 180.0f; tileHubo.sColor = glm::vec3(1.0f);
+			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.0f, 0.2f)) *
+			glm::rotate(glm::mat4(1), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+			glm::rotate(glm::mat4(1), glm::sin(ang)+0.5f, glm::vec3(0.0f, 0.0f, 1.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(35.0f)) *
+			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
+			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.00675f, 0.0f));
+		tileHubo.amb = 10.0f;
+		tileHubo.gamma = 300.0f;
+		tileHubo.sColor = glm::vec3(0.4f);
 		tileHubo.mvpMat = Prj * View * rotTile;
 		tileHubo.mMat = rotTile;
 		tileHubo.nMat = glm::inverse(glm::transpose(rotTile));
+		tileHubo.tileIdx = -1;
+		tileHubo.suitIdx = 10;
+		tileHubo.textureIdx = tileTextureIdx;
 		DSHTile.map(currentImage, &tileHubo, sizeof(tileHubo), 0);
 
 		//Matrix setup for Game Title
@@ -1276,7 +1281,7 @@ protected:
 		glm::mat4 World = glm::mat4(1);
 		World = glm::translate(glm::mat4(1), glm::vec3(0.04f, 0.0f, 0.0f)) * 
 				glm::scale(glm::mat4(1), glm::vec3(3.55f, 1.0f, 1.4f));
-		bgubo.amb = 1.0f; bgubo.gamma = 180.0f; bgubo.sColor = glm::vec3(1.0f);
+		bgubo.amb = 1.0f; bgubo.sigma = 1.1f;
 		commonubo[0].mvpMat = Prj * View * World;
 		commonubo[0].mMat = World;
 		commonubo[0].nMat = glm::inverse(glm::transpose(World));
@@ -1286,7 +1291,7 @@ protected:
 
 		// Matrix setup for walls
 		World = glm::mat4(1);
-		wallubo.amb = 1.0f; wallubo.gamma = 180.0f; wallubo.sColor = glm::vec3(1.0f);
+		wallubo.amb = 1.0f; wallubo.sigma = 1.1f;
 		commonubo[1].mvpMat = Prj * View * World;
 		commonubo[1].mMat = World;
 		commonubo[1].nMat = glm::inverse(glm::transpose(World));
@@ -1296,7 +1301,7 @@ protected:
 
 		// Matrix setup for floor
 		World = glm::mat4(1);
-		floorubo.amb = 1.0f; floorubo.gamma = 180.0f; floorubo.sColor = glm::vec3(1.0f);
+		floorubo.amb = 1.0f; floorubo.sigma = 1.1f;
 		commonubo[3].mvpMat = Prj * View * World;
 		commonubo[3].mMat = World;
 		commonubo[3].nMat = glm::inverse(glm::transpose(World));
@@ -1306,7 +1311,7 @@ protected:
 
 		// Matrix setup for ceiling
 		World = glm::mat4(1);
-		ceilingubo.amb = 1.0f; ceilingubo.gamma = 180.0f; ceilingubo.sColor = glm::vec3(1.0f);
+		ceilingubo.amb = 1.0f; ceilingubo.sigma = 1.1f;
 		commonubo[2].mvpMat = Prj * View * World;
 		commonubo[2].mMat = World;
 		commonubo[2].nMat = glm::inverse(glm::transpose(World));
@@ -1316,7 +1321,7 @@ protected:
 
 		// Matrix setup for table
 		World = glm::mat4(1);
-		tableubo.amb = 1.0f; tableubo.gamma = 180.0f; tableubo.sColor = glm::vec3(1.0f);
+		tableubo.amb = 20.0f; tableubo.sigma = 1.1f;
 		commonubo[4].mvpMat = Prj * View * World;
 		commonubo[4].mMat = World;
 		commonubo[4].nMat = glm::inverse(glm::transpose(World));
@@ -1329,7 +1334,7 @@ protected:
 		World = glm::mat4(1);
 		glm::mat4 TWindowMat = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.5f, -2.0f));
 		World = TWindowMat;
-		window1ubo.amb = 1.0f; window1ubo.gamma = 180.0f; window1ubo.sColor = glm::vec3(1.0f);
+		window1ubo.amb = 1.0f; window1ubo.sigma = 1.1f;
 		commonubo[5].mvpMat = Prj * View * World;
 		commonubo[5].mMat = World;
 		commonubo[5].nMat = glm::inverse(glm::transpose(World));
@@ -1339,7 +1344,7 @@ protected:
 		// Window 2
 		TWindowMat = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.5f, -2.0f));
 		World = TWindowMat;
-		window2ubo.amb = 1.0f; window2ubo.gamma = 180.0f; window2ubo.sColor = glm::vec3(1.0f);
+		window2ubo.amb = 1.0f; window2ubo.sigma = 1.1f;
 		commonubo[6].mvpMat = Prj * View * World;
 		commonubo[6].mMat = World;
 		commonubo[6].nMat = glm::inverse(glm::transpose(World));
@@ -1349,7 +1354,7 @@ protected:
 		// Window 3
 		TWindowMat = glm::translate(glm::mat4(1), glm::vec3(1.0f, 1.5f, -2.0f));
 		World = TWindowMat;
-		window3ubo.amb = 1.0f; window3ubo.gamma = 180.0f; window3ubo.sColor = glm::vec3(1.0f);
+		window3ubo.amb = 1.0f; window3ubo.sigma = 1.1f;
 		commonubo[7].mvpMat = Prj * View * World;
 		commonubo[7].mMat = World;
 		commonubo[7].nMat = glm::inverse(glm::transpose(World));
