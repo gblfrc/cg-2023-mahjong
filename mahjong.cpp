@@ -143,6 +143,7 @@ protected:
 	DescriptorSet DSArrowButton1_left, DSArrowButton2_left, DSArrowButton3_left;
 	DescriptorSet DSArrowButton1_right, DSArrowButton2_right, DSArrowButton3_right;
 	DescriptorSet DSPlayButton;
+	DescriptorSet DSSelection1, DSSelection2, DSSelection3;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -159,6 +160,9 @@ protected:
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
 	Texture TPlayButton;
+	Texture TSelection1;
+	Texture TSelection2;
+	Texture TSelection3;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
@@ -193,7 +197,10 @@ protected:
 	// [18] - Arrow Right 2
 	// [19] - Arrow Right 3
 	// [20] - Play button
-	CommonUniformBlock commonubo[21];
+	// [21] - Game setting
+	// [22] - Tile type selection title
+	// [23] - Board design selection title
+	CommonUniformBlock commonubo[24];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -497,7 +504,10 @@ protected:
 		TButton.init(this, "textures/buttons/button_rounded_edges.png");
 		TArrowButtonLeft.init(this, "textures/buttons/arrow_button_left.png");
 		TArrowButtonRight.init(this, "textures/buttons/arrow_button_right.png");
-		TPlayButton.init(this, "textures/buttons/button_with_plant.png");	//TO CHANGE
+		TPlayButton.init(this, "textures/buttons/button_with_plant.png");
+		TSelection1.init(this, "textures/buttons/settings.png");
+		TSelection2.init(this, "textures/buttons/tileDesign.png");
+		TSelection3.init(this, "textures/buttons/boardStyle.png");
 		
 		//-------------------------------
 		// Init local variables
@@ -505,7 +515,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;				//INITIAL GAME STATE <-----
+		gameState = -1;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -583,6 +593,18 @@ protected:
 		DSPlayButton.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TPlayButton}
+			});
+		DSSelection1.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TSelection1}
+			});
+		DSSelection2.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TSelection2}
+			});
+		DSSelection3.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TSelection3}
 			});
 		// Tile
 		for (int i = 0; i < 144; i++) {
@@ -692,6 +714,9 @@ protected:
 		DSArrowButton2_right.cleanup();
 		DSArrowButton3_right.cleanup();
 		DSPlayButton.cleanup();
+		DSSelection1.cleanup();
+		DSSelection2.cleanup();
+		DSSelection3.cleanup();
 
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
@@ -718,6 +743,9 @@ protected:
 		TArrowButtonLeft.cleanup();
 		TArrowButtonRight.cleanup();
 		TPlayButton.cleanup();
+		TSelection1.cleanup();
+		TSelection2.cleanup();
+		TSelection3.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -784,6 +812,18 @@ protected:
 		DSButton3.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+		DSSelection1.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+		DSSelection2.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+		DSSelection3.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
+		DSPlayButton.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
 		//Arrow buttons
 		MArrowButton.bind(commandBuffer);
 		DSArrowButton1_left.bind(commandBuffer, PPlain, 0, currentImage);
@@ -804,11 +844,6 @@ protected:
 		DSArrowButton3_right.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
-		//Play button
-		MButton.bind(commandBuffer);
-		DSPlayButton.bind(commandBuffer, PPlain, 0, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MButton.indices.size()), 1, 0, 0, 0);
 
 		// PTile
 		//
@@ -1167,7 +1202,7 @@ protected:
 		DSHome.map(currentImage, &commonubo[9], sizeof(commonubo[9]), 0);
 
 		//Button1
-		glm::mat4 WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		glm::mat4 WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.15f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
 		commonubo[11].mvpMat = Prj * View * WorldB;
 		commonubo[11].mMat = WorldB;
 		commonubo[11].nMat = glm::inverse(glm::transpose(WorldB));
@@ -1175,23 +1210,23 @@ protected:
 		DSButton1.map(currentImage, &commonubo[11], sizeof(commonubo[11]), 0);
 
 		//Button2
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.8f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
 		commonubo[12].mvpMat = Prj * View * WorldB;
 		commonubo[12].mMat = WorldB;
 		commonubo[12].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[12].transparency = 1.0f;
 		DSButton2.map(currentImage, &commonubo[12], sizeof(commonubo[12]), 0);
 
-		//Button3
+		/*//Button3
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[13].mvpMat = Prj * View * WorldB;
 		commonubo[13].mMat = WorldB;
 		commonubo[13].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[13].transparency = 1.0f;
-		DSButton3.map(currentImage, &commonubo[13], sizeof(commonubo[13]), 0);
+		DSButton3.map(currentImage, &commonubo[13], sizeof(commonubo[13]), 0);*/
 
 		//Arrow button 1 Left
-		glm::mat4 WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 1.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		glm::mat4 WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.35f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[14].mvpMat = Prj * View * WorldA_B;
 		commonubo[14].mMat = WorldA_B;
 		commonubo[14].nMat = glm::inverse(glm::transpose(WorldA_B));
@@ -1199,23 +1234,23 @@ protected:
 		DSArrowButton1_left.map(currentImage, &commonubo[14], sizeof(commonubo[14]), 0);
 
 		//Arrow button 2 Left
-		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.35f, -1.65f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[15].mvpMat = Prj * View * WorldA_B;
 		commonubo[15].mMat = WorldA_B;
 		commonubo[15].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[15].transparency = 1.0f;
 		DSArrowButton2_left.map(currentImage, &commonubo[15], sizeof(commonubo[15]), 0);
 
-		//Arrow button 3 Left
+		/*//Arrow button 3 Left
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[16].mvpMat = Prj * View * WorldA_B;
 		commonubo[16].mMat = WorldA_B;
 		commonubo[16].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[16].transparency = 1.0f;
-		DSArrowButton3_left.map(currentImage, &commonubo[16], sizeof(commonubo[16]), 0);
+		DSArrowButton3_left.map(currentImage, &commonubo[16], sizeof(commonubo[16]), 0);*/
 
 		//Arrow button 1 Right
-		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.5f, 1.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.7f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[17].mvpMat = Prj * View * WorldA_B;
 		commonubo[17].mMat = WorldA_B;
 		commonubo[17].nMat = glm::inverse(glm::transpose(WorldA_B));
@@ -1223,37 +1258,60 @@ protected:
 		DSArrowButton1_right.map(currentImage, &commonubo[17], sizeof(commonubo[17]), 0);
 
 		//Arrow button 2 Right
-		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.5f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.7f, -1.65f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[18].mvpMat = Prj * View * WorldA_B;
 		commonubo[18].mMat = WorldA_B;
 		commonubo[18].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[18].transparency = 1.0f;
 		DSArrowButton2_right.map(currentImage, &commonubo[18], sizeof(commonubo[18]), 0);
 
-		//Arrow button 3 Right
+		/*//Arrow button 3 Right
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.5f, -1.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[19].mvpMat = Prj * View * WorldA_B;
 		commonubo[19].mMat = WorldA_B;
 		commonubo[19].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[19].transparency = 1.0f;
-		DSArrowButton3_right.map(currentImage, &commonubo[19], sizeof(commonubo[19]), 0);
+		DSArrowButton3_right.map(currentImage, &commonubo[19], sizeof(commonubo[19]), 0);*/
 
 		//Play button
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.5f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.5f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.6f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.5f);
 		commonubo[20].mvpMat = Prj * View * WorldB;
 		commonubo[20].mMat = WorldB;
 		commonubo[20].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[20].transparency = 1.0f;
 		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
-		
+		//Game settings title
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.7f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f, 0.5f, 1.0f) * 1.4f);
+		commonubo[21].mvpMat = Prj * View * WorldB;
+		commonubo[21].mMat = WorldB;
+		commonubo[21].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[21].transparency = 1.0f;
+		DSSelection1.map(currentImage, &commonubo[21], sizeof(commonubo[21]), 0);
+
+		//tile selection title 
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.05f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f, 0.5f, 1.0f) * 0.8f);
+		commonubo[22].mvpMat = Prj * View * WorldB;
+		commonubo[22].mMat = WorldB;
+		commonubo[22].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[22].transparency = 1.0f;
+		DSSelection2.map(currentImage, &commonubo[22], sizeof(commonubo[22]), 0);
+
+		//board selection title
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.6f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f, 0.45f, 1.0f) * 0.8f);
+		commonubo[23].mvpMat = Prj * View * WorldB;
+		commonubo[23].mMat = WorldB;
+		commonubo[23].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[23].transparency = 1.0f;
+		DSSelection3.map(currentImage, &commonubo[23], sizeof(commonubo[23]), 0);
+		 
 		//Matrix setup for rotating tile
 		static float ang = 0.0f;
 		float ROT_SPEED = glm::radians(65.0f);
 		ang += ROT_SPEED * deltaT;
 		tileHubo.transparency = 1.0f;
 		glm::mat4 rotTile = translateUp * homeMenuWorld *
-			glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.0f, 0.2f)) *
+			glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.4f, 0.2f)) *
 			glm::rotate(glm::mat4(1.0f), ang * glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
 			glm::rotate(glm::mat4(1.0f), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(1) * 35.0f);
@@ -1264,7 +1322,7 @@ protected:
 		DSHTile.map(currentImage, &tileHubo, sizeof(tileHubo), 0);
 
 		//Matrix setup for Game Title
-		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.5f);
+		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.6f);
 			//* glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
 		commonubo[10].mvpMat = Prj * View * WorldTitle;
 		commonubo[10].mMat = WorldTitle;
