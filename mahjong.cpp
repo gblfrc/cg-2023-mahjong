@@ -147,7 +147,7 @@ protected:
 	DescriptorSet DSArrowButton1_right, DSArrowButton2_right, DSArrowButton3_right;
 	DescriptorSet DSPlayButton;
 	DescriptorSet DSSelection1, DSSelection2, DSSelection3;
-	DescriptorSet DSTileText;
+	DescriptorSet DSTileSelText;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -529,6 +529,9 @@ protected:
 		};
 		TTileSelText.initFour(this, tileNamesTextureFiles);
 
+		//TO DO: ADD Background style selection names
+		//------------------------
+
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
@@ -646,9 +649,9 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TSelection3}
 			});
-		DSTileText.init(this, &DSLPlain, {
+		DSTileSelText.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
-				{1, TEXTURE, 0, &TTileSelText}						//ARRAY OF TEXTURES?
+				{1, TEXTURE, 0, &TTileSelText}
 			});
 		// Tile
 		for (int i = 0; i < 144; i++) {
@@ -770,7 +773,7 @@ protected:
 		DSSelection1.cleanup();
 		DSSelection2.cleanup();
 		DSSelection3.cleanup();
-		DSTileText.cleanup();
+		DSTileSelText.cleanup();
 
 	}
 
@@ -878,6 +881,9 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSPlayButton.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
+		DSTileSelText.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		//Arrow buttons
@@ -1315,6 +1321,15 @@ protected:
 		commonubo[11].transparency = 1.0f;
 		commonubo[11].textureIdx = 0;
 		DSButton1.map(currentImage, &commonubo[11], sizeof(commonubo[11]), 0);
+
+		//Tile Selection Text
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.15f, 0.13f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
+		tileSelTextubo.mvpMat = Prj * View * WorldB;
+		tileSelTextubo.mMat = WorldB;
+		tileSelTextubo.nMat = glm::inverse(glm::transpose(WorldB));
+		tileSelTextubo.transparency = 1.0f;
+		tileSelTextubo.textureIdx = tileTextureIdx;
+		DSTileSelText.map(currentImage, &tileSelTextubo, sizeof(tileSelTextubo), 0);
 
 		//Button2
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.8f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
