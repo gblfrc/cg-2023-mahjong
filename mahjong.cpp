@@ -1178,6 +1178,8 @@ protected:
 				cout << "Game over: " << game.isGameOver() << endl;
 				if (game.isWon() || game.isGameOver()) {
 					gameState = 6;
+					cout << "\nCIAONE\n" ;
+					break;
 				}
 				disappearedTiles[firstTileIndex] = true;
 				disappearedTiles[secondTileIndex] = true;
@@ -1201,6 +1203,8 @@ protected:
 				//PRESS ENTER TO GO BACK TO MENU
 				if (enter) {
 					//go back to menu
+					gameoverubo.visible = 0.0f;
+					youwinubo.visible = 0.0f;
 					gameState = -1;
 					//reinitialise game
 					for (int j = 0; j < 144; j++) {
