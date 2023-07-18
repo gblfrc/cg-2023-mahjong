@@ -148,6 +148,7 @@ protected:
 	DescriptorSet DSPlayButton;
 	DescriptorSet DSSelection1, DSSelection2, DSSelection3;
 	DescriptorSet DSTileSelText;
+	DescriptorSet DSBoardSelText;
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -169,6 +170,7 @@ protected:
 	Texture TSelection2;
 	Texture TSelection3;
 	Texture TTileSelText;
+	Texture TBoardSelText;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
@@ -183,7 +185,7 @@ protected:
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
-	CommonUniformBlock tileSelTextubo;
+	CommonUniformBlock tileSelTextubo, boardSelTextubo;
 
 	// Geometry blocks for objects different from tiles
 	// [0] - Background
@@ -529,8 +531,14 @@ protected:
 		};
 		TTileSelText.initFour(this, tileNamesTextureFiles);
 
-		//TO DO: ADD Background style selection names
-		//------------------------
+		//TO DO: ADD CORRECT ASSETS FOR TEXTURES HERE
+		const char* boardNamesTextureFiles[4] = {
+			"textures/buttons/poolTable.png",
+			"textures/buttons/marble.png",
+			"textures/buttons/wood.png",
+			"textures/buttons/earthenware.png",
+		}; 
+		TBoardSelText.initFour(this, boardNamesTextureFiles); 
 
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
@@ -653,6 +661,10 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TTileSelText}
 			});
+		DSBoardSelText.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TBoardSelText}
+			});
 		// Tile
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].init(this, &DSLTile, {
@@ -774,6 +786,7 @@ protected:
 		DSSelection2.cleanup();
 		DSSelection3.cleanup();
 		DSTileSelText.cleanup();
+		DSBoardSelText.cleanup();
 
 	}
 
@@ -803,6 +816,7 @@ protected:
 		TSelection3.cleanup();
 		TLion.cleanup();
 		TTileSelText.cleanup(); 
+		TBoardSelText.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -884,6 +898,9 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSTileSelText.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
+		DSBoardSelText.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		//Arrow buttons
@@ -1339,6 +1356,15 @@ protected:
 		commonubo[12].transparency = 1.0f;
 		commonubo[12].textureIdx = 0;
 		DSButton2.map(currentImage, &commonubo[12], sizeof(commonubo[12]), 0);
+
+		//Board Selection Text
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.8f, 0.13f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
+		boardSelTextubo.mvpMat = Prj * View * WorldB;
+		boardSelTextubo.mMat = WorldB;
+		boardSelTextubo.nMat = glm::inverse(glm::transpose(WorldB));
+		boardSelTextubo.transparency = 1.0f;
+		boardSelTextubo.textureIdx = boardTextureIdx;
+		DSBoardSelText.map(currentImage, &boardSelTextubo, sizeof(boardSelTextubo), 0);
 
 		/*//Button3
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
