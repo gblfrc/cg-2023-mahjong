@@ -26,6 +26,7 @@ struct CommonUniformBlock {
 	alignas(16) glm::mat4 nMat;
 	alignas(4) float transparency;
 	alignas(4) int textureIdx;
+	alignas(4) int objectIdx;
 };
 
 struct TileUniformBlock {
@@ -1030,13 +1031,15 @@ protected:
 		int x = int(mousex);
 		int y = int(mousey);
 
+
+
 		void* data;
 		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data);
 		int* pixels = reinterpret_cast<int*>(data);
 		int index = y * windowWidth + x;
 		int hoverIndex = 0;
 		if (y < windowHeight && x < windowWidth) {
-			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
+			cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
 			//tileTextureIdx = hoverIndex % 4;
 		}
@@ -1062,6 +1065,8 @@ protected:
 					gameState = 0;
 					enterPressedFirstTime = true;
 				}
+
+				//get clicks to change textures and shaders
 				/*
 				if (handleClick /*&& //Arrow 1 right button index) {
 					tileTextureIdx++;
@@ -1073,6 +1078,7 @@ protected:
 					if (tileTextureIdx == -1) tileTextureIdx = 3;
 				}*/
 				if (handleClick /*&& //Arrow 1 right button index*/) {
+					
 					boardTextureIdx++;
 					if (boardTextureIdx == 4) boardTextureIdx = 0;
 				}
@@ -1082,9 +1088,9 @@ protected:
 					if (boardTextureIdx == -1) boardTextureIdx = 3;
 				}*/
 				/**/
-				std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";
-				std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
-				//get clicks to change textures and shaders
+				//std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";						//DEBUG
+				//std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
+				
 				break;
 			case 0:
 				//no piece selected
@@ -1326,6 +1332,7 @@ protected:
 		commonubo[14].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[14].transparency = 1.0f;
 		commonubo[14].textureIdx = 0;
+		commonubo[15].objectIdx = -41;
 		DSArrowButton1_left.map(currentImage, &commonubo[14], sizeof(commonubo[14]), 0);
 
 		//Arrow button 2 Left
@@ -1335,6 +1342,7 @@ protected:
 		commonubo[15].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[15].transparency = 1.0f;
 		commonubo[15].textureIdx = 0;
+		commonubo[15].objectIdx = -43;
 		DSArrowButton2_left.map(currentImage, &commonubo[15], sizeof(commonubo[15]), 0);
 
 		/*//Arrow button 3 Left
@@ -1353,6 +1361,7 @@ protected:
 		commonubo[17].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[17].transparency = 1.0f;
 		commonubo[17].textureIdx = 0;
+		commonubo[17].objectIdx = -42;
 		DSArrowButton1_right.map(currentImage, &commonubo[17], sizeof(commonubo[17]), 0);
 
 		//Arrow button 2 Right
@@ -1362,6 +1371,7 @@ protected:
 		commonubo[18].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[18].transparency = 1.0f;
 		commonubo[18].textureIdx = 0;
+		commonubo[18].objectIdx = -44;
 		DSArrowButton2_right.map(currentImage, &commonubo[18], sizeof(commonubo[18]), 0);
 
 		/*//Arrow button 3 Right
@@ -1380,6 +1390,7 @@ protected:
 		commonubo[20].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[20].transparency = 1.0f;
 		commonubo[20].textureIdx = 0;
+		commonubo[20].objectIdx = -30;
 		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
 		//Game settings title

@@ -13,6 +13,8 @@ layout(set = 0, binding = 0) uniform CommonUniformBufferObject {
 	mat4 mMat;
 	mat4 nMat;
 	float transparency;
+	int textureIdx;
+	int objectIdx;
 } cubo;
 
 layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {

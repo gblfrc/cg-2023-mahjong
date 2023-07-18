@@ -7,6 +7,7 @@ layout(set = 0, binding = 0) uniform CommonUniformBufferObject {
 	mat4 nMat;
 	float transparency;
 	int textureIdx;
+	int objectIdx;
 } cubo;
 
 layout(location = 0) in vec3 inPosition;

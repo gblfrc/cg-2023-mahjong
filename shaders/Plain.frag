@@ -14,6 +14,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 	mat4 nMat;
 	float transparency;
 	int textureIdx;
+	int objectIdx;
 } ubo;
 
 layout(set = 0, binding = 1) uniform sampler2DArray tex;
@@ -25,5 +26,5 @@ void main() {
 	float alpha = ubo.transparency * texture(tex, vec3(fragUV, ubo.textureIdx)).a + (1.0f-ubo.transparency);
 	// Outputs
 	outColor = vec4(texture(tex, vec3(fragUV, ubo.textureIdx)).rgb, alpha);
-	id = ubo.textureIdx;
+	id = ubo.objectIdx;
 }
