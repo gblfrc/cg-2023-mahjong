@@ -13,16 +13,17 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 	mat4 mMat;
 	mat4 nMat;
 	float transparency;
+	int textureIdx;
 } ubo;
 
-layout(set = 0, binding = 1) uniform sampler2D tex;
+layout(set = 0, binding = 1) uniform sampler2DArray tex;
 
 void main() {
 
 	// Use alpha channel from texture if ubo.transparency is set to 1
 	// Set 1.0f as alpha channel otherwise
-	float alpha = ubo.transparency * texture(tex, fragUV).a + (1.0f-ubo.transparency);
+	float alpha = ubo.transparency * texture(tex, vec3(fragUV, ubo.textureIdx)).a + (1.0f-ubo.transparency);
 	// Outputs
-	outColor = vec4(texture(tex,fragUV).rgb, alpha);
-	id = -1;
+	outColor = vec4(texture(tex, vec3(fragUV, ubo.textureIdx)).rgb, alpha);
+	id = ubo.textureIdx;
 }

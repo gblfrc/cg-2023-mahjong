@@ -6,6 +6,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 	mat4 mMat;
 	mat4 nMat;
 	float transparency;
+	int textureIdx;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

@@ -7,7 +7,7 @@ layout(set = 0, binding = 0) uniform UIUniformBufferObject {
 	int objectIdx;
 } ubo;
 
-layout(set = 0, binding = 1) uniform sampler2D tex;
+layout(set = 0, binding = 1) uniform sampler2DArray tex;
 
 layout(location = 0) in vec2 fragUV;
 
@@ -16,8 +16,8 @@ layout(location = 1) out int id;
 
 void main() {
 
-	float alpha = ubo.transparency * texture(tex, fragUV).a + (1-ubo.transparency);
+	float alpha = ubo.transparency * texture(tex, vec3(fragUV, 0)).a + (1-ubo.transparency);
 	
-	outColor = vec4(texture(tex, fragUV).rgb, alpha);
+	outColor = vec4(texture(tex, vec3(fragUV, 0)).rgb, alpha);
 	id = ubo.objectIdx;
 }

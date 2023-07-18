@@ -13,6 +13,7 @@ layout(set = 0, binding = 0) uniform CommonUniformBufferObject {
 	mat4 mMat;
 	mat4 nMat;
 	float transparency;
+	int textureIdx;
 } cubo;
 
 layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {
@@ -20,7 +21,7 @@ layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {
 	float sigma;
 } subo;
 
-layout(set = 0, binding = 2) uniform sampler2D tex;
+layout(set = 0, binding = 2) uniform sampler2DArray tex;
 
 layout(set = 1, binding = 0) uniform GlobalUniformBufferObject {
 	float beta;			// decay factor for point light
@@ -65,10 +66,10 @@ void main() {
 	// point light intensity
 	vec3 I = gubo.PlightColor * pow(gubo.g/length(gubo.PlightPos - fragPos), gubo.beta);
 
-	vec3 diffuseON = BRDF(V, N, L, texture(tex, fragUV).rgb, subo.sigma);
-	vec3 Ambient = texture(tex, fragUV).rgb * subo.amb * gubo.AmbLightColor;
+	vec3 diffuseON = BRDF(V, N, L, texture(tex, vec3(fragUV, cubo.textureIdx)).rgb, subo.sigma);
+	vec3 Ambient = texture(tex, vec3(fragUV, cubo.textureIdx)).rgb * subo.amb * gubo.AmbLightColor;
 
-	float alpha = cubo.transparency * texture(tex, fragUV).a + (1-cubo.transparency);
+	float alpha = cubo.transparency * texture(tex, vec3(fragUV, cubo.textureIdx)).a + (1-cubo.transparency);
 	
 	outColor = vec4(clamp(0.95*(diffuseON)*I.rgb + Ambient * 0.05f,0.0,1.0), alpha);
 	id = -1;

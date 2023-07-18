@@ -25,6 +25,7 @@ struct CommonUniformBlock {
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
 	alignas(4) float transparency;
+	alignas(4) int textureIdx;
 };
 
 struct TileUniformBlock {
@@ -496,7 +497,9 @@ protected:
 		// Create the TEXTURES
 		
 		// The second parameter is the file name
-		TPoolCloth.init(this, "textures/background/poolcloth.png");
+		//TPoolCloth.init(this, "textures/background/poolcloth.png");
+
+		//Tiles textures
 		const char* tileTextureFiles[4] = {
 			"textures/tiles/tiles_white_resized.png",
 			"textures/tiles/tiles_dark_resized.png",
@@ -504,6 +507,17 @@ protected:
 			"textures/tiles/tiles_botanical_resized.png",
 		};
 		TTile.initFour(this, tileTextureFiles);
+
+		//Background cloth textures
+		const char* clothTextureFiles[4] = {
+			"textures/background/poolcloth.png",
+			"textures/background/redCloth.png",
+			"textures/background/wood.png",
+			"textures/background/dark_wood_resized.png",
+			//"textures/background/marble.png",
+			//"textures/background/earthenware.png",  //CAUSES ERROR ch:4 instead of ch: 3?
+		};
+		TPoolCloth.initFour(this, clothTextureFiles);
 
 		//Tiles style selcetion names
 		const char* tileNamesTextureFiles[4] = {
@@ -1048,7 +1062,8 @@ protected:
 					gameState = 0;
 					enterPressedFirstTime = true;
 				}
-				if (handleClick /*&& //Arrow 1 right button index*/) {
+				/*
+				if (handleClick /*&& //Arrow 1 right button index) {
 					tileTextureIdx++;
 					if (tileTextureIdx == 4) tileTextureIdx = 0;
 				}
@@ -1056,17 +1071,19 @@ protected:
 				if(handleClick /*&& //Arrow 1 left button index) {
 					tileTextureIdx--;
 					if (tileTextureIdx == -1) tileTextureIdx = 3;
-				}
-				if (handleClick /*&& //Arrow 1 right button index) {
+				}*/
+				if (handleClick /*&& //Arrow 1 right button index*/) {
 					boardTextureIdx++;
-					if (boardTextureIdx == 4) tileTextureIdx = 0;
+					if (boardTextureIdx == 4) boardTextureIdx = 0;
 				}
+				/*
 				if (handleClick /*&& //Arrow 1 left button index) {
 					boardTextureIdx--;
-					if (boardTextureIdx == -1) tileTextureIdx = 3;
-				}
-				*/
+					if (boardTextureIdx == -1) boardTextureIdx = 3;
+				}*/
+				/**/
 				std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";
+				std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
 				//get clicks to change textures and shaders
 				break;
 			case 0:
@@ -1272,6 +1289,7 @@ protected:
 		commonubo[9].mMat = WorldH;
 		commonubo[9].nMat = glm::inverse(glm::transpose(WorldH));
 		commonubo[9].transparency = 0.0f;
+		commonubo[9].textureIdx = boardTextureIdx;
 		DSHome.map(currentImage, &commonubo[9], sizeof(commonubo[9]), 0);
 
 		//Button1
@@ -1280,6 +1298,7 @@ protected:
 		commonubo[11].mMat = WorldB;
 		commonubo[11].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[11].transparency = 1.0f;
+		commonubo[11].textureIdx = 0;
 		DSButton1.map(currentImage, &commonubo[11], sizeof(commonubo[11]), 0);
 
 		//Button2
@@ -1288,6 +1307,7 @@ protected:
 		commonubo[12].mMat = WorldB;
 		commonubo[12].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[12].transparency = 1.0f;
+		commonubo[12].textureIdx = 0;
 		DSButton2.map(currentImage, &commonubo[12], sizeof(commonubo[12]), 0);
 
 		/*//Button3
@@ -1296,6 +1316,7 @@ protected:
 		commonubo[13].mMat = WorldB;
 		commonubo[13].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[13].transparency = 1.0f;
+		commonubo[13].textureIdx = 0;
 		DSButton3.map(currentImage, &commonubo[13], sizeof(commonubo[13]), 0);*/
 
 		//Arrow button 1 Left
@@ -1304,6 +1325,7 @@ protected:
 		commonubo[14].mMat = WorldA_B;
 		commonubo[14].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[14].transparency = 1.0f;
+		commonubo[14].textureIdx = 0;
 		DSArrowButton1_left.map(currentImage, &commonubo[14], sizeof(commonubo[14]), 0);
 
 		//Arrow button 2 Left
@@ -1312,6 +1334,7 @@ protected:
 		commonubo[15].mMat = WorldA_B;
 		commonubo[15].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[15].transparency = 1.0f;
+		commonubo[15].textureIdx = 0;
 		DSArrowButton2_left.map(currentImage, &commonubo[15], sizeof(commonubo[15]), 0);
 
 		/*//Arrow button 3 Left
@@ -1320,6 +1343,7 @@ protected:
 		commonubo[16].mMat = WorldA_B;
 		commonubo[16].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[16].transparency = 1.0f;
+		commonubo[16].textureIdx = 0;
 		DSArrowButton3_left.map(currentImage, &commonubo[16], sizeof(commonubo[16]), 0);*/
 
 		//Arrow button 1 Right
@@ -1328,6 +1352,7 @@ protected:
 		commonubo[17].mMat = WorldA_B;
 		commonubo[17].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[17].transparency = 1.0f;
+		commonubo[17].textureIdx = 0;
 		DSArrowButton1_right.map(currentImage, &commonubo[17], sizeof(commonubo[17]), 0);
 
 		//Arrow button 2 Right
@@ -1336,6 +1361,7 @@ protected:
 		commonubo[18].mMat = WorldA_B;
 		commonubo[18].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[18].transparency = 1.0f;
+		commonubo[18].textureIdx = 0;
 		DSArrowButton2_right.map(currentImage, &commonubo[18], sizeof(commonubo[18]), 0);
 
 		/*//Arrow button 3 Right
@@ -1344,6 +1370,7 @@ protected:
 		commonubo[19].mMat = WorldA_B;
 		commonubo[19].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[19].transparency = 1.0f;
+		commonubo[19].textureIdx = 0;
 		DSArrowButton3_right.map(currentImage, &commonubo[19], sizeof(commonubo[19]), 0);*/
 
 		//Play button
@@ -1352,6 +1379,7 @@ protected:
 		commonubo[20].mMat = WorldB;
 		commonubo[20].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[20].transparency = 1.0f;
+		commonubo[20].textureIdx = 0;
 		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
 		//Game settings title
@@ -1360,6 +1388,7 @@ protected:
 		commonubo[21].mMat = WorldB;
 		commonubo[21].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[21].transparency = 1.0f;
+		commonubo[21].textureIdx = 0;
 		DSSelection1.map(currentImage, &commonubo[21], sizeof(commonubo[21]), 0);
 
 		//tile selection title 
@@ -1368,6 +1397,7 @@ protected:
 		commonubo[22].mMat = WorldB;
 		commonubo[22].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[22].transparency = 1.0f;
+		commonubo[22].textureIdx = 0;
 		DSSelection2.map(currentImage, &commonubo[22], sizeof(commonubo[22]), 0);
 
 		//board selection title
@@ -1376,6 +1406,7 @@ protected:
 		commonubo[23].mMat = WorldB;
 		commonubo[23].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[23].transparency = 1.0f;
+		commonubo[23].textureIdx = 0;
 		DSSelection3.map(currentImage, &commonubo[23], sizeof(commonubo[23]), 0);
 		 
 		//Matrix setup for rotating tile
@@ -1408,6 +1439,7 @@ protected:
 		commonubo[10].mMat = WorldTitle;
 		commonubo[10].nMat = glm::inverse(glm::transpose(WorldTitle));
 		commonubo[10].transparency = 1.0f;
+		commonubo[10].textureIdx = 0;
 		DSGameTitle.map(currentImage, &commonubo[10], sizeof(commonubo[10]), 0);
 		
 		// Matrix setup for background
@@ -1421,6 +1453,7 @@ protected:
 		commonubo[0].mMat = World;
 		commonubo[0].nMat = glm::inverse(glm::transpose(World));
 		commonubo[0].transparency = 0.0f;
+		commonubo[0].textureIdx = boardTextureIdx;
 		DSBackground.map(currentImage, &commonubo[0], sizeof(commonubo[0]), 0);
 		DSBackground.map(currentImage, &bgubo, sizeof(bgubo), 1);
 
@@ -1431,6 +1464,7 @@ protected:
 		commonubo[1].mMat = World;
 		commonubo[1].nMat = glm::inverse(glm::transpose(World));
 		commonubo[1].transparency = 0.0f;
+		commonubo[1].textureIdx = 0;
 		DSWall.map(currentImage, &commonubo[1], sizeof(commonubo[1]), 0);
 		DSWall.map(currentImage, &wallubo, sizeof(wallubo), 1);
 
@@ -1441,6 +1475,7 @@ protected:
 		commonubo[3].mMat = World;
 		commonubo[3].nMat = glm::inverse(glm::transpose(World));
 		commonubo[3].transparency = 0.0f;
+		commonubo[3].textureIdx = 0;
 		DSFloor.map(currentImage, &commonubo[3], sizeof(commonubo[3]), 0);
 		DSFloor.map(currentImage, &floorubo, sizeof(floorubo), 1);
 
@@ -1451,6 +1486,7 @@ protected:
 		commonubo[2].mMat = World;
 		commonubo[2].nMat = glm::inverse(glm::transpose(World));
 		commonubo[2].transparency = 0.0f;
+		commonubo[2].textureIdx = 0;
 		DSCeiling.map(currentImage, &commonubo[2], sizeof(commonubo[2]), 0);
 		DSCeiling.map(currentImage, &ceilingubo, sizeof(ceilingubo), 1);
 
@@ -1461,6 +1497,7 @@ protected:
 		commonubo[4].mMat = World;
 		commonubo[4].nMat = glm::inverse(glm::transpose(World));
 		commonubo[4].transparency = 0.0f;
+		commonubo[4].textureIdx = 0;
 		DSTable.map(currentImage, &commonubo[4], sizeof(commonubo[4]), 0);
 		DSTable.map(currentImage, &tableubo, sizeof(tableubo), 1);
 
@@ -1472,6 +1509,7 @@ protected:
 		commonubo[5].mMat = World;
 		commonubo[5].nMat = glm::inverse(glm::transpose(World));
 		commonubo[5].transparency = 1.0f;
+		commonubo[6].textureIdx = 0;
 		DSWindow1.map(currentImage, &commonubo[5], sizeof(commonubo[5]), 0);
 		DSWindow1.map(currentImage, &window1ubo, sizeof(window1ubo), 1);
 		// Window 2
@@ -1490,6 +1528,7 @@ protected:
 		commonubo[7].mMat = World;
 		commonubo[7].nMat = glm::inverse(glm::transpose(World));
 		commonubo[7].transparency = 1.0f;
+		commonubo[7].textureIdx = 0;
 		DSWindow3.map(currentImage, &commonubo[7], sizeof(commonubo[7]), 0);
 		DSWindow3.map(currentImage, &window3ubo, sizeof(window3ubo), 1);
 
@@ -1502,6 +1541,7 @@ protected:
 		commonubo[8].mMat = World;
 		commonubo[8].nMat = glm::inverse(glm::transpose(World));
 		commonubo[8].transparency = 0.0f;
+		commonubo[8].textureIdx = 0;
 		DSLandscape.map(currentImage, &commonubo[8], sizeof(commonubo[8]), 0);
 
 		//Lion statue
@@ -1512,6 +1552,7 @@ protected:
 		commonubo[24].mMat = World;
 		commonubo[24].nMat = glm::inverse(glm::transpose(World));
 		commonubo[24].transparency = 0.0f;
+		commonubo[24].textureIdx = 0;
 		lionubo.amb = 1.0f; lionubo.gamma = 200.0f; lionubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSLion.map(currentImage, &commonubo[24], sizeof(commonubo[24]), 0);
 		DSLion.map(currentImage, &lionubo, sizeof(lionubo), 1);

@@ -28,7 +28,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	int suitIdx;
 } ubo;
 
-layout(set = 1, binding = 1) uniform sampler2D tex;
+layout(set = 1, binding = 1) uniform sampler2DArray tex;
 
 void main() {
 	vec3 N = normalize(fragNorm);					// surface normal
@@ -43,7 +43,8 @@ void main() {
 	vec3 lightPosition = vec3(5.0f, 10.0f, 5.0f);	//light position
 
 
-	vec3 albedo = texture(tex, fragUV).rgb;		// main color
+	//vec3 albedo = texture(tex, fragUV).rgb;		// main color
+	vec3 albedo = texture(tex, vec3(fragUV, 0)).rgb;
 	vec3 MD = albedo;
 	vec3 MS = ubo.sColor;
 	vec3 MA = albedo * ubo.amb;

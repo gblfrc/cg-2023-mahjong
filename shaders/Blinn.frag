@@ -21,7 +21,7 @@ layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {
 	vec3 sColor;
 } subo;
 
-layout(set = 0, binding = 2) uniform sampler2D tex;
+layout(set = 0, binding = 2) uniform sampler2DArray tex;
 
 layout(set = 1, binding = 0) uniform GlobalUniformBufferObject {
 	float beta;			// decay factor for point light
@@ -42,7 +42,7 @@ void main() {
 	vec3 I = intensityCoeff * gubo.PlightColor;					// Light intensity
 	float alpha = cubo.transparency;							// transparency of the tile
 
-	vec3 albedo = texture(tex, fragUV).rgb;
+	vec3 albedo = texture(tex, vec3(fragUV, 0)).rgb;
 	vec3 MD = albedo;
 	vec3 MS = subo.sColor;
 	vec3 MA = albedo * subo.amb;

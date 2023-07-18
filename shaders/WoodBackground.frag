@@ -23,7 +23,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 nMat;
 } ubo;
 
-layout(set = 1, binding = 1) uniform sampler2D tex;
+layout(set = 1, binding = 1) uniform sampler2DArray tex;
 
 const float gamma = 110.0f;	// cosine power for the Blinn specular reflection
 
@@ -31,12 +31,12 @@ void main() {
 	const float betaPoint = 4.0f;	// decay exponent of the pointlight
 	const float gPoint = 6;
 
-	vec3 N = normalize(fragNorm);				// surface normal
-	vec3 V = normalize(gubo.eyePos - fragPos);	// viewer direction
-	vec3 MD = texture(tex, fragUV).rgb;			// diffuse color
-	vec3 MA = MD;								// ambient color
-	vec3 MS = vec3(1);							// specular color
-	//vec3 ME = texture(texEmit, fragUV).rgb;		// emission color
+	vec3 N = normalize(fragNorm);						// surface normal
+	vec3 V = normalize(gubo.eyePos - fragPos);			// viewer direction
+	vec3 MD = texture(tex, vec3(fragUV, 0)).rgb;		// diffuse color
+	vec3 MA = MD;										// ambient color
+	vec3 MS = vec3(1);									// specular color
+	//vec3 ME = texture(texEmit, fragUV).rgb;			// emission color
 
 
 	// Write the shader here

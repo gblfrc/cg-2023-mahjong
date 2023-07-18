@@ -26,7 +26,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 nMat;
 } ubo;
 
-layout(set = 1, binding = 1) uniform sampler2D tex;
+layout(set = 1, binding = 1) uniform sampler2DArray tex;
 
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float F0, float metallic, float roughness) {
 	//vec3 V  - direction of the viewer
@@ -97,8 +97,8 @@ void main() {
 	vec3 lightDir = gubo.DlightDir;
 	//vec3 lightColor = gubo.DlightColor.rgb;
 
-	vec3 DiffSpec = BRDF(EyeDir, Norm, lightDir, texture(tex, fragUV).rgb, 1.1f);
-	vec3 Ambient = texture(tex, fragUV).rgb * 0.05f;
+	vec3 DiffSpec = BRDF(EyeDir, Norm, lightDir, texture(tex, vec3(fragUV, 0)).rgb, 1.0f, 1.0f, 1.1f); //CHANGE VALUES
+	vec3 Ambient =texture(tex, vec3(fragUV, 0)).rgb * 0.05f;
 
 	//pointlight
 	vec3 L = (gubo.DlightDir - fragPos)/length(gubo.DlightDir - fragPos);
