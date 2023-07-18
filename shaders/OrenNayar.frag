@@ -17,8 +17,7 @@ layout(set = 0, binding = 0) uniform CommonUniformBufferObject {
 
 layout(set = 0, binding = 1) uniform ShadingUniformBufferObject {
 	float amb;
-	float gamma;
-	vec3 sColor;
+	float sigma;
 } subo;
 
 layout(set = 0, binding = 2) uniform sampler2D tex;
@@ -66,8 +65,8 @@ void main() {
 	// point light intensity
 	vec3 I = gubo.PlightColor * pow(gubo.g/length(gubo.PlightPos - fragPos), gubo.beta);
 
-	vec3 diffuseON = BRDF(V, N, L, texture(tex, fragUV).rgb, 1.1f);
-	vec3 Ambient = texture(tex, fragUV).rgb;
+	vec3 diffuseON = BRDF(V, N, L, texture(tex, fragUV).rgb, subo.sigma);
+	vec3 Ambient = texture(tex, fragUV).rgb * subo.amb * gubo.AmbLightColor;
 
 	float alpha = cubo.transparency * texture(tex, fragUV).a + (1-cubo.transparency);
 	
