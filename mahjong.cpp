@@ -246,9 +246,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 182;
-		texturesInPool = 28;
-		setsInPool = 174;
+		uniformBlocksInPool = 300;//184;
+		texturesInPool = 40;//32;
+		setsInPool = 300;//178;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -539,7 +539,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = 0;				//INITIAL GAME STATE <-----
+		gameState = -1;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
