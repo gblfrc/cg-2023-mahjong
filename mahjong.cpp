@@ -102,6 +102,7 @@ protected:
 	Pipeline PPlain;
 	Pipeline PTile;
 	Pipeline PRoughSurfaces;
+	Pipeline PSmoothSurfaces;
 	Pipeline PUI;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
@@ -120,6 +121,7 @@ protected:
 	Model<VertexUI> MYouWin;
 	Model<VertexMesh> MPlainRectangle;
 	Model<VertexMesh> MArrowButton;
+	Model<VertexMesh> MLion;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -134,6 +136,7 @@ protected:
 	DescriptorSet DSHome;
 	DescriptorSet DSGameTitle;
 	DescriptorSet DSLandscape;
+	DescriptorSet DSLion;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -155,6 +158,7 @@ protected:
 	Texture TLandscape;
 	Texture TGameOver;
 	Texture TYouWin;
+	Texture TLion;
 	//Buttons
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
@@ -173,6 +177,7 @@ protected:
 	RoughSurfaceUniformBlock ceilingubo;
 	RoughSurfaceUniformBlock tableubo;
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
+	SmoothSurfaceUniformBlock lionubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
@@ -201,7 +206,8 @@ protected:
 	// [21] - Game setting
 	// [22] - Tile type selection title
 	// [23] - Board design selection title
-	CommonUniformBlock commonubo[24];
+	// [24] - Lion statue
+	CommonUniformBlock commonubo[25];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -240,9 +246,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 300; //177;
-		texturesInPool = 40;//19;
-		setsInPool = 300;// 170;
+		uniformBlocksInPool = 182;
+		texturesInPool = 28;
+		setsInPool = 174;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -311,6 +317,9 @@ protected:
 		// Other pipelines
 		PRoughSurfaces.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/OrenNayarFrag.spv", { &DSLGeneric, &DSLGubo });
 		PRoughSurfaces.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+		// Other pipelines
+		PSmoothSurfaces.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/BlinnFrag.spv", { &DSLGeneric, &DSLGubo });
+		PSmoothSurfaces.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
 
 		//----------------------------
 		// Models, textures and Descriptors (values assigned to the uniforms)
@@ -480,6 +489,7 @@ protected:
 		MTile.init(this, &VMesh, "models/Tile.obj", OBJ);
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
+		MLion.init(this, &VMesh, "models/Lion.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -520,6 +530,8 @@ protected:
 		TSelection1.init(this, "textures/buttons/settings.png");
 		TSelection2.init(this, "textures/buttons/tileDesign.png");
 		TSelection3.init(this, "textures/buttons/boardStyle.png");
+		TPlayButton.init(this, "textures/buttons/button_with_plant.png");	//TO CHANGE
+		TLion.init(this, "textures/room/lion.png");
 		
 		//-------------------------------
 		// Init local variables
@@ -527,7 +539,7 @@ protected:
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;				//INITIAL GAME STATE <-----
+		gameState = 0;				//INITIAL GAME STATE <-----
 		firstTileIndex = -1;
 		secondTileIndex = -1;
 	}
@@ -536,6 +548,7 @@ protected:
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
 		PRoughSurfaces.create();
+		PSmoothSurfaces.create();
 		PTile.create();
 		PPlain.create();
 		PUI.create();
@@ -689,6 +702,12 @@ protected:
 					{2, TEXTURE, 0, &TWindow}
 			});
 
+		DSLion.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TLion}
+			});
+
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -696,6 +715,7 @@ protected:
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
 		PRoughSurfaces.cleanup();
+		PSmoothSurfaces.cleanup();
 		PTile.cleanup();
 		PPlain.cleanup();
 		PUI.cleanup();
@@ -715,7 +735,9 @@ protected:
 		DSWindow3.cleanup();
 		DSTileTexture.cleanup();
 		DSLandscape.cleanup();
-
+		DSLion.cleanup();
+		DSGameOver.cleanup();
+		DSYouWin.cleanup();
 		//menu
 		DSHTile.cleanup();
 		DSHome.cleanup();
@@ -762,6 +784,7 @@ protected:
 		TSelection1.cleanup();
 		TSelection2.cleanup();
 		TSelection3.cleanup();
+		TLion.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -778,6 +801,7 @@ protected:
 		MYouWin.cleanup();
 		MPlainRectangle.cleanup();
 		MArrowButton.cleanup();
+		MLion.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -789,6 +813,7 @@ protected:
 		// Destroys the pipelines
 		PTile.destroy();
 		PRoughSurfaces.destroy();
+		PSmoothSurfaces.destroy();
 		PPlain.destroy();
 		PUI.destroy();
 	}
@@ -919,6 +944,16 @@ protected:
 		DSWindow3.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
+
+		// PSmoothSurfaces
+		//
+		PSmoothSurfaces.bind(commandBuffer);
+		DSGubo.bind(commandBuffer, PSmoothSurfaces, 1, currentImage);
+		// Lion statue
+		MLion.bind(commandBuffer);
+		DSLion.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MLion.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1161,7 +1196,7 @@ protected:
 
 		//a
 		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
-		glm::vec3 camTarget = glm::vec3(0, 0.6f, 0);
+		glm::vec3 camTarget = glm::vec3(0, 0.6f, -0.5);
 		if (gameState == -1) {
 			camTarget = homeMenuPosition + glm::vec3(0, 1.2f, 0);
 		}
@@ -1369,7 +1404,9 @@ protected:
 		
 		// Matrix setup for background
 		glm::mat4 World = glm::mat4(1);
-		World = glm::translate(glm::mat4(1), glm::vec3(0.04f, 0.0f, 0.0f)) * 
+		glm::mat4 baseTranslation = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.0f, -0.5f));
+		World = baseTranslation * 
+				glm::translate(glm::mat4(1), glm::vec3(0.04f, 0.0f, 0.0f)) * 
 				glm::scale(glm::mat4(1), glm::vec3(3.55f, 1.0f, 1.4f));
 		bgubo.amb = 1.0f; bgubo.sigma = 1.1f;
 		commonubo[0].mvpMat = Prj * View * World;
@@ -1410,7 +1447,7 @@ protected:
 		DSCeiling.map(currentImage, &ceilingubo, sizeof(ceilingubo), 1);
 
 		// Matrix setup for table
-		World = glm::mat4(1);
+		World = baseTranslation;
 		tableubo.amb = 20.0f; tableubo.sigma = 1.1f;
 		commonubo[4].mvpMat = Prj * View * World;
 		commonubo[4].mMat = World;
@@ -1421,9 +1458,7 @@ protected:
 
 		// Matrix setup for windows
 		// Window 1
-		World = glm::mat4(1);
-		glm::mat4 TWindowMat = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.5f, -2.0f));
-		World = TWindowMat;
+		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.5f, -2.0f));
 		window1ubo.amb = 1.0f; window1ubo.sigma = 1.1f;
 		commonubo[5].mvpMat = Prj * View * World;
 		commonubo[5].mMat = World;
@@ -1432,8 +1467,7 @@ protected:
 		DSWindow1.map(currentImage, &commonubo[5], sizeof(commonubo[5]), 0);
 		DSWindow1.map(currentImage, &window1ubo, sizeof(window1ubo), 1);
 		// Window 2
-		TWindowMat = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.5f, -2.0f));
-		World = TWindowMat;
+		World = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.5f, -2.0f));
 		window2ubo.amb = 1.0f; window2ubo.sigma = 1.1f;
 		commonubo[6].mvpMat = Prj * View * World;
 		commonubo[6].mMat = World;
@@ -1442,8 +1476,7 @@ protected:
 		DSWindow2.map(currentImage, &commonubo[6], sizeof(commonubo[6]), 0);
 		DSWindow2.map(currentImage, &window2ubo, sizeof(window2ubo), 1);
 		// Window 3
-		TWindowMat = glm::translate(glm::mat4(1), glm::vec3(1.0f, 1.5f, -2.0f));
-		World = TWindowMat;
+		World = glm::translate(glm::mat4(1), glm::vec3(1.0f, 1.5f, -2.0f));
 		window3ubo.amb = 1.0f; window3ubo.sigma = 1.1f;
 		commonubo[7].mvpMat = Prj * View * World;
 		commonubo[7].mMat = World;
@@ -1463,11 +1496,23 @@ protected:
 		commonubo[8].transparency = 0.0f;
 		DSLandscape.map(currentImage, &commonubo[8], sizeof(commonubo[8]), 0);
 
+		//Lion statue
+		World = glm::translate(glm::mat4(1), glm::vec3(-1.4f, 0.0f, 1.2f)) *
+				glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+				glm::scale(glm::mat4(1), glm::vec3(0.7));
+		commonubo[24].mvpMat = Prj * View * World;
+		commonubo[24].mMat = World;
+		commonubo[24].nMat = glm::inverse(glm::transpose(World));
+		commonubo[24].transparency = 0.0f;
+		lionubo.amb = 1.0f; lionubo.gamma = 200.0f; lionubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		DSLion.map(currentImage, &commonubo[24], sizeof(commonubo[24]), 0);
+		DSLion.map(currentImage, &lionubo, sizeof(lionubo), 1);
+
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
 			float scaleFactor = game.tiles[i].isRemoved ? 0.0f : 1.0f;
 			//float scaleFactor = 0.0f;
-			glm::mat4 Tbase = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
+			glm::mat4 Tbase = baseTranslation * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 
