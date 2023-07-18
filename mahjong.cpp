@@ -1332,7 +1332,7 @@ protected:
 		commonubo[14].nMat = glm::inverse(glm::transpose(WorldA_B));
 		commonubo[14].transparency = 1.0f;
 		commonubo[14].textureIdx = 0;
-		commonubo[15].objectIdx = -41;
+		commonubo[14].objectIdx = -41;
 		DSArrowButton1_left.map(currentImage, &commonubo[14], sizeof(commonubo[14]), 0);
 
 		//Arrow button 2 Left
