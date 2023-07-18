@@ -533,10 +533,10 @@ protected:
 
 		//TO DO: ADD CORRECT ASSETS FOR TEXTURES HERE
 		const char* boardNamesTextureFiles[4] = {
-			"textures/buttons/poolTable.png",
-			"textures/buttons/marble.png",
-			"textures/buttons/wood.png",
-			"textures/buttons/earthenware.png",
+			"textures/buttons/poolTable_board_text.png",
+			"textures/buttons/imperialRed_board_text.png",
+			"textures/buttons/wood_board_text.png",
+			"textures/buttons/darkwood_board_text.png",
 		}; 
 		TBoardSelText.initFour(this, boardNamesTextureFiles); 
 
@@ -556,7 +556,7 @@ protected:
 		TPlayButton.init(this, "textures/buttons/button_with_plant.png");
 		TSelection1.init(this, "textures/buttons/settings.png");
 		TSelection2.init(this, "textures/buttons/tileDesign.png");
-		TSelection3.init(this, "textures/buttons/boardStyle.png");
+		TSelection3.init(this, "textures/buttons/boardDesign.png");
 		TLion.init(this, "textures/room/lion.png");
 		
 		//-------------------------------
@@ -1444,7 +1444,7 @@ protected:
 		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
 		//Game settings title
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.7f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f, 0.5f, 1.0f) * 1.4f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.7f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.2f, 0.5f, 1.0f) * 1.4f);
 		commonubo[21].mvpMat = Prj * View * WorldB;
 		commonubo[21].mMat = WorldB;
 		commonubo[21].nMat = glm::inverse(glm::transpose(WorldB));
@@ -1453,7 +1453,7 @@ protected:
 		DSSelection1.map(currentImage, &commonubo[21], sizeof(commonubo[21]), 0);
 
 		//tile selection title 
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.05f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f, 0.5f, 1.0f) * 0.8f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.01f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.2f, 0.5f, 1.0f) * 0.8f);
 		commonubo[22].mvpMat = Prj * View * WorldB;
 		commonubo[22].mMat = WorldB;
 		commonubo[22].nMat = glm::inverse(glm::transpose(WorldB));
@@ -1462,7 +1462,7 @@ protected:
 		DSSelection2.map(currentImage, &commonubo[22], sizeof(commonubo[22]), 0);
 
 		//board selection title
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.6f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f, 0.45f, 1.0f) * 0.8f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.6f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.2f, 0.5f, 1.0f) * 0.8f);
 		commonubo[23].mvpMat = Prj * View * WorldB;
 		commonubo[23].mMat = WorldB;
 		commonubo[23].nMat = glm::inverse(glm::transpose(WorldB));
