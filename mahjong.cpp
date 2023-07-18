@@ -1061,32 +1061,41 @@ protected:
 		switch (gameState) {		// main state machine implementation
 			
 			case -1: //menu	
+
+				/* //Start the game with enter key
 				if (enter) {
 					gameState = 0;
 					enterPressedFirstTime = true;
-				}
+				}*/
 
 				//get clicks to change textures and shaders
 				
+				//Change tiles texture
 				if (handleClick && hoverIndex==-42) {
 					tileTextureIdx++;
 					if (tileTextureIdx == 4) tileTextureIdx = 0;
 				}
-				
 				if(handleClick && hoverIndex == -41) {
 					tileTextureIdx--;
 					if (tileTextureIdx == -1) tileTextureIdx = 3;
 				}
+
+				//Change board texture
 				if (handleClick && hoverIndex == -44) {
-					
 					boardTextureIdx++;
 					if (boardTextureIdx == 4) boardTextureIdx = 0;
 				}
-				
 				if (handleClick && hoverIndex == -43) {
 					boardTextureIdx--;
 					if (boardTextureIdx == -1) boardTextureIdx = 3;
 				}
+
+				//Start the game
+				if (handleClick && hoverIndex == -30) {
+					gameState = 0;
+					enterPressedFirstTime = true;
+				}
+
 				/**/
 				//std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";						//DEBUG
 				//std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
