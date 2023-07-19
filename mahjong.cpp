@@ -482,8 +482,8 @@ protected:
 		MCeiling.initMesh(this, &VMesh);
 		// UI object models
 		// Game over message
-		float gameOverHalfX = 0.5f;
-		float gameOverHalfY = 0.45f;
+		float gameOverHalfX = 0.44f;
+		float gameOverHalfY = 0.5f;
 		MGameOver.vertices = {
 			{{-gameOverHalfX, -gameOverHalfY, 0.1f},{0.0f, 0.0f}},
 			{{gameOverHalfX, -gameOverHalfY, 0.1f},{1.0f, 0.0f}},
@@ -1199,7 +1199,6 @@ protected:
 				cout << "Game over: " << game.isGameOver() << endl;
 				if (game.isWon() || game.isGameOver()) {
 					gameState = 6;
-					cout << "\nCIAONE\n" ;
 					break;
 				}
 				disappearedTiles[firstTileIndex] = true;
@@ -1226,6 +1225,8 @@ protected:
 					//go back to menu
 					gameoverubo.visible = 0.0f;
 					youwinubo.visible = 0.0f;
+					boardTextureIdx = 0;
+					tileTextureIdx = 0;
 					gameState = -1;
 					//reinitialise game
 					for (int j = 0; j < 144; j++) {
