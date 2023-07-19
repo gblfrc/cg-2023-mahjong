@@ -135,6 +135,7 @@ protected:
 	Model<VertexMesh> MVase;
 	Model<VertexMesh> MChair;
 	Model<VertexMesh> MFlame;
+	Model<VertexMesh> MCandle;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -155,6 +156,7 @@ protected:
 	DescriptorSet DSVase;
 	DescriptorSet DSChair;
 	DescriptorSet DSFlame;
+	DescriptorSet DSCandle;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -193,6 +195,7 @@ protected:
 	Texture TBoardSelText;
 	Texture TVase;
 	Texture TChair;
+	Texture TCandle;
 	
 
 	// C++ storage for uniform variables
@@ -208,6 +211,7 @@ protected:
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
+	SmoothSurfaceUniformBlock candleubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
@@ -245,7 +249,8 @@ protected:
 	// [29] - Picture frame 1
 	// [30] - Picture frame image 1
 	// [31] - Flame
-	CommonUniformBlock commonubo[32];
+	// [32] - Candle
+	CommonUniformBlock commonubo[33];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -538,6 +543,7 @@ protected:
 		MVase.init(this, &VMesh, "models/vase.obj", OBJ);
 		MChair.init(this, &VMesh, "models/armchair.obj", OBJ);
 		MFlame.init(this, &VMesh, "models/Fire.obj", OBJ);
+		MCandle.init(this, &VMesh, "models/Candle.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -624,6 +630,7 @@ protected:
 		TVase.init(this, "textures/room/vase_1k.png");	//big image dimension
 		TChair.init(this, "textures/room/armchair.jpg");
 		TFlame.init(this, "textures/room/fire.jpg");
+		TCandle.init(this, "textures/room/candle.jpg");
 		
 		//-------------------------------
 		// Init local variables
@@ -838,6 +845,11 @@ protected:
 					{1, UNIFORM, sizeof(PlainWithEmissionUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TFlame}
 			});
+		DSCandle.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr}, 
+					{2, TEXTURE, 0, &TCandle} 
+			});
 
 
 	}
@@ -876,6 +888,7 @@ protected:
 		DSVase.cleanup();
 		DSChair.cleanup();
 		DSFlame.cleanup();
+		DSCandle.cleanup(); 
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -933,6 +946,7 @@ protected:
 		TTileSelText.cleanup(); 
 		TBoardSelText.cleanup();
 		TFlame.cleanup();
+		TCandle.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -954,6 +968,7 @@ protected:
 		MVase.cleanup();
 		MChair.cleanup();
 		MFlame.cleanup();
+		MCandle.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1140,6 +1155,11 @@ protected:
 		DSVase.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MVase.indices.size()), 1, 0, 0, 0);
+		//Candle
+		MCandle.bind(commandBuffer);
+		DSCandle.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MCandle.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1508,6 +1528,7 @@ protected:
 		// [29] - Picture frame 1
 		// [30] - Picture frame image 1
 		// [31] - Flame
+		// [32] - Candle
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1889,10 +1910,14 @@ protected:
 		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
 
+
+		//Candle+Flame
+		glm::vec3 candlePos = glm::vec3(0.8f, 0.6f, -0.7f);
+
 		//Flame
 		glm::vec3 candleLightPos = glm::vec3(0.8f, 0.7f, -0.7f);
 		std::mt19937 rngFlame(time(NULL));
-		std::uniform_int_distribution<int> genScaleDiff(8, 13);
+		std::uniform_int_distribution<int> genScaleDiff(8, 12);
 		float scaleDiff = genScaleDiff(rngFlame)/10.0f;
 		std::uniform_int_distribution<int> genRotDiff(0, 180);
 		float rotationDiff = genRotDiff(rngFlame);
@@ -1909,9 +1934,9 @@ protected:
 		std::uniform_int_distribution<int> genshearCoeff(-2, 2);
 		float shearhx = genshearCoeff(rngFlame)/10.0f;
 		float shearhz = genshearCoeff(rngFlame)/10.0f;
-		World = glm::translate(glm::mat4(1), candleLightPos) * 
+		World = glm::translate(glm::mat4(1), candlePos) * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.115f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(rotationDiff), glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(0.5f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.16f)) *
 			glm::scale(glm::mat4(1), glm::vec3(1.0f, scaleDiff, 1.0f)) *
 			glm::shearY3D(glm::mat4(1), shearhx, shearhz);
 		commonubo[31].mvpMat = Prj * View * World;
@@ -1922,6 +1947,20 @@ protected:
 		flameEmissionubo.emission = chosenEmissionColor;
 		DSFlame.map(currentImage, &commonubo[31], sizeof(commonubo[31]), 0);
 		DSFlame.map(currentImage, &flameEmissionubo, sizeof(flameEmissionubo), 1);
+
+		//Candle
+		World = glm::translate(glm::mat4(1), candlePos) *
+			glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.055f));
+		commonubo[32].mvpMat = Prj * View * World;
+		commonubo[32].mMat = World;
+		commonubo[32].nMat = glm::inverse(glm::transpose(World));
+		commonubo[32].transparency = 0.0f;
+		commonubo[32].textureIdx = 0;
+		candleubo.amb = 1.0f; candleubo.gamma = 200.0f; 
+		candleubo.sColor = chosenEmissionColor;	//change specular color according to emitted color by the candle light
+		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
+		DSCandle.map(currentImage, &candleubo, sizeof(candleubo), 1);
 
 
 		// Matrix setup for tiles
