@@ -127,6 +127,7 @@ protected:
 	Model<VertexMesh> MLion;
 	Model<VertexMesh> MPictureFrame;
 	Model<VertexMesh> MVase;
+	Model<VertexMesh> MChair;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -145,6 +146,7 @@ protected:
 	DescriptorSet DSPictureFrame;
 	DescriptorSet DSPictureFrameImage;
 	DescriptorSet DSVase;
+	DescriptorSet DSChair;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -181,6 +183,7 @@ protected:
 	Texture TTileSelText;
 	Texture TBoardSelText;
 	Texture TVase;
+	Texture TChair;
 	
 
 	// C++ storage for uniform variables
@@ -192,6 +195,7 @@ protected:
 	RoughSurfaceUniformBlock ceilingubo;
 	RoughSurfaceUniformBlock tableubo;
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
+	RoughSurfaceUniformBlock chairubo;
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo;
 	SmoothSurfaceUniformBlock vaseubo;
@@ -227,7 +231,8 @@ protected:
 	// [25] - Picture frame
 	// [26] - Picture frame image
 	// [27] - Vase
-	CommonUniformBlock commonubo[28];
+	// [28] - Chair
+	CommonUniformBlock commonubo[29];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -514,6 +519,7 @@ protected:
 		MLion.init(this, &VMesh, "models/Lion.obj", OBJ);
 		MPictureFrame.init(this, &VMesh, "models/frame.obj", OBJ);
 		MVase.init(this, &VMesh, "models/vase.obj", OBJ);
+		MChair.init(this, &VMesh, "models/chinese_armchair.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -588,6 +594,7 @@ protected:
 		TLion.init(this, "textures/room/lion.png");
 		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
 		TVase.init(this, "textures/room/vase_8k.jpeg");	//big image dimension
+		TChair.init(this, "textures/room/Chair_wood.jpg");
 		
 		//-------------------------------
 		// Init local variables
@@ -782,6 +789,11 @@ protected:
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TVase}
 			});
+		DSChair.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TChair}
+			});
 
 
 	}
@@ -815,6 +827,7 @@ protected:
 		DSPictureFrame.cleanup(); 
 		DSPictureFrameImage.cleanup(); 
 		DSVase.cleanup();
+		DSChair.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -865,6 +878,7 @@ protected:
 		TSelection3.cleanup();
 		TLion.cleanup();
 		TVase.cleanup();
+		TChair.cleanup();
 		TPictureFrame.cleanup(); 
 		TPictureFrameImage.cleanup(); 
 		TTileSelText.cleanup(); 
@@ -888,6 +902,7 @@ protected:
 		MLion.cleanup();
 		MPictureFrame.cleanup();
 		MVase.cleanup();
+		MChair.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1040,6 +1055,11 @@ protected:
 		DSWindow3.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
+		//Chair
+		MChair.bind(commandBuffer);
+		DSChair.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MChair.indices.size()), 1, 0, 0, 0);
 
 		// PSmoothSurfaces
 		//
@@ -1577,6 +1597,8 @@ protected:
 		tileHomeubo.nMat = glm::inverse(glm::transpose(rotTile));
 		tileHomeubo.tileIdx = -2;
 		tileHomeubo.suitIdx = 10;
+		tileHomeubo.selectedIdx = -10;
+		tileHomeubo.hoverIdx = -10;
 		tileHomeubo.textureIdx = tileTextureIdx;
 		DSHTile.map(currentImage, &tileHomeubo, sizeof(tileHomeubo), 0);
 
@@ -1744,6 +1766,19 @@ protected:
 		vaseubo.amb = 1.0f; vaseubo.gamma = 200.0f; vaseubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSVase.map(currentImage, &commonubo[27], sizeof(commonubo[27]), 0);
 		DSVase.map(currentImage, &vaseubo, sizeof(vaseubo), 1);
+
+		//Chair
+		World = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f)) *
+			glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(1.0f));
+		tableubo.amb = 20.0f; tableubo.sigma = 1.1f;
+		commonubo[28].mvpMat = Prj * View * World;
+		commonubo[28].mMat = World;
+		commonubo[28].nMat = glm::inverse(glm::transpose(World));
+		commonubo[28].transparency = 0.0f;
+		commonubo[28].textureIdx = 0;
+		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
+		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
