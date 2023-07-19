@@ -143,8 +143,8 @@ protected:
 	DescriptorSet DSGameTitle;
 	DescriptorSet DSLandscape;
 	DescriptorSet DSLion;
-	DescriptorSet DSPictureFrame;
-	DescriptorSet DSPictureFrameImage;
+	DescriptorSet DSPictureFrame1, DSPictureFrame2;
+	DescriptorSet DSPictureFrameImage1, DSPictureFrameImage2;
 	DescriptorSet DSVase;
 	DescriptorSet DSChair;
 	// Descriptor sets for UI elements
@@ -172,7 +172,7 @@ protected:
 	Texture TYouWin;
 	Texture TLion;
 	Texture TPictureFrame; 
-	Texture TPictureFrameImage;
+	Texture TPictureFrameImage1, TPictureFrameImage2;
 	//Buttons
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
@@ -197,7 +197,7 @@ protected:
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
 	RoughSurfaceUniformBlock chairubo;
 	SmoothSurfaceUniformBlock lionubo;
-	SmoothSurfaceUniformBlock pictureFrameubo;
+	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
@@ -228,16 +228,19 @@ protected:
 	// [22] - Tile type selection title
 	// [23] - Board design selection title
 	// [24] - Lion statue
-	// [25] - Picture frame
-	// [26] - Picture frame image
+	// [25] - Picture frame 1
+	// [26] - Picture frame image 1
 	// [27] - Vase
 	// [28] - Chair
-	CommonUniformBlock commonubo[29];
+	// [29] - Picture frame 1
+	// [30] - Picture frame image 1
+	CommonUniformBlock commonubo[31];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
 	int boardTextureIdx = 0;
-	int pictureFrameImageIdx = 0;
+	int pictureFrameImageIdx1 = 0;
+	int pictureFrameImageIdx2 = 0;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -519,7 +522,7 @@ protected:
 		MLion.init(this, &VMesh, "models/Lion.obj", OBJ);
 		MPictureFrame.init(this, &VMesh, "models/frame.obj", OBJ);
 		MVase.init(this, &VMesh, "models/vase.obj", OBJ);
-		MChair.init(this, &VMesh, "models/chinese_armchair.obj", OBJ);
+		MChair.init(this, &VMesh, "models/armchair.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -565,14 +568,24 @@ protected:
 		}; 
 		TBoardSelText.initFour(this, boardNamesTextureFiles); 
 
-		//Images that can appear in the picture frame
-		const char* frameImagesTextureFiles[4] = {
+		//Images that can appear in the picture frame 1
+		const char* frameImagesTextureFiles1[4] = {
 			"textures/room/picture1.jpg",
 			"textures/room/picture2.jpg",
 			"textures/room/picture3.jpg",
 			"textures/room/picture4.jpg",
 		};
-		TPictureFrameImage.initFour(this, frameImagesTextureFiles);
+		TPictureFrameImage1.initFour(this, frameImagesTextureFiles1);
+
+		//Images that can appear in the picture frame 2
+		const char* frameImagesTextureFiles2[5] = { 
+			"textures/foto_cina/shanghai.jpg",
+			"textures/foto_cina/suzhou.jpg",
+			"textures/foto_cina/yunnan.jpg",
+			"textures/foto_cina/jiayuguan.jpg",
+			"textures/foto_cina/zhangye.jpg",
+		};
+		TPictureFrameImage2.initFive(this, frameImagesTextureFiles2); 
 
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
@@ -593,8 +606,8 @@ protected:
 		TSelection3.init(this, "textures/buttons/boardDesign.png");
 		TLion.init(this, "textures/room/lion.png");
 		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
-		TVase.init(this, "textures/room/vase_8k.jpeg");	//big image dimension
-		TChair.init(this, "textures/room/Chair_wood.jpg");
+		TVase.init(this, "textures/room/vase_1k.png");	//big image dimension
+		TChair.init(this, "textures/room/armchair.jpg");
 		
 		//-------------------------------
 		// Init local variables
@@ -702,9 +715,13 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TBoardSelText}
 			});
-		DSPictureFrameImage.init(this, &DSLPlain, {
+		DSPictureFrameImage1.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
-				{1, TEXTURE, 0, &TPictureFrameImage}
+				{1, TEXTURE, 0, &TPictureFrameImage1}
+			});
+		DSPictureFrameImage2.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TPictureFrameImage2}
 			});
 
 		// Tile
@@ -779,9 +796,14 @@ protected:
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TLion}
 			});
-		DSPictureFrame.init(this, &DSLGeneric, {
+		DSPictureFrame1.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr}, 
+					{2, TEXTURE, 0, &TPictureFrame}
+			});
+		DSPictureFrame2.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TPictureFrame}
 			});
 		DSVase.init(this, &DSLGeneric, {
@@ -824,8 +846,10 @@ protected:
 		DSTileTexture.cleanup();
 		DSLandscape.cleanup();
 		DSLion.cleanup();
-		DSPictureFrame.cleanup(); 
-		DSPictureFrameImage.cleanup(); 
+		DSPictureFrame1.cleanup(); 
+		DSPictureFrameImage1.cleanup(); 
+		DSPictureFrame2.cleanup();
+		DSPictureFrameImage2.cleanup();
 		DSVase.cleanup();
 		DSChair.cleanup();
 		DSGameOver.cleanup();
@@ -880,7 +904,8 @@ protected:
 		TVase.cleanup();
 		TChair.cleanup();
 		TPictureFrame.cleanup(); 
-		TPictureFrameImage.cleanup(); 
+		TPictureFrameImage1.cleanup(); 
+		TPictureFrameImage2.cleanup();
 		TTileSelText.cleanup(); 
 		TBoardSelText.cleanup();
 
@@ -993,9 +1018,12 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
 		//Picture frame image
-		DSPictureFrameImage.bind(commandBuffer, PPlain, 0, currentImage); 
+		DSPictureFrameImage1.bind(commandBuffer, PPlain, 0, currentImage); 
 		vkCmdDrawIndexed(commandBuffer, 
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
+		DSPictureFrameImage2.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 
 		// PTile
 		//
@@ -1070,9 +1098,14 @@ protected:
 		DSLion.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MLion.indices.size()), 1, 0, 0, 0);
-		//Picture frame
+		//Picture frame 1
 		MPictureFrame.bind(commandBuffer);
-		DSPictureFrame.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		DSPictureFrame1.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPictureFrame.indices.size()), 1, 0, 0, 0);
+		//Picture frame 2
+		MPictureFrame.bind(commandBuffer);
+		DSPictureFrame2.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPictureFrame.indices.size()), 1, 0, 0, 0);
 		//Vase
@@ -1211,8 +1244,13 @@ protected:
 					int max = 3;
 					int min = 0;
 					std::mt19937 rng(time(NULL));
-					std::uniform_int_distribution<int> gen(min, max); // uniform, unbiased
-					pictureFrameImageIdx = gen(rng);
+					std::uniform_int_distribution<int> gen(min, max);
+					pictureFrameImageIdx1 = gen(rng);
+
+					max = 4;
+					std::mt19937 rng2(time(NULL));
+					std::uniform_int_distribution<int> gen2(min, max);
+					pictureFrameImageIdx2 = gen2(rng);
 					//std::cout << "\nRandom picture idx: " << pictureFrameImageIdx << "\n";
 
 					enterPressedFirstTime = true;
@@ -1425,6 +1463,10 @@ protected:
 		// [24] - Lion statue
 		// [25] - Picture frame
 		// [26] - Picture frame image
+		// [27] - Vase
+		// [28] - Chair
+		// [29] - Picture frame 1
+		// [30] - Picture frame image 1
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1582,10 +1624,10 @@ protected:
 		ang += homeTileRotSpeed * deltaT;
 		tileHomeubo.transparency = 1.0f;
 		glm::mat4 rotTile = translateUp * homeMenuWorld *
-			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.4f, 0.2f)) *
+			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.4f, 0.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::sin(ang)+0.5f, glm::vec3(0.0f, 0.0f, 1.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(35.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(40.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
 			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.00675f, 0.0f));
@@ -1729,7 +1771,7 @@ protected:
 
 
 		glm::mat4 pictureFramePosition = glm::translate(glm::mat4(1), glm::vec3(1.96f, 1.75f, 0.3f));
-		//Picture frame
+		//Picture frame 1
 		World = pictureFramePosition *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
 			glm::scale(glm::mat4(1), glm::vec3(0.5)); 
@@ -1738,11 +1780,11 @@ protected:
 		commonubo[25].nMat = glm::inverse(glm::transpose(World)); 
 		commonubo[25].transparency = 0.0f; 
 		commonubo[25].textureIdx = 0; 
-		pictureFrameubo.amb = 1.0f; pictureFrameubo.gamma = 200.0f; pictureFrameubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
-		DSPictureFrame.map(currentImage, &commonubo[25], sizeof(commonubo[25]), 0);
-		DSPictureFrame.map(currentImage, &pictureFrameubo, sizeof(pictureFrameubo), 1);
+		pictureFrameubo1.amb = 1.0f; pictureFrameubo1.gamma = 200.0f; pictureFrameubo1.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		DSPictureFrame1.map(currentImage, &commonubo[25], sizeof(commonubo[25]), 0);
+		DSPictureFrame1.map(currentImage, &pictureFrameubo1, sizeof(pictureFrameubo1), 1);
 
-		//Picture frame Image
+		//Picture frame Image 1
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(2.0f, 1.2f, 1.0f)) * 
@@ -1751,8 +1793,34 @@ protected:
 		commonubo[26].mMat = World;
 		commonubo[26].nMat = glm::inverse(glm::transpose(World));
 		commonubo[26].transparency = 0.0f;
-		commonubo[26].textureIdx = pictureFrameImageIdx;
-		DSPictureFrameImage.map(currentImage, &commonubo[26], sizeof(commonubo[26]), 0);
+		commonubo[26].textureIdx = pictureFrameImageIdx1;
+		DSPictureFrameImage1.map(currentImage, &commonubo[26], sizeof(commonubo[26]), 0);
+
+		//Picture frame 2
+		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.3f, -1.5f)) *
+			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.5));
+		commonubo[29].mvpMat = Prj * View * World;
+		commonubo[29].mMat = World;
+		commonubo[29].nMat = glm::inverse(glm::transpose(World));
+		commonubo[29].transparency = 0.0f;
+		commonubo[29].textureIdx = 0;
+		pictureFrameubo2.amb = 1.0f; pictureFrameubo2.gamma = 200.0f; pictureFrameubo2.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		DSPictureFrame2.map(currentImage, &commonubo[29], sizeof(commonubo[29]), 0);
+		DSPictureFrame2.map(currentImage, &pictureFrameubo2, sizeof(pictureFrameubo2), 1);
+
+		//Picture frame Image 2
+		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.3f, -1.5f)) *
+			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
+			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(2.0f, 1.2f, 1.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
+		commonubo[30].mvpMat = Prj * View * World;
+		commonubo[30].mMat = World;
+		commonubo[30].nMat = glm::inverse(glm::transpose(World));
+		commonubo[30].transparency = 0.0f;
+		commonubo[30].textureIdx = pictureFrameImageIdx2;
+		DSPictureFrameImage2.map(currentImage, &commonubo[30], sizeof(commonubo[30]), 0);
 
 		//Vase
 		World = glm::translate(glm::mat4(1), glm::vec3(-1.5f, 0.0f, -1.8f)) *
@@ -1768,15 +1836,15 @@ protected:
 		DSVase.map(currentImage, &vaseubo, sizeof(vaseubo), 1);
 
 		//Chair
-		World = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f)) *
-			glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(1.0f));
-		tableubo.amb = 20.0f; tableubo.sigma = 1.1f;
+		World = glm::translate(glm::mat4(1), glm::vec3(0.15f, -0.1f, 0.3f)) *
+			glm::rotate(glm::mat4(1), glm::radians(35.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.7f));
 		commonubo[28].mvpMat = Prj * View * World;
 		commonubo[28].mMat = World;
 		commonubo[28].nMat = glm::inverse(glm::transpose(World));
 		commonubo[28].transparency = 0.0f;
 		commonubo[28].textureIdx = 0;
+		chairubo.amb = 20.0f; chairubo.sigma = 1.1f;
 		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
 
