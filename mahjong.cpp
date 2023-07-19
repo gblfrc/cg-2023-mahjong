@@ -1757,7 +1757,7 @@ protected:
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; 
 			tileubo[i].gamma = 300.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
-			tileubo[i].sColor = glm::vec3(0.4f);
+			tileubo[i].sColor = glm::vec3(0.2f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
