@@ -126,6 +126,7 @@ protected:
 	Model<VertexMesh> MArrowButton;
 	Model<VertexMesh> MLion;
 	Model<VertexMesh> MPictureFrame;
+	Model<VertexMesh> MVase;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -143,6 +144,7 @@ protected:
 	DescriptorSet DSLion;
 	DescriptorSet DSPictureFrame;
 	DescriptorSet DSPictureFrameImage;
+	DescriptorSet DSVase;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -178,6 +180,7 @@ protected:
 	Texture TSelection3;
 	Texture TTileSelText;
 	Texture TBoardSelText;
+	Texture TVase;
 	
 
 	// C++ storage for uniform variables
@@ -191,6 +194,7 @@ protected:
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo;
+	SmoothSurfaceUniformBlock vaseubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
@@ -222,7 +226,8 @@ protected:
 	// [24] - Lion statue
 	// [25] - Picture frame
 	// [26] - Picture frame image
-	CommonUniformBlock commonubo[27];
+	// [27] - Vase
+	CommonUniformBlock commonubo[28];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -508,6 +513,7 @@ protected:
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
 		MLion.init(this, &VMesh, "models/Lion.obj", OBJ);
 		MPictureFrame.init(this, &VMesh, "models/frame.obj", OBJ);
+		MVase.init(this, &VMesh, "models/vase.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -581,6 +587,7 @@ protected:
 		TSelection3.init(this, "textures/buttons/boardDesign.png");
 		TLion.init(this, "textures/room/lion.png");
 		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
+		TVase.init(this, "textures/room/vase_8k.jpeg");	//big image dimension
 		
 		//-------------------------------
 		// Init local variables
@@ -770,6 +777,11 @@ protected:
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr}, 
 					{2, TEXTURE, 0, &TPictureFrame}
 			});
+		DSVase.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TVase}
+			});
 
 
 	}
@@ -802,6 +814,7 @@ protected:
 		DSLion.cleanup();
 		DSPictureFrame.cleanup(); 
 		DSPictureFrameImage.cleanup(); 
+		DSVase.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -851,6 +864,7 @@ protected:
 		TSelection2.cleanup();
 		TSelection3.cleanup();
 		TLion.cleanup();
+		TVase.cleanup();
 		TPictureFrame.cleanup(); 
 		TPictureFrameImage.cleanup(); 
 		TTileSelText.cleanup(); 
@@ -873,6 +887,7 @@ protected:
 		MArrowButton.cleanup();
 		MLion.cleanup();
 		MPictureFrame.cleanup();
+		MVase.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1040,6 +1055,11 @@ protected:
 		DSPictureFrame.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPictureFrame.indices.size()), 1, 0, 0, 0);
+		//Vase
+		MVase.bind(commandBuffer);
+		DSVase.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MVase.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1711,6 +1731,19 @@ protected:
 		commonubo[26].transparency = 0.0f;
 		commonubo[26].textureIdx = pictureFrameImageIdx;
 		DSPictureFrameImage.map(currentImage, &commonubo[26], sizeof(commonubo[26]), 0);
+
+		//Vase
+		World = glm::translate(glm::mat4(1), glm::vec3(-1.5f, 0.0f, -1.8f)) *
+			glm::rotate(glm::mat4(1), glm::radians(60.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.016f));
+		commonubo[27].mvpMat = Prj * View * World;
+		commonubo[27].mMat = World;
+		commonubo[27].nMat = glm::inverse(glm::transpose(World));
+		commonubo[27].transparency = 0.0f;
+		commonubo[27].textureIdx = 0;
+		vaseubo.amb = 1.0f; vaseubo.gamma = 200.0f; vaseubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		DSVase.map(currentImage, &commonubo[27], sizeof(commonubo[27]), 0);
+		DSVase.map(currentImage, &vaseubo, sizeof(vaseubo), 1);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
