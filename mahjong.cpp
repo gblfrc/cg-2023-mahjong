@@ -9,6 +9,7 @@
 #include <mmsystem.h>
 #include <string>
 #include <random>
+#include <glm/gtx/transform2.hpp>
 
 //link windows multimedia library to our program
 #pragma comment(lib, "winmm.lib")
@@ -54,6 +55,10 @@ struct SmoothSurfaceUniformBlock {
 	alignas(4) float amb;
 	alignas(4) float gamma;
 	alignas(16) glm::vec3 sColor;
+};
+
+struct PlainWithEmissionUniformBlock {
+	alignas(16) glm::vec3 emission;
 };
 
 struct GlobalUniformBlock {
@@ -106,6 +111,7 @@ protected:
 	Pipeline PTile;
 	Pipeline PRoughSurfaces;
 	Pipeline PSmoothSurfaces;
+	Pipeline PPlainWithEmission;
 	Pipeline PUI;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
@@ -128,6 +134,7 @@ protected:
 	Model<VertexMesh> MPictureFrame;
 	Model<VertexMesh> MVase;
 	Model<VertexMesh> MChair;
+	Model<VertexMesh> MFlame;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -147,6 +154,7 @@ protected:
 	DescriptorSet DSPictureFrameImage1, DSPictureFrameImage2;
 	DescriptorSet DSVase;
 	DescriptorSet DSChair;
+	DescriptorSet DSFlame;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -173,6 +181,7 @@ protected:
 	Texture TLion;
 	Texture TPictureFrame; 
 	Texture TPictureFrameImage1, TPictureFrameImage2;
+	Texture TFlame;
 	//Buttons
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
@@ -203,6 +212,7 @@ protected:
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
 	CommonUniformBlock tileSelTextubo, boardSelTextubo;
+	PlainWithEmissionUniformBlock flameEmissionubo;
 
 	// Geometry blocks for objects different from tiles
 	// [0] - Background
@@ -234,7 +244,8 @@ protected:
 	// [28] - Chair
 	// [29] - Picture frame 1
 	// [30] - Picture frame image 1
-	CommonUniformBlock commonubo[31];
+	// [31] - Flame
+	CommonUniformBlock commonubo[32];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -350,6 +361,9 @@ protected:
 		// Other pipelines
 		PSmoothSurfaces.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/BlinnFrag.spv", { &DSLGeneric, &DSLGubo });
 		PSmoothSurfaces.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
+		// PPlain --> Pipeline for elements that have to be 'copied' from textures
+		PPlainWithEmission.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/PlainWithEmissionFrag.spv", { &DSLGeneric});
+		PPlainWithEmission.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, true);
 
 		//----------------------------
 		// Models, textures and Descriptors (values assigned to the uniforms)
@@ -523,6 +537,7 @@ protected:
 		MPictureFrame.init(this, &VMesh, "models/frame.obj", OBJ);
 		MVase.init(this, &VMesh, "models/vase.obj", OBJ);
 		MChair.init(this, &VMesh, "models/armchair.obj", OBJ);
+		MFlame.init(this, &VMesh, "models/Fire.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -608,6 +623,7 @@ protected:
 		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
 		TVase.init(this, "textures/room/vase_1k.png");	//big image dimension
 		TChair.init(this, "textures/room/armchair.jpg");
+		TFlame.init(this, "textures/room/fire.jpg");
 		
 		//-------------------------------
 		// Init local variables
@@ -627,6 +643,7 @@ protected:
 		PSmoothSurfaces.create();
 		PTile.create();
 		PPlain.create();
+		PPlainWithEmission.create();
 		PUI.create();
 
 		// Descriptor Sets
@@ -816,6 +833,11 @@ protected:
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TChair}
 			});
+		DSFlame.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
+					{1, UNIFORM, sizeof(PlainWithEmissionUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TFlame}
+			});
 
 
 	}
@@ -828,6 +850,7 @@ protected:
 		PSmoothSurfaces.cleanup();
 		PTile.cleanup();
 		PPlain.cleanup();
+		PPlainWithEmission.cleanup();
 		PUI.cleanup();
 
 		// Cleanup descriptor sets
@@ -852,6 +875,7 @@ protected:
 		DSPictureFrameImage2.cleanup();
 		DSVase.cleanup();
 		DSChair.cleanup();
+		DSFlame.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -908,6 +932,7 @@ protected:
 		TPictureFrameImage2.cleanup();
 		TTileSelText.cleanup(); 
 		TBoardSelText.cleanup();
+		TFlame.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -928,6 +953,7 @@ protected:
 		MPictureFrame.cleanup();
 		MVase.cleanup();
 		MChair.cleanup();
+		MFlame.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -941,6 +967,7 @@ protected:
 		PRoughSurfaces.destroy();
 		PSmoothSurfaces.destroy();
 		PPlain.destroy();
+		PPlainWithEmission.destroy();
 		PUI.destroy();
 	}
 
@@ -1126,6 +1153,13 @@ protected:
 		DSYouWin.bind(commandBuffer, PUI, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MYouWin.indices.size()), 1, 0, 0, 0);
+
+		//PPlainWithEmission
+		PPlainWithEmission.bind(commandBuffer);
+		MFlame.bind(commandBuffer);
+		DSFlame.bind(commandBuffer, PPlainWithEmission, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MFlame.indices.size()), 1, 0, 0, 0);
 	}
 
 	// Here is where you update the uniforms.
@@ -1473,6 +1507,7 @@ protected:
 		// [28] - Chair
 		// [29] - Picture frame 1
 		// [30] - Picture frame image 1
+		// [31] - Flame
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1853,6 +1888,41 @@ protected:
 		chairubo.amb = 20.0f; chairubo.sigma = 1.1f;
 		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
+
+		//Flame
+		glm::vec3 candleLightPos = glm::vec3(0.8f, 0.7f, -0.7f);
+		std::mt19937 rngFlame(time(NULL));
+		std::uniform_int_distribution<int> genScaleDiff(8, 13);
+		float scaleDiff = genScaleDiff(rngFlame)/10.0f;
+		std::uniform_int_distribution<int> genRotDiff(0, 180);
+		float rotationDiff = genRotDiff(rngFlame);
+		std::uniform_int_distribution<int> genEmissionPicker(0, 3);
+		int emissionPicker = genEmissionPicker(rngFlame);
+		glm::vec3 emissionColors[4] = {
+			glm::vec3(235.0f/255.0f, 103.0f/255.0f, 52.0f/255.0f),		//Dark orange
+			glm::vec3(245.0f/255.0f, 2.0f/255.0f, 2.0f/255.0f),			//Red
+			glm::vec3(232.0f/255.0f, 65.0f/255.0f, 19.0f/255.0f),		//Lighter red
+			//glm::vec3(237.0f/255.0f, 198.0f/255.0f, 2.0f/255.0f),		//Yellow
+			glm::vec3(245.0f/255.0f, 136.0f/255.0f, 2.0f/255.0f),		// Light orange
+		};
+		glm::vec3 chosenEmissionColor = emissionColors[emissionPicker];
+		std::uniform_int_distribution<int> genshearCoeff(-2, 2);
+		float shearhx = genshearCoeff(rngFlame)/10.0f;
+		float shearhz = genshearCoeff(rngFlame)/10.0f;
+		World = glm::translate(glm::mat4(1), candleLightPos) * 
+			glm::rotate(glm::mat4(1), glm::radians(rotationDiff), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.5f)) *
+			glm::scale(glm::mat4(1), glm::vec3(1.0f, scaleDiff, 1.0f)) *
+			glm::shearY3D(glm::mat4(1), shearhx, shearhz);
+		commonubo[31].mvpMat = Prj * View * World;
+		commonubo[31].mMat = World;
+		commonubo[31].nMat = glm::inverse(glm::transpose(World));
+		commonubo[31].transparency = 0.0f;
+		commonubo[31].textureIdx = 0;
+		flameEmissionubo.emission = chosenEmissionColor;
+		DSFlame.map(currentImage, &commonubo[31], sizeof(commonubo[31]), 0);
+		DSFlame.map(currentImage, &flameEmissionubo, sizeof(flameEmissionubo), 1);
+
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
