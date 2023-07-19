@@ -124,6 +124,7 @@ protected:
 	Model<VertexMesh> MPlainRectangle;
 	Model<VertexMesh> MArrowButton;
 	Model<VertexMesh> MLion;
+	Model<VertexMesh> MPictureFrame;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -139,6 +140,7 @@ protected:
 	DescriptorSet DSGameTitle;
 	DescriptorSet DSLandscape;
 	DescriptorSet DSLion;
+	DescriptorSet DSPictureFrame;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -149,6 +151,7 @@ protected:
 	DescriptorSet DSSelection1, DSSelection2, DSSelection3;
 	DescriptorSet DSTileSelText;
 	DescriptorSet DSBoardSelText;
+	
 
 	Texture TPoolCloth;
 	Texture TTile;
@@ -171,6 +174,7 @@ protected:
 	Texture TSelection3;
 	Texture TTileSelText;
 	Texture TBoardSelText;
+	Texture TPictureFrame;
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
@@ -182,6 +186,7 @@ protected:
 	RoughSurfaceUniformBlock tableubo;
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
 	SmoothSurfaceUniformBlock lionubo;
+	SmoothSurfaceUniformBlock pictureFrameubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
@@ -211,7 +216,8 @@ protected:
 	// [22] - Tile type selection title
 	// [23] - Board design selection title
 	// [24] - Lion statue
-	CommonUniformBlock commonubo[25];
+	// [25] - Picture frame
+	CommonUniformBlock commonubo[26];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -251,9 +257,9 @@ protected:
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes
-		uniformBlocksInPool = 300;//184;
-		texturesInPool = 40;//32;
-		setsInPool = 300;//178;
+		uniformBlocksInPool = 300;//186;
+		texturesInPool = 40;//33;
+		setsInPool = 300;//179;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -495,6 +501,7 @@ protected:
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
 		MLion.init(this, &VMesh, "models/Lion.obj", OBJ);
+		MPictureFrame.init(this, &VMesh, "models/frame.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -558,6 +565,7 @@ protected:
 		TSelection2.init(this, "textures/buttons/tileDesign.png");
 		TSelection3.init(this, "textures/buttons/boardDesign.png");
 		TLion.init(this, "textures/room/lion.png");
+		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
 		
 		//-------------------------------
 		// Init local variables
@@ -737,6 +745,11 @@ protected:
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TLion}
 			});
+		DSPictureFrame.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr}, 
+					{2, TEXTURE, 0, &TPictureFrame}
+			});
 
 	}
 
@@ -766,6 +779,7 @@ protected:
 		DSTileTexture.cleanup();
 		DSLandscape.cleanup();
 		DSLion.cleanup();
+		DSPictureFrame.cleanup(); 
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -815,6 +829,7 @@ protected:
 		TSelection2.cleanup();
 		TSelection3.cleanup();
 		TLion.cleanup();
+		TPictureFrame.cleanup(); 
 		TTileSelText.cleanup(); 
 		TBoardSelText.cleanup();
 
@@ -834,6 +849,7 @@ protected:
 		MPlainRectangle.cleanup();
 		MArrowButton.cleanup();
 		MLion.cleanup();
+		MPictureFrame.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -992,6 +1008,11 @@ protected:
 		DSLion.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MLion.indices.size()), 1, 0, 0, 0);
+		//Picture frame
+		MPictureFrame.bind(commandBuffer);
+		DSPictureFrame.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPictureFrame.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1322,6 +1343,8 @@ protected:
 		// [21] - Game setting
 		// [22] - Tile type selection title
 		// [23] - Board design selection title
+		// [24] - Lion statue
+		// [25] - Picture frame
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1621,6 +1644,21 @@ protected:
 		lionubo.amb = 1.0f; lionubo.gamma = 200.0f; lionubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSLion.map(currentImage, &commonubo[24], sizeof(commonubo[24]), 0);
 		DSLion.map(currentImage, &lionubo, sizeof(lionubo), 1);
+
+
+		glm::mat4 pictureFramePosition = glm::translate(glm::mat4(1), glm::vec3(1.96f, 1.75f, 0.3f));
+		//Picture frame
+		World = pictureFramePosition *
+			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
+			glm::scale(glm::mat4(1), glm::vec3(0.5)); 
+		commonubo[25].mvpMat = Prj * View * World; 
+		commonubo[25].mMat = World; 
+		commonubo[25].nMat = glm::inverse(glm::transpose(World)); 
+		commonubo[25].transparency = 0.0f; 
+		commonubo[25].textureIdx = 0; 
+		pictureFrameubo.amb = 1.0f; pictureFrameubo.gamma = 200.0f; pictureFrameubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		DSPictureFrame.map(currentImage, &commonubo[25], sizeof(commonubo[25]), 0);
+		DSPictureFrame.map(currentImage, &pictureFrameubo, sizeof(pictureFrameubo), 1);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
