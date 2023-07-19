@@ -256,13 +256,13 @@ protected:
 	//other parameters
 	int gameState = 0;
 	float DisappearingTileTransparency = 1.0f;
-	const float homeTileRotSpeed = glm::radians(100.0f);
+	const float homeTileRotSpeed = glm::radians(80.0f);
 	int firstTileIndex = -1;
 	int secondTileIndex = -1;
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	bool disappearedTiles[144] = {0};
-	const glm::vec3 homeMenuPosition = glm::vec3(30.0f, 0.0f, 0.0f);
+	const glm::vec3 homeMenuPosition = glm::vec3(-10.0f, 0.0f, -20.0f);
 	const glm::mat4 homeMenuWorld = glm::translate(glm::mat4(1.0f), homeMenuPosition);
 
 
@@ -1220,20 +1220,24 @@ protected:
 				if (handleClick && hoverIndex==-42) {
 					tileTextureIdx++;
 					if (tileTextureIdx == 4) tileTextureIdx = 0;
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				}
 				if(handleClick && hoverIndex == -41) {
 					tileTextureIdx--;
 					if (tileTextureIdx == -1) tileTextureIdx = 3;
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
 
 				//Change board texture
 				if (handleClick && hoverIndex == -44) {
 					boardTextureIdx++;
 					if (boardTextureIdx == 4) boardTextureIdx = 0;
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
 				if (handleClick && hoverIndex == -43) {
 					boardTextureIdx--;
 					if (boardTextureIdx == -1) boardTextureIdx = 3;
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
 
 				//Start the game
@@ -1252,6 +1256,8 @@ protected:
 					std::uniform_int_distribution<int> gen2(min, max);
 					pictureFrameImageIdx2 = gen2(rng);
 					//std::cout << "\nRandom picture idx: " << pictureFrameImageIdx << "\n";
+
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); //TO CHANGE WITH DEDICATED ONE
 
 					enterPressedFirstTime = true;
 				}
@@ -1417,11 +1423,11 @@ protected:
 		//BUFFERS FILLING
 		//--------------------------
 
-		gubo.PlightPos = glm::vec3(0.0f, 3.0f, 0.0f);	
+		gubo.PlightPos = glm::vec3(0.0f, 1.9f, 0.0f);	
 		gubo.PlightColor = glm::vec3(10.0f);
-		gubo.beta = 1.0f;
-		gubo.g = 0.5f;
-		gubo.AmbLightColor = glm::vec3(0.1f);
+		gubo.beta = 1.1f;
+		gubo.g = 0.3f;
+		gubo.AmbLightColor = glm::vec3(0.01f);
 		gubo.eyePos = camPos;
 
 		// Writes value to the GPU
@@ -1633,7 +1639,7 @@ protected:
 			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.00675f, 0.0f));
 		tileHomeubo.amb = 10.0f;
 		tileHomeubo.gamma = 300.0f;
-		tileHomeubo.sColor = glm::vec3(0.4f);
+		tileHomeubo.sColor = glm::vec3(0.1f);
 		tileHomeubo.mvpMat = Prj * View * rotTile;
 		tileHomeubo.mMat = rotTile;
 		tileHomeubo.nMat = glm::inverse(glm::transpose(rotTile));
