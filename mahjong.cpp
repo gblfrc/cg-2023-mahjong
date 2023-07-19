@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include <string>
+#include <random>
 
 //link windows multimedia library to our program
 #pragma comment(lib, "winmm.lib")
@@ -141,6 +142,7 @@ protected:
 	DescriptorSet DSLandscape;
 	DescriptorSet DSLion;
 	DescriptorSet DSPictureFrame;
+	DescriptorSet DSPictureFrameImage;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -165,6 +167,8 @@ protected:
 	Texture TGameOver;
 	Texture TYouWin;
 	Texture TLion;
+	Texture TPictureFrame; 
+	Texture TPictureFrameImage;
 	//Buttons
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
@@ -174,7 +178,7 @@ protected:
 	Texture TSelection3;
 	Texture TTileSelText;
 	Texture TBoardSelText;
-	Texture TPictureFrame;
+	
 
 	// C++ storage for uniform variables
 	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
@@ -217,11 +221,13 @@ protected:
 	// [23] - Board design selection title
 	// [24] - Lion statue
 	// [25] - Picture frame
-	CommonUniformBlock commonubo[26];
+	// [26] - Picture frame image
+	CommonUniformBlock commonubo[27];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
 	int boardTextureIdx = 0;
+	int pictureFrameImageIdx = 0;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -538,7 +544,7 @@ protected:
 		};
 		TTileSelText.initFour(this, tileNamesTextureFiles);
 
-		//TO DO: ADD CORRECT ASSETS FOR TEXTURES HERE
+		//Board styles
 		const char* boardNamesTextureFiles[4] = {
 			"textures/buttons/poolTable_board_text.png",
 			"textures/buttons/imperialRed_board_text.png",
@@ -546,6 +552,15 @@ protected:
 			"textures/buttons/darkwood_board_text.png",
 		}; 
 		TBoardSelText.initFour(this, boardNamesTextureFiles); 
+
+		//Images that can appear in the picture frame
+		const char* frameImagesTextureFiles[4] = {
+			"textures/room/picture1.jpg",
+			"textures/room/picture2.jpg",
+			"textures/room/picture3.jpg",
+			"textures/room/picture4.jpg",
+		};
+		TPictureFrameImage.initFour(this, frameImagesTextureFiles);
 
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
@@ -673,6 +688,11 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TBoardSelText}
 			});
+		DSPictureFrameImage.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TPictureFrameImage}
+			});
+
 		// Tile
 		for (int i = 0; i < 144; i++) {
 			DSTile[i].init(this, &DSLTile, {
@@ -751,6 +771,7 @@ protected:
 					{2, TEXTURE, 0, &TPictureFrame}
 			});
 
+
 	}
 
 	// Here you destroy your pipelines and Descriptor Sets!
@@ -780,6 +801,7 @@ protected:
 		DSLandscape.cleanup();
 		DSLion.cleanup();
 		DSPictureFrame.cleanup(); 
+		DSPictureFrameImage.cleanup(); 
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -830,6 +852,7 @@ protected:
 		TSelection3.cleanup();
 		TLion.cleanup();
 		TPictureFrame.cleanup(); 
+		TPictureFrameImage.cleanup(); 
 		TTileSelText.cleanup(); 
 		TBoardSelText.cleanup();
 
@@ -890,7 +913,7 @@ protected:
 		DSGameTitle.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
-		//Buttons
+		//Rectangles
 		MPlainRectangle.bind(commandBuffer);
 		DSButton1.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -939,6 +962,10 @@ protected:
 		DSArrowButton3_right.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
+		//Picture frame image
+		DSPictureFrameImage.bind(commandBuffer, PPlain, 0, currentImage); 
+		vkCmdDrawIndexed(commandBuffer, 
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
 
 		// PTile
 		//
@@ -1083,13 +1110,13 @@ protected:
 		int index = y * windowWidth + x;
 		int hoverIndex = 0;
 		if (y < windowHeight && x < windowWidth) {
-			cout << x << ", " << y << " ---> " << pixels[index] << "\n";
+			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
 			//tileTextureIdx = hoverIndex % 4;
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
-		if(handleClick) std::cout << "\nClick on tile: " << pixels[index]<<"\n";
+		//if(handleClick) std::cout << "\nClick on tile: " << pixels[index]<<"\n";
 
 
 
@@ -1112,8 +1139,10 @@ protected:
 					enterPressedFirstTime = true;
 				}*/
 
-				//get clicks to change textures and shaders
+				//exit game
 				
+
+				//get clicks to change textures and shaders
 				//Change tiles texture
 				if (handleClick && hoverIndex==-42) {
 					tileTextureIdx++;
@@ -1135,8 +1164,17 @@ protected:
 				}
 
 				//Start the game
-				if (handleClick && hoverIndex == -30) {
+				if ((handleClick && hoverIndex == -30) || enter) {
 					gameState = 0;
+
+					//random gen of the index to use to chose the picture for the picture frame
+					int max = 3;
+					int min = 0;
+					std::mt19937 rng(time(NULL));
+					std::uniform_int_distribution<int> gen(min, max); // uniform, unbiased
+					pictureFrameImageIdx = gen(rng);
+					//std::cout << "\nRandom picture idx: " << pictureFrameImageIdx << "\n";
+
 					enterPressedFirstTime = true;
 				}
 
@@ -1345,6 +1383,7 @@ protected:
 		// [23] - Board design selection title
 		// [24] - Lion statue
 		// [25] - Picture frame
+		// [26] - Picture frame image
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1659,6 +1698,18 @@ protected:
 		pictureFrameubo.amb = 1.0f; pictureFrameubo.gamma = 200.0f; pictureFrameubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSPictureFrame.map(currentImage, &commonubo[25], sizeof(commonubo[25]), 0);
 		DSPictureFrame.map(currentImage, &pictureFrameubo, sizeof(pictureFrameubo), 1);
+
+		//Picture frame Image
+		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
+			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(2.0f, 1.2f, 1.0f)) * 
+			glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
+		commonubo[26].mvpMat = Prj * View * World;
+		commonubo[26].mMat = World;
+		commonubo[26].nMat = glm::inverse(glm::transpose(World));
+		commonubo[26].transparency = 0.0f;
+		commonubo[26].textureIdx = pictureFrameImageIdx;
+		DSPictureFrameImage.map(currentImage, &commonubo[26], sizeof(commonubo[26]), 0);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
