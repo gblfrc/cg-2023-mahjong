@@ -44,6 +44,7 @@ struct TileUniformBlock {
 	alignas(4) int hoverIdx;
 	alignas(4) int selectedIdx;
 	alignas(4) int textureIdx;
+	alignas(4) int isInMenu;
 };
 
 struct RoughSurfaceUniformBlock {
@@ -1538,7 +1539,7 @@ protected:
 
 		//Some positions
 		//Candle+Flame Position
-		glm::vec3 candlePos = glm::vec3(0.8f, 0.6f, -0.7f);
+		glm::vec3 candlePos = glm::vec3(0.35f, 0.6f, -0.7f);
 		glm::vec3 candleLightPos = candlePos + glm::vec3(0.0f, 0.115f, 0.0f); 
 		//Day lantern point light position
 		glm::vec3 lanternLightPos = glm::vec3(0.0f, 1.9f, 0.0f);
@@ -1548,20 +1549,21 @@ protected:
 		bool isNight = circleTextureIdx;
 		if (isNight) {
 			isCandleAlight = 1;
-			generalSColor = glm::vec3(239.0f / 255.0f, 192.0f / 255.0f, 112.0f / 255.0f); //Cold light color
+			generalSColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
 			gubo.PlightPos = candleLightPos;
 			gubo.PlightColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
-			gubo.beta = 1.4f;
-			gubo.g = 0.3f;
+			gubo.beta = 1.6f;
+			gubo.g = 0.6f;
 			gubo.AmbLightColor = glm::vec3(0.01f);
 		}
 		else {
 			isCandleAlight = 0;
 			generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
 			gubo.PlightPos = lanternLightPos;
-			gubo.PlightColor = glm::vec3(10.0f);
-			gubo.beta = 1.1f;
-			gubo.g = 0.3f;
+			gubo.PlightColor = glm::vec3(255.0f/255.0f, 252.0f/255.0f, 221.0f/255.0f); //Yellow-ish white
+			//gubo.PlightColor = glm::vec3(1.0f);
+			gubo.beta = 1.0f;
+			gubo.g = 1.3f;
 			gubo.AmbLightColor = glm::vec3(0.01f);
 		}
 			
@@ -1801,6 +1803,7 @@ protected:
 		tileHomeubo.selectedIdx = -10;
 		tileHomeubo.hoverIdx = -10;
 		tileHomeubo.textureIdx = tileTextureIdx;
+		tileHomeubo.isInMenu = 1;
 		DSHTile.map(currentImage, &tileHomeubo, sizeof(tileHomeubo), 0);
 
 		//Matrix setup for Game Title
@@ -1819,7 +1822,7 @@ protected:
 		World = baseTranslation * 
 				glm::translate(glm::mat4(1), glm::vec3(0.04f, 0.0f, 0.0f)) * 
 				glm::scale(glm::mat4(1), glm::vec3(3.55f, 1.0f, 1.4f));
-		bgubo.amb = 1.0f; bgubo.sigma = 1.1f;
+		bgubo.amb = 1.0f; bgubo.sigma = 0.7f;
 		commonubo[0].mvpMat = Prj * View * World;
 		commonubo[0].mMat = World;
 		commonubo[0].nMat = glm::inverse(glm::transpose(World));
@@ -1830,7 +1833,7 @@ protected:
 
 		// Matrix setup for walls
 		World = glm::mat4(1);
-		wallubo.amb = 1.0f; wallubo.sigma = 1.1f;
+		wallubo.amb = 1.0f; wallubo.sigma = 0.7f;
 		commonubo[1].mvpMat = Prj * View * World;
 		commonubo[1].mMat = World;
 		commonubo[1].nMat = glm::inverse(glm::transpose(World));
@@ -1841,7 +1844,7 @@ protected:
 
 		// Matrix setup for floor
 		World = glm::mat4(1);
-		floorubo.amb = 1.0f; floorubo.sigma = 1.1f;
+		floorubo.amb = 1.0f; floorubo.sigma = 0.7f;
 		commonubo[3].mvpMat = Prj * View * World;
 		commonubo[3].mMat = World;
 		commonubo[3].nMat = glm::inverse(glm::transpose(World));
@@ -1852,7 +1855,7 @@ protected:
 
 		// Matrix setup for ceiling
 		World = glm::mat4(1);
-		ceilingubo.amb = 1.0f; ceilingubo.sigma = 1.1f;
+		ceilingubo.amb = 1.0f; ceilingubo.sigma = 0.7f;
 		commonubo[2].mvpMat = Prj * View * World;
 		commonubo[2].mMat = World;
 		commonubo[2].nMat = glm::inverse(glm::transpose(World));
@@ -1863,7 +1866,7 @@ protected:
 
 		// Matrix setup for table
 		World = baseTranslation;
-		tableubo.amb = 20.0f; tableubo.sigma = 1.1f;
+		tableubo.amb = 20.0f; tableubo.sigma = 0.7f;
 		commonubo[4].mvpMat = Prj * View * World;
 		commonubo[4].mMat = World;
 		commonubo[4].nMat = glm::inverse(glm::transpose(World));
@@ -1875,7 +1878,7 @@ protected:
 		// Matrix setup for windows
 		// Window 1
 		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 1.5f, -2.0f));
-		window1ubo.amb = 1.0f; window1ubo.sigma = 1.1f;
+		window1ubo.amb = 1.0f; window1ubo.sigma = 0.9f;
 		commonubo[5].mvpMat = Prj * View * World;
 		commonubo[5].mMat = World;
 		commonubo[5].nMat = glm::inverse(glm::transpose(World));
@@ -1885,7 +1888,7 @@ protected:
 		DSWindow1.map(currentImage, &window1ubo, sizeof(window1ubo), 1);
 		// Window 2
 		World = glm::translate(glm::mat4(1), glm::vec3(-1.0f, 1.5f, -2.0f));
-		window2ubo.amb = 1.0f; window2ubo.sigma = 1.1f;
+		window2ubo.amb = 1.0f; window2ubo.sigma = 0.9f;
 		commonubo[6].mvpMat = Prj * View * World;
 		commonubo[6].mMat = World;
 		commonubo[6].nMat = glm::inverse(glm::transpose(World));
@@ -1894,7 +1897,7 @@ protected:
 		DSWindow2.map(currentImage, &window2ubo, sizeof(window2ubo), 1);
 		// Window 3
 		World = glm::translate(glm::mat4(1), glm::vec3(1.0f, 1.5f, -2.0f));
-		window3ubo.amb = 1.0f; window3ubo.sigma = 1.1f;
+		window3ubo.amb = 1.0f; window3ubo.sigma = 0.9f;
 		commonubo[7].mvpMat = Prj * View * World;
 		commonubo[7].mMat = World;
 		commonubo[7].nMat = glm::inverse(glm::transpose(World));
@@ -2014,7 +2017,7 @@ protected:
 		commonubo[27].transparency = 0.0f;
 		commonubo[27].textureIdx = 0;
 		if (isNight) {
-			vaseubo.amb = 0.01f; vaseubo.gamma = 10000.0f;
+			vaseubo.amb = 0.0001f; vaseubo.gamma = 10000.0f;
 		}
 		else {
 			vaseubo.amb = 1.0f; vaseubo.gamma = 200.0f;
@@ -2032,7 +2035,7 @@ protected:
 		commonubo[28].nMat = glm::inverse(glm::transpose(World));
 		commonubo[28].transparency = 0.0f;
 		commonubo[28].textureIdx = 0;
-		chairubo.amb = 20.0f; chairubo.sigma = 1.1f;
+		chairubo.amb = 20.0f; chairubo.sigma = 0.5f;
 		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
 
@@ -2080,7 +2083,13 @@ protected:
 		commonubo[32].nMat = glm::inverse(glm::transpose(World));
 		commonubo[32].transparency = 0.0f;
 		commonubo[32].textureIdx = 0;
-		candleubo.amb = 1.0f; candleubo.gamma = 200.0f; 
+		if (isNight) {
+			candleubo.amb = 1.5f; candleubo.gamma = 1000.0f;
+		}
+		else {
+			candleubo.amb = 1.0f; candleubo.gamma = 200.0f;
+		}
+		
 		if (isCandleAlight) candleubo.sColor = chosenEmissionColor;	//change specular color according to emitted color by the candle light
 		else candleubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
@@ -2099,11 +2108,13 @@ protected:
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; 
 			tileubo[i].gamma = 300.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
-			tileubo[i].sColor = glm::vec3(0.5f);//glm::vec3(0.2f);
+			if(isNight) tileubo[i].sColor = generalSColor;
+			else tileubo[i].sColor =glm::vec3(0.5f); //glm::vec3(0.2f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
 			tileubo[i].textureIdx = tileTextureIdx;
+			tileubo[i].isInMenu = 0;
 
 			//highlight the piece on which the mouse is hoovering
 			tileubo[i].hoverIdx = hoverIndex;

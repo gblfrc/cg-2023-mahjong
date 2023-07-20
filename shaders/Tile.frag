@@ -30,6 +30,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	int hoverIdx;
 	int selectedIdx;
 	int textureIdx;
+	int isInMenu; //1 if the tile is in the menu, 0 otherwise
 } ubo;
 
 layout(set = 2, binding = 0) uniform sampler2DArray tex;
@@ -40,9 +41,11 @@ void main() {
 	vec3 V = normalize(gubo.eyePos - fragPos);					// viewer direction
 	vec3 L = normalize(gubo.PlightPos - fragPos);				// light direction
 	vec3 H = normalize(L + V);									// half vector for Blinn BRDF
-	float intensityCoeff = pow((gubo.g/length(gubo.PlightPos - fragPos)), gubo.beta);
+	float intensityCoeff = clamp(pow((gubo.g/length(gubo.PlightPos - fragPos)), gubo.beta), 0.0f, 1.0f);
 	vec3 I = intensityCoeff * gubo.PlightColor;					// Light intensity
 	float alpha = ubo.transparency;								// transparency of the tile
+
+	I = (1-ubo.isInMenu)*I + ubo.isInMenu*vec3(1.0f);
 
 	vec3 albedo = texture(tex, vec3(fragUV, ubo.textureIdx)).rgb;
 	vec3 MD = albedo;
@@ -64,8 +67,8 @@ void main() {
 	vec3 MHover = hoverCoeff * vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
 	// Similar procedure as for hover coefficient
 	float selectCoeff = 1-ceil(abs((ubo.selectedIdx - ubo.tileIdx)/144.0f));
-	vec3 MSelected = selectCoeff * 1.3f * vec3(255.0f/255.0f, 103.0f/255.0f, 102.0f/255.0f);
+	vec3 MSelected = selectCoeff * 1.3f * vec3(255.0f/255.0f, 60.0f/255.0f, 59.0f/255.0f);
 
-	outColor = vec4(clamp((Lambert + Blinn + Ambient)+MHover+MSelected,0.0f, 1.0f), alpha);
+	outColor = vec4(clamp(I*Lambert + Blinn + Ambient + MHover + MSelected,0.0f, 0.95f), alpha);
 	id = ubo.tileIdx;
 }

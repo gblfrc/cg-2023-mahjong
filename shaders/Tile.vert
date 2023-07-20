@@ -10,6 +10,11 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 	mat4 nMat;
 	int tileIdx;
 	int suitIdx;
+	float transparency;
+	int hoverIdx;
+	int selectedIdx;
+	int textureIdx;
+	int isInMenu;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

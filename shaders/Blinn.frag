@@ -40,7 +40,7 @@ void main() {
 	vec3 V = normalize(gubo.eyePos - fragPos);					// viewer direction
 	vec3 L = normalize(gubo.PlightPos - fragPos);				// light direction
 	vec3 H = normalize(L + V);									// half vector for Blinn BRDF
-	float intensityCoeff = pow((gubo.g/length(gubo.PlightPos - fragPos)), gubo.beta);
+	float intensityCoeff = clamp(pow((gubo.g/length(gubo.PlightPos - fragPos)), gubo.beta), 0.0f, 5.0f);
 	vec3 I = intensityCoeff * gubo.PlightColor;					// Light intensity
 	float alpha = cubo.transparency;							// transparency of the tile
 
@@ -54,6 +54,6 @@ void main() {
 	vec3 Blinn = MS * pow(clamp(dot(N, H), 0.0f, 1.0f), subo.gamma);
 	vec3 Ambient = LA * MA;
 
-	outColor = vec4(clamp((Lambert + Blinn + Ambient),0.0f, 1.0f), alpha);
+	outColor = vec4(clamp(I*(Lambert + Blinn + Ambient),0.0f, 0.95f), alpha);
 	id = -1;
 }
