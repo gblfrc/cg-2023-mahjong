@@ -212,6 +212,7 @@ protected:
 	RoughSurfaceUniformBlock tableubo;
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
 	RoughSurfaceUniformBlock chairubo;
+	RoughSurfaceUniformBlock pictureFrameImageubo1, pictureFrameImageubo2;
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
@@ -775,14 +776,6 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TBoardSelText}
 			});
-		DSPictureFrameImage1.init(this, &DSLPlain, {
-				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
-				{1, TEXTURE, 0, &TPictureFrameImage1}
-			});
-		DSPictureFrameImage2.init(this, &DSLPlain, {
-				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
-				{1, TEXTURE, 0, &TPictureFrameImage2}
-			});
 
 		// Tile
 		for (int i = 0; i < 144; i++) {
@@ -865,6 +858,16 @@ protected:
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TPictureFrame}
+			});
+		DSPictureFrameImage1.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TPictureFrameImage1}
+			});
+		DSPictureFrameImage2.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TPictureFrameImage2}
 			});
 		DSVase.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
@@ -1103,17 +1106,11 @@ protected:
 		DSArrowButton3_right.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
+		//Circle button
 		MCircleButton.bind(commandBuffer);
 		DSCircleButton.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MCircleButton.indices.size()), 1, 0, 0, 0);
-		//Picture frame image
-		DSPictureFrameImage1.bind(commandBuffer, PPlain, 0, currentImage); 
-		vkCmdDrawIndexed(commandBuffer, 
-			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
-		DSPictureFrameImage2.bind(commandBuffer, PPlain, 0, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 
 		// PTile
 		//
@@ -1178,6 +1175,14 @@ protected:
 		DSChair.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MChair.indices.size()), 1, 0, 0, 0);
+		//Picture frame image
+		MPlainRectangle.bind(commandBuffer); 
+		DSPictureFrameImage1.bind(commandBuffer, PRoughSurfaces, 0, currentImage); 
+		vkCmdDrawIndexed(commandBuffer, 
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
+		DSPictureFrameImage2.bind(commandBuffer, PRoughSurfaces, 0, currentImage); 
+		vkCmdDrawIndexed(commandBuffer, 
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
 
 		// PSmoothSurfaces
 		//
@@ -1954,14 +1959,16 @@ protected:
 		//Picture frame Image 1
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(2.0f, 1.2f, 1.0f)) * 
+			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(1.0f, 1.2f, 1.0f)) * 
 			glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
 		commonubo[26].mvpMat = Prj * View * World;
 		commonubo[26].mMat = World;
 		commonubo[26].nMat = glm::inverse(glm::transpose(World));
 		commonubo[26].transparency = 0.0f;
 		commonubo[26].textureIdx = pictureFrameImageIdx1;
+		pictureFrameImageubo1.amb = 20.0f; pictureFrameImageubo1.sigma = 1.1f;
 		DSPictureFrameImage1.map(currentImage, &commonubo[26], sizeof(commonubo[26]), 0);
+		DSPictureFrameImage1.map(currentImage, &pictureFrameImageubo1, sizeof(pictureFrameImageubo1), 1);
 
 		//Picture frame 2
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.3f, -1.5f)) *
@@ -1986,14 +1993,16 @@ protected:
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.3f, -1.5f)) *
 			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(2.0f, 1.2f, 1.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(1.0f, 1.2f, 1.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
 		commonubo[30].mvpMat = Prj * View * World;
 		commonubo[30].mMat = World;
 		commonubo[30].nMat = glm::inverse(glm::transpose(World));
 		commonubo[30].transparency = 0.0f;
 		commonubo[30].textureIdx = pictureFrameImageIdx2;
+		pictureFrameImageubo2.amb = 20.0f; pictureFrameImageubo2.sigma = 1.1f;
 		DSPictureFrameImage2.map(currentImage, &commonubo[30], sizeof(commonubo[30]), 0);
+		DSPictureFrameImage2.map(currentImage, &pictureFrameImageubo2, sizeof(pictureFrameImageubo2), 1);
 
 		//Vase
 		World = glm::translate(glm::mat4(1), glm::vec3(-1.5f, 0.0f, -1.8f)) *
@@ -2090,7 +2099,7 @@ protected:
 			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
 			tileubo[i].amb = 1.0f; 
 			tileubo[i].gamma = 300.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
-			tileubo[i].sColor = glm::vec3(0.2f);
+			tileubo[i].sColor = glm::vec3(0.5f);//glm::vec3(0.2f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
