@@ -139,6 +139,7 @@ protected:
 	Model<VertexMesh> MFlame;
 	Model<VertexMesh> MCandle;
 	Model<VertexMesh> MLamp;
+	Model<VertexMesh> MKettle;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -161,6 +162,7 @@ protected:
 	DescriptorSet DSFlame;
 	DescriptorSet DSCandle;
 	DescriptorSet DSLamp;
+	DescriptorSet DSKettle;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -204,6 +206,7 @@ protected:
 	Texture TChair;
 	Texture TCandle;
 	Texture TLamp;
+	Texture TKettle;
 	
 
 	// C++ storage for uniform variables
@@ -221,6 +224,7 @@ protected:
 	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
 	SmoothSurfaceUniformBlock candleubo;
+	SmoothSurfaceUniformBlock kettleubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
@@ -263,7 +267,8 @@ protected:
 	// [33] - day/night time selection title
 	// [34] - circular day/night button
 	// [35] - Lamp
-	CommonUniformBlock commonubo[36];
+	// [36] - Kettle
+	CommonUniformBlock commonubo[37];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -308,7 +313,7 @@ protected:
 		windowResizable = GLFW_FALSE;
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
-		// Descriptor pool sizes
+		// Descriptor pool sizes							//TO RECALCULATE <-----
 		uniformBlocksInPool = 300;//186;
 		texturesInPool = 40;//33;
 		setsInPool = 300;//179;
@@ -572,6 +577,7 @@ protected:
 		MFlame.init(this, &VMesh, "models/Fire.obj", OBJ);
 		MCandle.init(this, &VMesh, "models/Candle.obj", OBJ);
 		MLamp.init(this, &VMesh, "models/Lamp.obj", OBJ);
+		MKettle.init(this, &VMesh, "models/kettle.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -668,6 +674,7 @@ protected:
 		TChair.init(this, "textures/room/armchair.jpg");
 		TFlame.init(this, "textures/room/fire.jpg");
 		TCandle.init(this, "textures/room/candle.jpg");
+		TKettle.init(this, "textures/room/kettle.jpg");
 
 		const char* lampTextureFiles[2] = {
 			"textures/room/lamp.png",
@@ -873,6 +880,11 @@ protected:
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TPictureFrame}
 			});
+		DSKettle.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TKettle}
+			});
 		DSPictureFrameImage1.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
@@ -949,6 +961,7 @@ protected:
 		DSFlame.cleanup();
 		DSLamp.cleanup();
 		DSCandle.cleanup(); 
+		DSKettle.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -1012,6 +1025,7 @@ protected:
 		TFlame.cleanup();
 		TCandle.cleanup();
 		TLamp.cleanup();
+		TKettle.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -1036,6 +1050,7 @@ protected:
 		MFlame.cleanup();
 		MCandle.cleanup();
 		MLamp.cleanup();
+		MKettle.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1241,6 +1256,11 @@ protected:
 		DSCandle.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MCandle.indices.size()), 1, 0, 0, 0);
+		//Kettle
+		MKettle.bind(commandBuffer);
+		DSKettle.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MKettle.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1648,6 +1668,7 @@ protected:
 		// [33] - day/night time selection title
 		// [34] - circular day/night button
 		// [35] - Lamp
+		// [36] - Kettle
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -2124,6 +2145,25 @@ protected:
 		else candleubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
 		DSCandle.map(currentImage, &candleubo, sizeof(candleubo), 1);
+
+		//Kettle
+		World = glm::translate(glm::mat4(1), glm::vec3(-0.4f, 0.6f, -0.5f)) *
+			glm::rotate(glm::mat4(1), glm::radians(235.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.4f));
+		commonubo[36].mvpMat = Prj * View * World;
+		commonubo[36].mMat = World;
+		commonubo[36].nMat = glm::inverse(glm::transpose(World));
+		commonubo[36].transparency = 0.0f;
+		commonubo[36].textureIdx = 0;
+		if (isNight) {
+			kettleubo.amb = 0.0001f; kettleubo.gamma = 10000.0f;
+		}
+		else {
+			kettleubo.amb = 1.0f; kettleubo.gamma = 200.0f;
+		}
+		kettleubo.sColor = generalSColor;
+		DSKettle.map(currentImage, &commonubo[36], sizeof(commonubo[36]), 0);
+		DSKettle.map(currentImage, &kettleubo, sizeof(kettleubo), 1);
 
 		//Lamp
 		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 3.01f, 0.0f)) * //glm::translate(glm::mat4(1), lanternLightPos) *
