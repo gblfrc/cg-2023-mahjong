@@ -250,8 +250,8 @@ protected:
 	// [26] - Picture frame image 1
 	// [27] - Vase
 	// [28] - Chair
-	// [29] - Picture frame 1
-	// [30] - Picture frame image 1
+	// [29] - Picture frame 2
+	// [30] - Picture frame image 2
 	// [31] - Flame
 	// [32] - Candle
 	// [33] - day/night time selection title
@@ -279,6 +279,7 @@ protected:
 	//other parameters
 	int gameState = 0;
 	int isCandleAlight = 0;
+	glm::vec3 generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	float DisappearingTileTransparency = 1.0f;
 	const float homeTileRotSpeed = glm::radians(80.0f);
 	int firstTileIndex = -1;
@@ -1542,6 +1543,7 @@ protected:
 		bool isNight = circleTextureIdx;
 		if (isNight) {
 			isCandleAlight = 1;
+			generalSColor = glm::vec3(239.0f / 255.0f, 192.0f / 255.0f, 112.0f / 255.0f); //Cold light color
 			gubo.PlightPos = candleLightPos;
 			gubo.PlightColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
 			gubo.beta = 1.4f;
@@ -1550,6 +1552,7 @@ protected:
 		}
 		else {
 			isCandleAlight = 0;
+			generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
 			gubo.PlightPos = lanternLightPos;
 			gubo.PlightColor = glm::vec3(10.0f);
 			gubo.beta = 1.1f;
@@ -1597,12 +1600,12 @@ protected:
 		// [22] - Tile type selection title
 		// [23] - Board design selection title
 		// [24] - Lion statue
-		// [25] - Picture frame
-		// [26] - Picture frame image
+		// [25] - Picture frame 1
+		// [26] - Picture frame image 1
 		// [27] - Vase
 		// [28] - Chair
-		// [29] - Picture frame 1
-		// [30] - Picture frame image 1
+		// [29] - Picture frame 2
+		// [30] - Picture frame image 2
 		// [31] - Flame
 		// [32] - Candle
 		// [33] - day/night time selection title
@@ -1917,6 +1920,13 @@ protected:
 		commonubo[24].transparency = 0.0f;
 		commonubo[24].textureIdx = 0;
 		lionubo.amb = 1.0f; lionubo.gamma = 200.0f; lionubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		if (isNight) {
+			lionubo.amb = 0.01f; lionubo.gamma = 10000.0f;
+		}
+		else {
+			lionubo.amb = 1.0f; lionubo.gamma = 200.0f;
+		}
+		lionubo.sColor = generalSColor;
 		DSLion.map(currentImage, &commonubo[24], sizeof(commonubo[24]), 0);
 		DSLion.map(currentImage, &lionubo, sizeof(lionubo), 1);
 
@@ -1931,7 +1941,13 @@ protected:
 		commonubo[25].nMat = glm::inverse(glm::transpose(World)); 
 		commonubo[25].transparency = 0.0f; 
 		commonubo[25].textureIdx = 0; 
-		pictureFrameubo1.amb = 1.0f; pictureFrameubo1.gamma = 200.0f; pictureFrameubo1.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		if (isNight) {
+			pictureFrameubo1.amb = 0.01f; pictureFrameubo1.gamma = 10000.0f;
+		}
+		else {
+			pictureFrameubo1.amb = 1.0f; pictureFrameubo1.gamma = 200.0f;
+		}
+		pictureFrameubo1.sColor = generalSColor;
 		DSPictureFrame1.map(currentImage, &commonubo[25], sizeof(commonubo[25]), 0);
 		DSPictureFrame1.map(currentImage, &pictureFrameubo1, sizeof(pictureFrameubo1), 1);
 
@@ -1956,7 +1972,13 @@ protected:
 		commonubo[29].nMat = glm::inverse(glm::transpose(World));
 		commonubo[29].transparency = 0.0f;
 		commonubo[29].textureIdx = 0;
-		pictureFrameubo2.amb = 1.0f; pictureFrameubo2.gamma = 200.0f; pictureFrameubo2.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		if (isNight) {
+			pictureFrameubo2.amb = 0.01f; pictureFrameubo2.gamma = 10000.0f;
+		}
+		else {
+			pictureFrameubo2.amb = 1.0f; pictureFrameubo2.gamma = 200.0f;
+		}
+		pictureFrameubo2.sColor = generalSColor;
 		DSPictureFrame2.map(currentImage, &commonubo[29], sizeof(commonubo[29]), 0);
 		DSPictureFrame2.map(currentImage, &pictureFrameubo2, sizeof(pictureFrameubo2), 1);
 
@@ -1982,7 +2004,13 @@ protected:
 		commonubo[27].nMat = glm::inverse(glm::transpose(World));
 		commonubo[27].transparency = 0.0f;
 		commonubo[27].textureIdx = 0;
-		vaseubo.amb = 1.0f; vaseubo.gamma = 200.0f; vaseubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		if (isNight) {
+			vaseubo.amb = 0.01f; vaseubo.gamma = 10000.0f;
+		}
+		else {
+			vaseubo.amb = 1.0f; vaseubo.gamma = 200.0f;
+		}
+		vaseubo.sColor = generalSColor;
 		DSVase.map(currentImage, &commonubo[27], sizeof(commonubo[27]), 0);
 		DSVase.map(currentImage, &vaseubo, sizeof(vaseubo), 1);
 
