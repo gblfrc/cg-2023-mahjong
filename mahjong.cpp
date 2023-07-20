@@ -140,6 +140,7 @@ protected:
 	Model<VertexMesh> MCandle;
 	Model<VertexMesh> MLamp;
 	Model<VertexMesh> MKettle;
+	Model<VertexMesh> MDoor;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -163,6 +164,7 @@ protected:
 	DescriptorSet DSCandle;
 	DescriptorSet DSLamp;
 	DescriptorSet DSKettle;
+	DescriptorSet DSDoor;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -207,6 +209,7 @@ protected:
 	Texture TCandle;
 	Texture TLamp;
 	Texture TKettle;
+	Texture TDoor;
 	
 
 	// C++ storage for uniform variables
@@ -220,6 +223,7 @@ protected:
 	RoughSurfaceUniformBlock window1ubo, window2ubo, window3ubo;
 	RoughSurfaceUniformBlock chairubo;
 	RoughSurfaceUniformBlock pictureFrameImageubo1, pictureFrameImageubo2;
+	RoughSurfaceUniformBlock doorubo;
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
@@ -268,7 +272,8 @@ protected:
 	// [34] - circular day/night button
 	// [35] - Lamp
 	// [36] - Kettle
-	CommonUniformBlock commonubo[37];
+	// [37] - Door
+	CommonUniformBlock commonubo[38];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -578,6 +583,7 @@ protected:
 		MCandle.init(this, &VMesh, "models/Candle.obj", OBJ);
 		MLamp.init(this, &VMesh, "models/Lamp.obj", OBJ);
 		MKettle.init(this, &VMesh, "models/kettle.obj", OBJ);
+		MDoor.init(this, &VMesh, "models/door.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -649,6 +655,13 @@ protected:
 		};
 		TPictureFrameImage2.initFive(this, frameImagesTextureFiles2); 
 
+		//Lamp if it is off or on
+		const char* lampTextureFiles[2] = {
+			"textures/room/lamp.png",
+			"textures/room/lampAlight.jpg",
+		};
+		TLamp.initTwo(this, lampTextureFiles);
+
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
@@ -675,13 +688,8 @@ protected:
 		TFlame.init(this, "textures/room/fire.jpg");
 		TCandle.init(this, "textures/room/candle.jpg");
 		TKettle.init(this, "textures/room/kettle.jpg");
+		TDoor.init(this, "textures/room/wood_door.jpg");
 
-		const char* lampTextureFiles[2] = {
-			"textures/room/lamp.png",
-			"textures/room/lampAlight.jpg", 
-		};
-		TLamp.initTwo(this, lampTextureFiles);
-		
 		//-------------------------------
 		// Init local variables
 		CamH = 1.0f;
@@ -864,6 +872,11 @@ protected:
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TWindow}
 			});
+		DSDoor.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TDoor}
+			});
 
 		DSLion.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
@@ -962,6 +975,7 @@ protected:
 		DSLamp.cleanup();
 		DSCandle.cleanup(); 
 		DSKettle.cleanup();
+		DSDoor.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -1026,6 +1040,7 @@ protected:
 		TCandle.cleanup();
 		TLamp.cleanup();
 		TKettle.cleanup();
+		TDoor.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -1051,6 +1066,7 @@ protected:
 		MCandle.cleanup();
 		MLamp.cleanup();
 		MKettle.cleanup();
+		MDoor.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1226,6 +1242,11 @@ protected:
 		DSLamp.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MLamp.indices.size()), 1, 0, 0, 0);
+		//Door
+		MDoor.bind(commandBuffer);
+		DSDoor.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MDoor.indices.size()), 1, 0, 0, 0);
 
 		// PSmoothSurfaces
 		//
@@ -1669,6 +1690,7 @@ protected:
 		// [34] - circular day/night button
 		// [35] - Lamp
 		// [36] - Kettle
+		// [37] - Door
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -2089,6 +2111,19 @@ protected:
 		chairubo.amb = 20.0f; chairubo.sigma = 0.5f;
 		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
+
+		//Door
+		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.0f, 2.0f)) *
+			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.3f));
+		commonubo[37].mvpMat = Prj * View * World; 
+		commonubo[37].mMat = World;
+		commonubo[37].nMat = glm::inverse(glm::transpose(World));
+		commonubo[37].transparency = 0.0f;
+		commonubo[37].textureIdx = 0;
+		doorubo.amb = 20.0f; doorubo.sigma = 0.5f;
+		DSDoor.map(currentImage, &commonubo[37], sizeof(commonubo[37]), 0);
+		DSDoor.map(currentImage, &doorubo, sizeof(doorubo), 1);
 
 
 		//Flame
