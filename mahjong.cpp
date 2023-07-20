@@ -130,6 +130,7 @@ protected:
 	Model<VertexUI> MYouWin;
 	Model<VertexMesh> MPlainRectangle;
 	Model<VertexMesh> MArrowButton;
+	Model<VertexMesh> MCircleButton;
 	Model<VertexMesh> MLion;
 	Model<VertexMesh> MPictureFrame;
 	Model<VertexMesh> MVase;
@@ -163,8 +164,9 @@ protected:
 	DescriptorSet DSButton1, DSButton2, DSButton3;
 	DescriptorSet DSArrowButton1_left, DSArrowButton2_left, DSArrowButton3_left;
 	DescriptorSet DSArrowButton1_right, DSArrowButton2_right, DSArrowButton3_right;
+	DescriptorSet DSCircleButton;
 	DescriptorSet DSPlayButton;
-	DescriptorSet DSSelection1, DSSelection2, DSSelection3;
+	DescriptorSet DSSelection1, DSSelection2, DSSelection3, DSSelection4;
 	DescriptorSet DSTileSelText;
 	DescriptorSet DSBoardSelText;
 	
@@ -187,10 +189,12 @@ protected:
 	//Buttons
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
+	Texture TCircleButton;
 	Texture TPlayButton;
 	Texture TSelection1;
 	Texture TSelection2;
 	Texture TSelection3;
+	Texture TSelection4;
 	Texture TTileSelText;
 	Texture TBoardSelText;
 	Texture TVase;
@@ -250,11 +254,14 @@ protected:
 	// [30] - Picture frame image 1
 	// [31] - Flame
 	// [32] - Candle
-	CommonUniformBlock commonubo[33];
+	// [33] - day/night time selection title
+	// [34] - circular day/night button
+	CommonUniformBlock commonubo[35];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
 	int boardTextureIdx = 0;
+	int circleTextureIdx = 0;
 	int pictureFrameImageIdx1 = 0;
 	int pictureFrameImageIdx2 = 0;
 	// Camera parameters
@@ -425,6 +432,11 @@ protected:
 		MArrowButton.indices = { 0, 2, 1,    0, 3, 2 };
 		MArrowButton.initMesh(this, &VMesh);
 
+		//day/night button
+		MCircleButton.vertices = MArrowButton.vertices;
+		MCircleButton.indices = MArrowButton.indices;
+		MCircleButton.initMesh(this, &VMesh);
+
 		// Background
 		float side = 0.25f;
 		float baseHeight = 0.6f;
@@ -494,6 +506,7 @@ protected:
 		}
 		MWall.indices = wallIndices;
 		MWall.initMesh(this, &VMesh);
+
 		// Create floor
 		vector<VertexMesh> floorVertices;
 		vertexIndex = 0;
@@ -506,6 +519,7 @@ protected:
 		MFloor.vertices = floorVertices;
 		MFloor.indices = { 0, 2, 1,    1, 2, 3 };
 		MFloor.initMesh(this, &VMesh);
+
 		// Create ceiling
 		vector<VertexMesh> ceilingVertices;
 		vertexIndex = 0;
@@ -518,6 +532,7 @@ protected:
 		MCeiling.vertices = ceilingVertices;
 		MCeiling.indices = { 0, 1, 2,    2, 1, 3 };
 		MCeiling.initMesh(this, &VMesh);
+
 		// UI object models
 		// Game over message
 		float gameOverHalfX = 0.44f;
@@ -530,11 +545,13 @@ protected:
 		};
 		MGameOver.indices = { 0, 1, 2,    1, 2, 3 };
 		MGameOver.initMesh(this, &VUI);
+
 		// You win message
 		MYouWin.vertices = MGameOver.vertices;
 		MYouWin.indices = MGameOver.indices;
 		MYouWin.initMesh(this, &VUI);
-		// Import Tile model
+
+		// IMPORT MODELS
 		MTile.init(this, &VMesh, "models/Tile.obj", OBJ);
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
@@ -589,6 +606,13 @@ protected:
 		}; 
 		TBoardSelText.initFour(this, boardNamesTextureFiles); 
 
+		//Light styles
+		const char* circleNamesTextureFiles[2] = {
+			"textures/buttons/dayTime.png",
+			"textures/buttons/nightTime.png",
+		};
+		TCircleButton.initTwo(this, circleNamesTextureFiles);
+
 		//Images that can appear in the picture frame 1
 		const char* frameImagesTextureFiles1[4] = {
 			"textures/room/picture1.jpg",
@@ -619,12 +643,14 @@ protected:
 		TGameOver.init(this, "textures/ui/gameover.png");
 		TYouWin.init(this, "textures/ui/youwin.png");
 		TButton.init(this, "textures/buttons/button_rounded_edges.png");
+
 		TArrowButtonLeft.init(this, "textures/buttons/arrow_button_left.png");
 		TArrowButtonRight.init(this, "textures/buttons/arrow_button_right.png");
 		TPlayButton.init(this, "textures/buttons/button_with_plant.png");
 		TSelection1.init(this, "textures/buttons/settings.png");
 		TSelection2.init(this, "textures/buttons/tileDesign.png");
 		TSelection3.init(this, "textures/buttons/boardDesign.png");
+		TSelection4.init(this, "textures/buttons/lightText.png");
 		TLion.init(this, "textures/room/lion.png");
 		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
 		TVase.init(this, "textures/room/vase_1k.png");	//big image dimension
@@ -715,6 +741,10 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TArrowButtonRight}
 			});
+		DSCircleButton.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TCircleButton}
+			});
 		DSPlayButton.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TPlayButton}
@@ -730,6 +760,10 @@ protected:
 		DSSelection3.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TSelection3}
+			});
+		DSSelection4.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TSelection4}
 			});
 		DSTileSelText.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
@@ -904,10 +938,12 @@ protected:
 		DSArrowButton1_right.cleanup();
 		DSArrowButton2_right.cleanup();
 		DSArrowButton3_right.cleanup();
+		DSCircleButton.cleanup();
 		DSPlayButton.cleanup();
 		DSSelection1.cleanup();
 		DSSelection2.cleanup();
 		DSSelection3.cleanup();
+		DSSelection4.cleanup();
 		DSTileSelText.cleanup();
 		DSBoardSelText.cleanup();
 
@@ -933,10 +969,12 @@ protected:
 		TButton.cleanup();
 		TArrowButtonLeft.cleanup();
 		TArrowButtonRight.cleanup();
+		TCircleButton.cleanup();
 		TPlayButton.cleanup();
 		TSelection1.cleanup();
 		TSelection2.cleanup();
 		TSelection3.cleanup();
+		TSelection4.cleanup();
 		TLion.cleanup();
 		TVase.cleanup();
 		TChair.cleanup();
@@ -963,6 +1001,7 @@ protected:
 		MYouWin.cleanup();
 		MPlainRectangle.cleanup();
 		MArrowButton.cleanup();
+		MCircleButton.cleanup();
 		MLion.cleanup();
 		MPictureFrame.cleanup();
 		MVase.cleanup();
@@ -1030,6 +1069,9 @@ protected:
 		DSSelection3.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
+		DSSelection4.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 		DSPlayButton.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
@@ -1059,6 +1101,10 @@ protected:
 		DSArrowButton3_right.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
+		MCircleButton.bind(commandBuffer);
+		DSCircleButton.bind(commandBuffer, PPlain, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MCircleButton.indices.size()), 1, 0, 0, 0);
 		//Picture frame image
 		DSPictureFrameImage1.bind(commandBuffer, PPlain, 0, currentImage); 
 		vkCmdDrawIndexed(commandBuffer, 
@@ -1293,7 +1339,11 @@ protected:
 					if (boardTextureIdx == -1) boardTextureIdx = 3;
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
-
+				if (handleClick && hoverIndex == -45) {
+					circleTextureIdx++;
+					if (circleTextureIdx == 2) circleTextureIdx = 0;
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
+				}
 				//Start the game
 				if ((handleClick && hoverIndex == -30) || enter) {
 					gameState = 0;
@@ -1317,7 +1367,7 @@ protected:
 				}
 
 				/**/
-				//std::cout << "\nTileTexIdx: " << tileTextureIdx << "\n";						//DEBUG
+				std::cout << "\nhoverIndex: " << hoverIndex << "\n";						//DEBUG
 				//std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
 				
 				break;
@@ -1529,6 +1579,9 @@ protected:
 		// [30] - Picture frame image 1
 		// [31] - Flame
 		// [32] - Candle
+		// [33] - day/night time selection title
+		// [34] - circular day/night button
+
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1606,14 +1659,15 @@ protected:
 		commonubo[15].objectIdx = -43;
 		DSArrowButton2_left.map(currentImage, &commonubo[15], sizeof(commonubo[15]), 0);
 
-		/*//Arrow button 3 Left
-		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
-		commonubo[16].mvpMat = Prj * View * WorldA_B;
-		commonubo[16].mMat = WorldA_B;
-		commonubo[16].nMat = glm::inverse(glm::transpose(WorldA_B));
-		commonubo[16].transparency = 1.0f;
-		commonubo[16].textureIdx = 0;
-		DSArrowButton3_left.map(currentImage, &commonubo[16], sizeof(commonubo[16]), 0);*/
+		//day/night button
+		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(1.05f, -3.2f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
+		commonubo[34].mvpMat = Prj * View * WorldA_B;
+		commonubo[34].mMat = WorldA_B;
+		commonubo[34].nMat = glm::inverse(glm::transpose(WorldA_B));
+		commonubo[34].transparency = 1.0f;
+		commonubo[34].textureIdx = circleTextureIdx;
+		commonubo[34].objectIdx = -45;
+		DSCircleButton.map(currentImage, &commonubo[34], sizeof(commonubo[34]), 0);
 
 		//Arrow button 1 Right
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.7f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
@@ -1645,7 +1699,7 @@ protected:
 		DSArrowButton3_right.map(currentImage, &commonubo[19], sizeof(commonubo[19]), 0);*/
 
 		//Play button
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -3.6f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.5f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(-2.7f, -3.6f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.6f);
 		commonubo[20].mvpMat = Prj * View * WorldB;
 		commonubo[20].mMat = WorldB;
 		commonubo[20].nMat = glm::inverse(glm::transpose(WorldB));
@@ -1673,20 +1727,29 @@ protected:
 		DSSelection2.map(currentImage, &commonubo[22], sizeof(commonubo[22]), 0);
 
 		//board selection title
-		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.6f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.2f, 0.5f, 1.0f) * 0.8f);
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.6f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.3f, 0.5f, 1.0f) * 0.8f);
 		commonubo[23].mvpMat = Prj * View * WorldB;
 		commonubo[23].mMat = WorldB;
 		commonubo[23].nMat = glm::inverse(glm::transpose(WorldB));
 		commonubo[23].transparency = 1.0f;
 		commonubo[23].textureIdx = 0;
 		DSSelection3.map(currentImage, &commonubo[23], sizeof(commonubo[23]), 0);
+
+		//day/night time selection title
+		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.65f, -3.1f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f) * 0.9f);
+		commonubo[33].mvpMat = Prj * View * WorldB;
+		commonubo[33].mMat = WorldB;
+		commonubo[33].nMat = glm::inverse(glm::transpose(WorldB));
+		commonubo[33].transparency = 1.0f;
+		commonubo[33].textureIdx = 0;
+		DSSelection4.map(currentImage, &commonubo[33], sizeof(commonubo[33]), 0);
 		 
 		//Matrix setup for rotating tile
 		static float ang = 0.0f;
 		ang += homeTileRotSpeed * deltaT;
 		tileHomeubo.transparency = 1.0f;
 		glm::mat4 rotTile = translateUp * homeMenuWorld *
-			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.4f, 0.5f)) *
+			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.3f, 0.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::sin(ang)+0.5f, glm::vec3(0.0f, 0.0f, 1.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(40.0f)) *

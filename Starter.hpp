@@ -253,6 +253,7 @@ struct Texture {
 							);
 
 	void init(BaseProject *bp, const char * file, VkFormat Fmt, bool initSampler);
+	void initTwo(BaseProject* bp, const char* files[2]);
 	void initFour(BaseProject *bp, const char * files[4]);
 	void initFive(BaseProject* bp, const char* files[5]);
 	void initCubic(BaseProject *bp, const char * files[6]);
@@ -2628,6 +2629,15 @@ void Texture::init(BaseProject *bp, const char *  file, VkFormat Fmt = VK_FORMAT
 		createTextureSampler();
 	}
 }
+
+void Texture::initTwo(BaseProject* bp, const char* files[2]) {
+	BP = bp;
+	imgs = 2;
+	createTextureImage(files);
+	createTextureImageView();
+	createTextureSampler();
+}
+
 
 void Texture::initFour(BaseProject* bp, const char* files[4]) {
 	BP = bp;
