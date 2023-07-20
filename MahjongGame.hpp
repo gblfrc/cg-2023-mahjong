@@ -110,12 +110,12 @@ public:
 				for (int underIdx : tile.under) {
 					tiles[underIdx].over.erase(remove(tiles[underIdx].over.begin(), tiles[underIdx].over.end(), tile.tileIdx), tiles[underIdx].over.end());
 				}
-				// remove all neighbors from current tile
-				tile.left.clear();
-				tile.right.clear();
-				tile.under.clear();
+				//// remove all neighbors from current tile
+				//tile.left.clear();
+				//tile.right.clear();
+				//tile.under.clear();
 				// set current tile as removed
-				tile.isRemoved = true;
+				tiles[tile.tileIdx].isRemoved = true;
 				// remove current tile from related suit vector
 				int svi = tile.getSuitVectorIndex();
 				suitVectors[svi].erase(remove(suitVectors[svi].begin(), suitVectors[svi].end(), tile.tileIdx), suitVectors[svi].end());
@@ -134,6 +134,7 @@ public:
 	}
 
 	bool isGameOver() {
+		if (isWon()) return false;
 		for (vector<int> suitVector : suitVectors) {
 			int count = 0;
 			for (int index : suitVector) {
