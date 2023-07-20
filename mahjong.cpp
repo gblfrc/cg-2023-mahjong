@@ -278,6 +278,7 @@ protected:
 	
 	//other parameters
 	int gameState = 0;
+	int isCandleAlight = 0;
 	float DisappearingTileTransparency = 1.0f;
 	const float homeTileRotSpeed = glm::radians(80.0f);
 	int firstTileIndex = -1;
@@ -1339,6 +1340,8 @@ protected:
 					if (boardTextureIdx == -1) boardTextureIdx = 3;
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
+
+				//Change day/Night
 				if (handleClick && hoverIndex == -45) {
 					circleTextureIdx++;
 					if (circleTextureIdx == 2) circleTextureIdx = 0;
@@ -1527,11 +1530,34 @@ protected:
 		//BUFFERS FILLING
 		//--------------------------
 
-		gubo.PlightPos = glm::vec3(0.0f, 1.9f, 0.0f);	
-		gubo.PlightColor = glm::vec3(10.0f);
-		gubo.beta = 1.1f;
-		gubo.g = 0.3f;
-		gubo.AmbLightColor = glm::vec3(0.01f);
+		//Some positions
+		//Candle+Flame Position
+		glm::vec3 candlePos = glm::vec3(0.8f, 0.6f, -0.7f);
+		glm::vec3 candleLightPos = candlePos + glm::vec3(0.0f, 0.115f, 0.0f); 
+		//Day lantern point light position
+		glm::vec3 lanternLightPos = glm::vec3(0.0f, 1.9f, 0.0f);
+
+
+
+		bool isNight = circleTextureIdx;
+		if (isNight) {
+			isCandleAlight = 1;
+			gubo.PlightPos = candleLightPos;
+			gubo.PlightColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
+			gubo.beta = 1.4f;
+			gubo.g = 0.3f;
+			gubo.AmbLightColor = glm::vec3(0.01f);
+		}
+		else {
+			isCandleAlight = 0;
+			gubo.PlightPos = lanternLightPos;
+			gubo.PlightColor = glm::vec3(10.0f);
+			gubo.beta = 1.1f;
+			gubo.g = 0.3f;
+			gubo.AmbLightColor = glm::vec3(0.01f);
+		}
+			
+		
 		gubo.eyePos = camPos;
 
 		// Writes value to the GPU
@@ -1974,11 +2000,7 @@ protected:
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
 
 
-		//Candle+Flame
-		glm::vec3 candlePos = glm::vec3(0.8f, 0.6f, -0.7f);
-
 		//Flame
-		glm::vec3 candleLightPos = glm::vec3(0.8f, 0.7f, -0.7f);
 		std::mt19937 rngFlame(time(NULL));
 		std::uniform_int_distribution<int> genScaleDiff(8, 12);
 		float scaleDiff = genScaleDiff(rngFlame)/10.0f;
@@ -1997,9 +2019,10 @@ protected:
 		std::uniform_int_distribution<int> genshearCoeff(-2, 2);
 		float shearhx = genshearCoeff(rngFlame)/10.0f;
 		float shearhz = genshearCoeff(rngFlame)/10.0f;
-		World = glm::translate(glm::mat4(1), candlePos) * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.115f, 0.0f)) *
+		World = glm::translate(glm::mat4(1), candleLightPos) * //glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.115f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(rotationDiff), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.16f)) *
+			glm::scale(glm::mat4(1), glm::vec3(float(isCandleAlight))) *
 			glm::scale(glm::mat4(1), glm::vec3(1.0f, scaleDiff, 1.0f)) *
 			glm::shearY3D(glm::mat4(1), shearhx, shearhz);
 		commonubo[31].mvpMat = Prj * View * World;
@@ -2021,7 +2044,8 @@ protected:
 		commonubo[32].transparency = 0.0f;
 		commonubo[32].textureIdx = 0;
 		candleubo.amb = 1.0f; candleubo.gamma = 200.0f; 
-		candleubo.sColor = chosenEmissionColor;	//change specular color according to emitted color by the candle light
+		if (isCandleAlight) candleubo.sColor = chosenEmissionColor;	//change specular color according to emitted color by the candle light
+		else candleubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
 		DSCandle.map(currentImage, &candleubo, sizeof(candleubo), 1);
 
