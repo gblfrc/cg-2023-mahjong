@@ -138,6 +138,7 @@ protected:
 	Model<VertexMesh> MChair;
 	Model<VertexMesh> MFlame;
 	Model<VertexMesh> MCandle;
+	Model<VertexMesh> MLamp;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -159,6 +160,7 @@ protected:
 	DescriptorSet DSChair;
 	DescriptorSet DSFlame;
 	DescriptorSet DSCandle;
+	DescriptorSet DSLamp;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -201,6 +203,7 @@ protected:
 	Texture TVase;
 	Texture TChair;
 	Texture TCandle;
+	Texture TLamp;
 	
 
 	// C++ storage for uniform variables
@@ -223,6 +226,7 @@ protected:
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
 	CommonUniformBlock tileSelTextubo, boardSelTextubo;
 	PlainWithEmissionUniformBlock flameEmissionubo;
+	RoughSurfaceUniformBlock lampubo;
 
 	// Geometry blocks for objects different from tiles
 	// [0] - Background
@@ -258,7 +262,8 @@ protected:
 	// [32] - Candle
 	// [33] - day/night time selection title
 	// [34] - circular day/night button
-	CommonUniformBlock commonubo[35];
+	// [35] - Lamp
+	CommonUniformBlock commonubo[36];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -266,6 +271,7 @@ protected:
 	int circleTextureIdx = 0;
 	int pictureFrameImageIdx1 = 0;
 	int pictureFrameImageIdx2 = 0;
+	int lampTextureIdx = 1;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -565,6 +571,7 @@ protected:
 		MChair.init(this, &VMesh, "models/armchair.obj", OBJ);
 		MFlame.init(this, &VMesh, "models/Fire.obj", OBJ);
 		MCandle.init(this, &VMesh, "models/Candle.obj", OBJ);
+		MLamp.init(this, &VMesh, "models/Lamp.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -657,10 +664,16 @@ protected:
 		TSelection4.init(this, "textures/buttons/lightText.png");
 		TLion.init(this, "textures/room/lion.png");
 		TPictureFrame.init(this, "textures/room/PictureFrame.jpg");
-		TVase.init(this, "textures/room/vase_1k.png");	//big image dimension
+		TVase.init(this, "textures/room/vase_1k.png");
 		TChair.init(this, "textures/room/armchair.jpg");
 		TFlame.init(this, "textures/room/fire.jpg");
 		TCandle.init(this, "textures/room/candle.jpg");
+
+		const char* lampTextureFiles[2] = {
+			"textures/room/lamp.png",
+			"textures/room/lampAlight.jpg", 
+		};
+		TLamp.initTwo(this, lampTextureFiles);
 		
 		//-------------------------------
 		// Init local variables
@@ -880,16 +893,22 @@ protected:
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TChair}
 			});
-		DSFlame.init(this, &DSLGeneric, {
-					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
-					{1, UNIFORM, sizeof(PlainWithEmissionUniformBlock), nullptr},
-					{2, TEXTURE, 0, &TFlame}
+		DSLamp.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TLamp}
 			});
 		DSCandle.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr}, 
 					{2, TEXTURE, 0, &TCandle} 
 			});
+		DSFlame.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(PlainWithEmissionUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TFlame}
+			});
+		
 
 
 	}
@@ -928,6 +947,7 @@ protected:
 		DSVase.cleanup();
 		DSChair.cleanup();
 		DSFlame.cleanup();
+		DSLamp.cleanup();
 		DSCandle.cleanup(); 
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
@@ -991,6 +1011,7 @@ protected:
 		TBoardSelText.cleanup();
 		TFlame.cleanup();
 		TCandle.cleanup();
+		TLamp.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -1014,6 +1035,7 @@ protected:
 		MChair.cleanup();
 		MFlame.cleanup();
 		MCandle.cleanup();
+		MLamp.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1184,6 +1206,11 @@ protected:
 		DSPictureFrameImage2.bind(commandBuffer, PRoughSurfaces, 0, currentImage); 
 		vkCmdDrawIndexed(commandBuffer, 
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
+		//Lamp
+		MLamp.bind(commandBuffer);
+		DSLamp.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MLamp.indices.size()), 1, 0, 0, 0);
 
 		// PSmoothSurfaces
 		//
@@ -1230,6 +1257,7 @@ protected:
 
 		//PPlainWithEmission
 		PPlainWithEmission.bind(commandBuffer);
+		//Flame
 		MFlame.bind(commandBuffer);
 		DSFlame.bind(commandBuffer, PPlainWithEmission, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1355,7 +1383,7 @@ protected:
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				}
 				//Start the game
-				if ((handleClick && hoverIndex == -30) || enter) {
+				if ((handleClick && hoverIndex == -30)) { // || enter in the if to use also enter to start game
 					gameState = 0;
 
 					//random gen of the index to use to chose the picture for the picture frame
@@ -1542,7 +1570,7 @@ protected:
 		glm::vec3 candlePos = glm::vec3(0.35f, 0.6f, -0.7f);
 		glm::vec3 candleLightPos = candlePos + glm::vec3(0.0f, 0.115f, 0.0f); 
 		//Day lantern point light position
-		glm::vec3 lanternLightPos = glm::vec3(0.0f, 1.9f, 0.0f);
+		glm::vec3 lanternLightPos = glm::vec3(0.0f, 2.4f, 0.0f);
 
 
 
@@ -1550,6 +1578,7 @@ protected:
 		if (isNight) {
 			isCandleAlight = 1;
 			generalSColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
+			lampTextureIdx = 0;
 			gubo.PlightPos = candleLightPos;
 			gubo.PlightColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
 			gubo.beta = 1.6f;
@@ -1559,6 +1588,7 @@ protected:
 		else {
 			isCandleAlight = 0;
 			generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
+			lampTextureIdx = 1;
 			gubo.PlightPos = lanternLightPos;
 			gubo.PlightColor = glm::vec3(255.0f/255.0f, 252.0f/255.0f, 221.0f/255.0f); //Yellow-ish white
 			//gubo.PlightColor = glm::vec3(1.0f);
@@ -1617,7 +1647,7 @@ protected:
 		// [32] - Candle
 		// [33] - day/night time selection title
 		// [34] - circular day/night button
-
+		// [35] - Lamp
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -1822,7 +1852,7 @@ protected:
 		World = baseTranslation * 
 				glm::translate(glm::mat4(1), glm::vec3(0.04f, 0.0f, 0.0f)) * 
 				glm::scale(glm::mat4(1), glm::vec3(3.55f, 1.0f, 1.4f));
-		bgubo.amb = 1.0f; bgubo.sigma = 0.7f;
+		bgubo.amb = 1.2f; bgubo.sigma = 0.7f;
 		commonubo[0].mvpMat = Prj * View * World;
 		commonubo[0].mMat = World;
 		commonubo[0].nMat = glm::inverse(glm::transpose(World));
@@ -1833,7 +1863,7 @@ protected:
 
 		// Matrix setup for walls
 		World = glm::mat4(1);
-		wallubo.amb = 1.0f; wallubo.sigma = 0.7f;
+		wallubo.amb = 1.2f; wallubo.sigma = 0.7f;
 		commonubo[1].mvpMat = Prj * View * World;
 		commonubo[1].mMat = World;
 		commonubo[1].nMat = glm::inverse(glm::transpose(World));
@@ -1844,7 +1874,7 @@ protected:
 
 		// Matrix setup for floor
 		World = glm::mat4(1);
-		floorubo.amb = 1.0f; floorubo.sigma = 0.7f;
+		floorubo.amb = 1.2f; floorubo.sigma = 0.7f;
 		commonubo[3].mvpMat = Prj * View * World;
 		commonubo[3].mMat = World;
 		commonubo[3].nMat = glm::inverse(glm::transpose(World));
@@ -1866,7 +1896,7 @@ protected:
 
 		// Matrix setup for table
 		World = baseTranslation;
-		tableubo.amb = 20.0f; tableubo.sigma = 0.7f;
+		tableubo.amb = 25.0f; tableubo.sigma = 0.7f;
 		commonubo[4].mvpMat = Prj * View * World;
 		commonubo[4].mMat = World;
 		commonubo[4].nMat = glm::inverse(glm::transpose(World));
@@ -2095,6 +2125,20 @@ protected:
 		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
 		DSCandle.map(currentImage, &candleubo, sizeof(candleubo), 1);
 
+		//Lamp
+		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 3.01f, 0.0f)) * //glm::translate(glm::mat4(1), lanternLightPos) *
+			glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(1.5f));
+		commonubo[35].mvpMat = Prj * View * World;
+		commonubo[35].mMat = World;
+		commonubo[35].nMat = glm::inverse(glm::transpose(World));
+		commonubo[35].transparency = 0.0f;
+		commonubo[35].textureIdx = lampTextureIdx;
+		if(isNight) lampubo.amb = 20.0f;
+		else lampubo.amb = 1000.0f;
+		lampubo.sigma = 0.3f;
+		DSLamp.map(currentImage, &commonubo[35], sizeof(commonubo[35]), 0);
+		DSLamp.map(currentImage, &lampubo, sizeof(lampubo), 1);
 
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
