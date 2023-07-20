@@ -282,6 +282,7 @@ protected:
 	int pictureFrameImageIdx1 = 0;
 	int pictureFrameImageIdx2 = 0;
 	int lampTextureIdx = 1;
+	int landscapeTextureIdx = 0;
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -320,7 +321,7 @@ protected:
 
 		// Descriptor pool sizes							//TO RECALCULATE <-----
 		uniformBlocksInPool = 300;//186;
-		texturesInPool = 40;//33;
+		texturesInPool = 43;
 		setsInPool = 300;//179;
 
 		// Initialize aspect ratio
@@ -662,6 +663,12 @@ protected:
 		};
 		TLamp.initTwo(this, lampTextureFiles);
 
+		const char* landscapeTextureFiles[2] = {
+			"textures/room/landscape.jpg",
+			"textures/room/landscape_night.jpg",
+		};
+		TLandscape.initTwo(this, landscapeTextureFiles);
+
 		// Initialize other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
@@ -669,7 +676,6 @@ protected:
 		TTable.init(this, "textures/room/table.jpg");
 		TWindow.init(this, "textures/room/window.png");
 		TGameTitle.init(this, "textures/title_brush.png");
-		TLandscape.init(this, "textures/room/landscape.jpg");
 		TGameOver.init(this, "textures/ui/gameover.png");
 		TYouWin.init(this, "textures/ui/youwin.png");
 		TButton.init(this, "textures/buttons/button_rounded_edges.png");
@@ -1362,7 +1368,6 @@ protected:
 		if (y < windowHeight && x < windowWidth) {
 			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
-			//tileTextureIdx = hoverIndex % 4;
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
@@ -1388,14 +1393,12 @@ protected:
 					game = MahjongGame(structurePath);
 					reset = false;
 				}
+				
 				/* //Start the game with enter key
 				if (enter) {
 					gameState = 0;
 					enterPressedFirstTime = true;
 				}*/
-
-				//exit game
-				
 
 				//get clicks to change textures and shaders
 				//Change tiles texture
@@ -1425,6 +1428,7 @@ protected:
 				//Change day/Night
 				if (handleClick && hoverIndex == -45) {
 					circleTextureIdx++;
+
 					if (circleTextureIdx == 2) circleTextureIdx = 0;
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				}
@@ -1645,6 +1649,7 @@ protected:
 			isCandleAlight = 1;
 			generalSColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
 			lampTextureIdx = 0;
+			landscapeTextureIdx = 1;
 			gubo.PlightPos = candleLightPos;
 			gubo.PlightColor = glm::vec3(239.0f/255.0f, 192.0f/255.0f, 112.0f/255.0f); //Cold light color
 			gubo.beta = 1.6f;
@@ -1655,6 +1660,7 @@ protected:
 			isCandleAlight = 0;
 			generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
 			lampTextureIdx = 1;
+			landscapeTextureIdx = 0;
 			gubo.PlightPos = lanternLightPos;
 			gubo.PlightColor = glm::vec3(255.0f/255.0f, 252.0f/255.0f, 221.0f/255.0f); //Yellow-ish white
 			//gubo.PlightColor = glm::vec3(1.0f);
@@ -2013,7 +2019,7 @@ protected:
 		commonubo[8].mMat = World;
 		commonubo[8].nMat = glm::inverse(glm::transpose(World));
 		commonubo[8].transparency = 0.0f;
-		commonubo[8].textureIdx = 0;
+		commonubo[8].textureIdx = landscapeTextureIdx;
 		DSLandscape.map(currentImage, &commonubo[8], sizeof(commonubo[8]), 0);
 
 		//Lion statue
