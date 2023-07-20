@@ -1372,6 +1372,7 @@ protected:
 
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
+		static bool reset = false;
 
 
 		//--------------------------
@@ -1383,6 +1384,10 @@ protected:
 			
 			case -1: //menu	
 
+				if (reset) {
+					game = MahjongGame(structurePath);
+					reset = false;
+				}
 				/* //Start the game with enter key
 				if (enter) {
 					gameState = 0;
@@ -1424,7 +1429,7 @@ protected:
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				}
 				//Start the game
-				if ((handleClick && hoverIndex == -30)) { // || enter in the if to use also enter to start game
+				if (handleClick && hoverIndex == -30) {
 					gameState = 0;
 
 					//random gen of the index to use to chose the picture for the picture frame
@@ -1446,7 +1451,7 @@ protected:
 				}
 
 				/**/
-				std::cout << "\nhoverIndex: " << hoverIndex << "\n";						//DEBUG
+				//std::cout << "\nhoverIndex: " << hoverIndex << "\n";						//DEBUG
 				//std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
 				
 				break;
@@ -1463,8 +1468,14 @@ protected:
 			case 1:
 				//1 piece selected and highlighted
 				if (handleClick && hoverIndex>-1) {
-					secondTileIndex = hoverIndex;
-					gameState = 2;
+					if (hoverIndex != firstTileIndex) {
+						secondTileIndex = hoverIndex;
+						gameState = 2;
+					} 
+					else {
+						firstTileIndex = -1;
+						gameState = 0;
+					}
 				}
 				break;
 			case 2:
@@ -1502,6 +1513,18 @@ protected:
 				//remove the tile
 				game.removeTiles(firstTileIndex, secondTileIndex);
 				cout << "Game over: " << game.isGameOver() << endl;
+				cout << "Game won: " << game.isWon() << endl;
+				// DEBUG - Trigger game won
+				//for (int i = 0; i < game.tiles.size(); i++) {
+				//	game.tiles[i].isRemoved = true;
+				//}
+				//cout << "\n";
+				//for (vector<int> sv : game.suitVectors) {
+					//sv.clear();
+				//}
+				//cout << "Game over: " << game.isGameOver() << endl;
+				//cout << "Game won: " << game.isWon() << endl;
+				// Usual flow
 				if (game.isWon() || game.isGameOver()) {
 					gameState = 6;
 					break;
@@ -1533,6 +1556,8 @@ protected:
 					boardTextureIdx = 0;
 					tileTextureIdx = 0;
 					gameState = -1;
+					cout << "Reset: " << reset << endl;
+					reset = true;
 					//reinitialise game
 					for (int j = 0; j < 144; j++) {
 						disappearedTiles[j] = false;
