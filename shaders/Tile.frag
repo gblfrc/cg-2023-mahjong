@@ -59,14 +59,14 @@ void main() {
 
 	// Compute hover coefficient:
 	// Subtract the tile idx from the hover idx: only if they coincide, the subtraction will return 0
-	// Normalize the result to fit into the [-1,1] range (included the case in which mouse hovers on -1)
+	// Normalize the result to fit into the [-1,1] range (included the case in which mouse hovers on negative values)
 	// Compute absolute value. Values are now in the [0,1] range, 0 only if hoverIdx == tileIdx
 	// Compute ceiling: all non-zero values will become 1
 	// Invert to have 1 when hovering and 0 otherwise
-	float hoverCoeff = 1-ceil(abs((ubo.hoverIdx-ubo.tileIdx)/144.0f)); 
+	float hoverCoeff = 1-ceil(abs((ubo.hoverIdx-ubo.tileIdx)/200.0f)); 
 	vec3 MHover = hoverCoeff * vec3(77.0f/255.0f, 77.0f/255.0f, 255.0f/255.0f);
 	// Similar procedure as for hover coefficient
-	float selectCoeff = 1-ceil(abs((ubo.selectedIdx - ubo.tileIdx)/144.0f));
+	float selectCoeff = 1-ceil(abs((ubo.selectedIdx - ubo.tileIdx)/200.0f));
 	vec3 MSelected = selectCoeff * 1.3f * vec3(255.0f/255.0f, 60.0f/255.0f, 59.0f/255.0f);
 
 	outColor = vec4(clamp(I*Lambert + Blinn + Ambient + MHover + MSelected,0.0f, 0.95f), alpha);

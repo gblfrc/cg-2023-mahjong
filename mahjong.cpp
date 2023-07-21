@@ -143,6 +143,9 @@ protected:
 	Model<VertexMesh> MDoor;
 	Model<VertexMesh> MBlackboardFrame;
 	Model<VertexMesh> MBlackboardBoard;
+	Model<VertexUI> MYesButton;
+	Model<VertexUI> MNoButton;
+	Model<VertexUI> MBackToMenu;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -181,6 +184,8 @@ protected:
 	DescriptorSet DSSelection1, DSSelection2, DSSelection3, DSSelection4;
 	DescriptorSet DSTileSelText;
 	DescriptorSet DSBoardSelText;
+	DescriptorSet DSYesButton, DSNoButton;
+	DescriptorSet DSBackToMenu;
 	
 
 	Texture TPoolCloth;
@@ -218,6 +223,8 @@ protected:
 	Texture TBlackboardFrame;
 	Texture TBlackboardBoard;
 	Texture TBlackboardText;
+	Texture TYesButton, TNoButton;
+	Texture TBackToMenu;
 	
 
 	// C++ storage for uniform variables
@@ -246,6 +253,10 @@ protected:
 	CommonUniformBlock tileSelTextubo, boardSelTextubo;
 	PlainWithEmissionUniformBlock flameEmissionubo;
 	RoughSurfaceUniformBlock lampubo;
+	UIUniformBlock yesbuttonubo;
+	UIUniformBlock nobuttonubo;
+	UIUniformBlock backtomenuubo;
+
 
 	// Geometry blocks for objects different from tiles
 	// [0] - Background
@@ -306,7 +317,6 @@ protected:
 	float CamH, CamRadius, CamPitch, CamYaw;
 	const float initialCamRadius = 0.3f;
 	const float initialPitch = glm::radians(60.0f);
-	//const float initialPitch = glm::radians(90.0f);
 	const float initialYaw = glm::radians(0.0f);
 	
 	//other parameters
@@ -336,7 +346,7 @@ protected:
 
 		// Descriptor pool sizes							//TO RECALCULATE <-----
 		uniformBlocksInPool = 300;//186;
-		texturesInPool = 45;
+		texturesInPool = 49;
 		setsInPool = 300;//179;
 
 		// Initialize aspect ratio
@@ -587,6 +597,39 @@ protected:
 		MYouWin.indices = MGameOver.indices;
 		MYouWin.initMesh(this, &VUI);
 
+		// Back to menu message
+		float backToMenuHalfX = 0.44f;
+		MBackToMenu.vertices = {
+			{{-backToMenuHalfX, -0.5, 0.1f},{0.0f, 0.0f}},
+			{{backToMenuHalfX, -0.5, 0.1f},{1.0f, 0.0f}},
+			{{-backToMenuHalfX, 0.1, 0.1f},{0.0f, 1.0f}},
+			{{backToMenuHalfX, 0.1, 0.1f},{1.0f, 1.0f}},
+		};
+		MBackToMenu.indices = { 0, 1, 2,    1, 2, 3 };
+		MBackToMenu.initMesh(this, &VUI);
+
+		// Yes/No buttons
+		float yesButtonTop = 0.1f;
+		float yesButtonBottom = 0.3f;
+		float yesButtonLeft = -0.40;
+		float yesButtonRight = -0.1;
+		MYesButton.vertices = {
+			{{yesButtonLeft, yesButtonTop, 0.0f},{0.0f, 0.0f}},
+			{{yesButtonRight, yesButtonTop, 0.0f},{1.0f, 0.0f}},
+			{{yesButtonLeft, yesButtonBottom, 0.0f},{0.0f, 1.0f}},
+			{{yesButtonRight, yesButtonBottom, 0.0f},{1.0f, 1.0f}},
+		};
+		MYesButton.indices = { 0, 1, 2,    1, 2, 3 };
+		MYesButton.initMesh(this, &VUI);
+		MNoButton.vertices = {
+			{{-yesButtonRight, yesButtonTop, 0.1f},{0.0f, 0.0f}},
+			{{-yesButtonLeft, yesButtonTop, 0.1f},{1.0f, 0.0f}},
+			{{-yesButtonRight, yesButtonBottom, 0.1f},{0.0f, 1.0f}},
+			{{-yesButtonLeft, yesButtonBottom, 0.1f},{1.0f, 1.0f}},
+		};
+		MNoButton.indices = { 0, 1, 2,    1, 2, 3 };
+		MNoButton.initMesh(this, &VUI);
+
 		// IMPORT MODELS
 		MTile.init(this, &VMesh, "models/Tile.obj", OBJ);
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
@@ -696,7 +739,6 @@ protected:
 		TGameOver.init(this, "textures/ui/gameover.png");
 		TYouWin.init(this, "textures/ui/youwin.png");
 		TButton.init(this, "textures/buttons/button_rounded_edges.png");
-
 		TArrowButtonLeft.init(this, "textures/buttons/arrow_button_left.png");
 		TArrowButtonRight.init(this, "textures/buttons/arrow_button_right.png");
 		TPlayButton.init(this, "textures/buttons/button_with_plant.png");
@@ -715,6 +757,10 @@ protected:
 		TBlackboardFrame.init(this, "textures/room/blackboard_frame.png");
 		TBlackboardBoard.init(this, "textures/room/blackboard_board.png");
 		TBlackboardText.init(this, "textures/room/commands.png");
+		TBackToMenu.init(this, "textures/buttons/backtomenu.png");
+		TYesButton.init(this, "textures/buttons/yes.png");
+		TNoButton.init(this, "textures/buttons/no.png");
+
 		//-------------------------------
 		// Init local variables
 		CamH = 1.0f;
@@ -746,6 +792,18 @@ protected:
 		DSYouWin.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(UIUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TYouWin}
+			});
+		DSBackToMenu.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(UIUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TBackToMenu}
+			});
+		DSYesButton.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(UIUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TYesButton}
+			});
+		DSNoButton.init(this, &DSLPlain, {
+				{0, UNIFORM, sizeof(UIUniformBlock), nullptr},
+				{1, TEXTURE, 0, &TNoButton}
 			});
 		
 		// Plain
@@ -1021,6 +1079,9 @@ protected:
 		DSBlackboardText.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
+		DSBackToMenu.cleanup();
+		DSYesButton.cleanup();
+		DSNoButton.cleanup();
 		//menu
 		DSHTile.cleanup();
 		DSHome.cleanup();
@@ -1062,6 +1123,9 @@ protected:
 		TLandscape.cleanup();
 		TGameOver.cleanup();
 		TYouWin.cleanup();
+		TBackToMenu.cleanup();
+		TYesButton.cleanup();
+		TNoButton.cleanup();
 		TButton.cleanup();
 		TArrowButtonLeft.cleanup();
 		TArrowButtonRight.cleanup();
@@ -1101,6 +1165,9 @@ protected:
 		MLandscape.cleanup();
 		MGameOver.cleanup();
 		MYouWin.cleanup();
+		MBackToMenu.cleanup();
+		MYesButton.cleanup();
+		MNoButton.cleanup();
 		MPlainRectangle.cleanup();
 		MArrowButton.cleanup();
 		MCircleButton.cleanup();
@@ -1363,6 +1430,21 @@ protected:
 		DSYouWin.bind(commandBuffer, PUI, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MYouWin.indices.size()), 1, 0, 0, 0);
+		// Back to menu
+		MBackToMenu.bind(commandBuffer);
+		DSBackToMenu.bind(commandBuffer, PUI, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MBackToMenu.indices.size()), 1, 0, 0, 0);
+		// Back to menu
+		MYesButton.bind(commandBuffer);
+		DSYesButton.bind(commandBuffer, PUI, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MYesButton.indices.size()), 1, 0, 0, 0);
+		// Back to menu
+		MNoButton.bind(commandBuffer);
+		DSNoButton.bind(commandBuffer, PUI, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MNoButton.indices.size()), 1, 0, 0, 0);
 
 		//PPlainWithEmission
 		PPlainWithEmission.bind(commandBuffer);
@@ -1648,11 +1730,25 @@ protected:
 					}
 				}
 				break;
-
+			case 8:	// screen to go back to menu
+				youwinubo.visible = 0.0f;
+				gameoverubo.visible = 0.0f;
+				backtomenuubo.visible = 1.0f;
+				yesbuttonubo.visible = 1.0f;
+				nobuttonubo.visible = 1.0f;
+				if (click && (hoverIndex == -2 || hoverIndex == -3)) {
+					backtomenuubo.visible = 0.0f;
+					yesbuttonubo.visible = 0.0f;
+					nobuttonubo.visible = 0.0f;
+					if (hoverIndex == -2) {
+						gameState = -1;
+						reset = true;
+					}
+					else firstTileIndex != -1 ? gameState = 1 : gameState = 0;
+				}
 		}
-		if (gameState!=-1 && mButton) {
-			gameManuallyEnded = true;
-			gameState = 6;
+		if (gameState!=-1 && gameState != 7 && mButton) {
+			gameState = 8;
 		}
 
 		//---------------------------
@@ -1768,6 +1864,18 @@ protected:
 		youwinubo.transparency = 1.0f;
 		youwinubo.objectIdx = -1;
 		DSYouWin.map(currentImage, &youwinubo, sizeof(youwinubo), 0);
+		// Back to menu message
+		backtomenuubo.transparency = 1.0f;
+		backtomenuubo.objectIdx = -1;
+		DSBackToMenu.map(currentImage, &backtomenuubo, sizeof(backtomenuubo), 0);
+		// Back to menu message
+		yesbuttonubo.transparency = 1.0f;
+		yesbuttonubo.objectIdx = -2;
+		DSYesButton.map(currentImage, &yesbuttonubo, sizeof(yesbuttonubo), 0);
+		// Back to menu message
+		nobuttonubo.transparency = 1.0f;
+		nobuttonubo.objectIdx = -3;
+		DSNoButton.map(currentImage, &nobuttonubo, sizeof(nobuttonubo), 0);
 
 		// Indices for commonubo
 		// [0] - Background
