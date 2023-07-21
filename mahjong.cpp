@@ -585,7 +585,7 @@ protected:
 		MCandle.init(this, &VMesh, "models/Candle.obj", OBJ);
 		MLamp.init(this, &VMesh, "models/Lamp.obj", OBJ);
 		MKettle.init(this, &VMesh, "models/kettle.obj", OBJ);
-		MDoor.init(this, &VMesh, "models/door.obj", OBJ);
+		MDoor.init(this, &VMesh, "models/door2.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -695,7 +695,7 @@ protected:
 		TFlame.init(this, "textures/room/fire.jpg");
 		TCandle.init(this, "textures/room/candle.jpg");
 		TKettle.init(this, "textures/room/kettle.jpg");
-		TDoor.init(this, "textures/room/wood_door.jpg");
+		TDoor.init(this, "textures/room/wood_door_2.png");
 
 		//-------------------------------
 		// Init local variables
@@ -2159,7 +2159,8 @@ protected:
 		//Door
 		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.0f, 2.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::scale(glm::mat4(1), glm::vec3(0.3f));
+			glm::scale(glm::mat4(1), glm::vec3(1.2f, 1.0f, 1.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.8f));
 		commonubo[37].mvpMat = Prj * View * World; 
 		commonubo[37].mMat = World;
 		commonubo[37].nMat = glm::inverse(glm::transpose(World));
