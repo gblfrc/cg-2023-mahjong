@@ -1562,6 +1562,7 @@ protected:
 					youwinubo.visible = 0.0f;
 					boardTextureIdx = 0;
 					tileTextureIdx = 0;
+					circleTextureIdx = 0;
 					gameManuallyEnded = false; 
 					gameState = -1;
 					cout << "Reset: " << reset << endl;
