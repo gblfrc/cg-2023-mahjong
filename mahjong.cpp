@@ -327,12 +327,12 @@ protected:
 		windowWidth = 1200;
 		windowHeight = 900;
 		windowTitle = "Mahjong";
-		windowResizable = GLFW_FALSE;
+		windowResizable = GLFW_TRUE;
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
 		// Descriptor pool sizes							//TO RECALCULATE <-----
 		uniformBlocksInPool = 300;//186;
-		texturesInPool = 43;
+		texturesInPool = 45;
 		setsInPool = 300;//179;
 
 		// Initialize aspect ratio
@@ -1402,8 +1402,18 @@ protected:
 
 		void* data;
 		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data);
+		vkGetImageSubresourceLayout(device, entityImage, &entitySubresource, &entityLayout);
+		//cout << "Offset: " << entityLayout.offset << endl;
+		//cout << "Window Width: " << windowWidth << endl;
+		//cout << "Window Height: " << windowHeight << endl;
+		//cout << "Size: " << entityLayout.size << endl;
+		//cout << "Row Pitch: " << entityLayout.rowPitch << endl;
+		//cout << "Array Pitch: " << entityLayout.arrayPitch << endl;
+		//cout << "Depth Pitch: " << entityLayout.depthPitch << endl;
+		//cout << "-------------------------------------------------" << endl;
+		//int rowLength = entityLayout.rowPitch
 		int* pixels = reinterpret_cast<int*>(data);
-		int index = y * windowWidth + x;
+		int index = y * entityLayout.rowPitch/4 + x;
 		int hoverIndex = -1;
 		//cout << "Window size: " << windowWidth << "x" << windowHeight << endl;
 		if (y < windowHeight && x < windowWidth) {
