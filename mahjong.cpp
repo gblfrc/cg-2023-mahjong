@@ -298,6 +298,7 @@ protected:
 	//other parameters
 	int gameState = 0;
 	int isCandleAlight = 0;
+	bool gameManuallyEnded = false;
 	glm::vec3 generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	float DisappearingTileTransparency = 1.0f;
 	const float homeTileRotSpeed = glm::radians(80.0f);
@@ -1329,7 +1330,8 @@ protected:
 		bool fire = false;
 		bool click = false;
 		bool enter = false;
-		getSixAxis(deltaT, m, r, fire, click, enter); 
+		bool mButton = false;
+		getSixAxis(deltaT, m, r, fire, click, enter, mButton); 
 		//std::cout << "\nclicked is :" << clicked<<"\n";
 		//std::cout << "\nEnter: " << enter << " \n";
 		
@@ -1393,6 +1395,7 @@ protected:
 					game = MahjongGame(structurePath);
 					reset = false;
 				}
+				//gameManuallyEnded = false; 
 				
 				/* //Start the game with enter key
 				if (enter) {
@@ -1546,7 +1549,7 @@ protected:
 					PlaySound(TEXT("sounds/clapping_people.wav"), NULL, SND_FILENAME | SND_ASYNC);
 					std::cout << "\n------\nVictory!\n------\n";
 				}
-				else if (game.isGameOver()) {
+				else if (game.isGameOver() || gameManuallyEnded) {
 					gameoverubo.visible = 1.0f;
 					youwinubo.visible = 0.0f;
 					PlaySound(TEXT("sounds/retro_error_long_tone.wav"), NULL, SND_FILENAME | SND_ASYNC);
@@ -1559,6 +1562,7 @@ protected:
 					youwinubo.visible = 0.0f;
 					boardTextureIdx = 0;
 					tileTextureIdx = 0;
+					gameManuallyEnded = false; 
 					gameState = -1;
 					cout << "Reset: " << reset << endl;
 					reset = true;
@@ -1569,6 +1573,10 @@ protected:
 				}
 				break;
 
+		}
+		if (gameState!=-1 && mButton) {
+			gameManuallyEnded = true;
+			gameState = 6;
 		}
 
 		//---------------------------
