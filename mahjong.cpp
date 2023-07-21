@@ -1662,10 +1662,10 @@ protected:
 		//Change position accoring to received commands
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 0.20f, 10.0f); //minumum and maximum zoom of the cam //REDUCE MAXIMUM ZOOOM <------------
+		CamRadius = glm::clamp(CamRadius, 0.20f, 1.5f); //minumum and maximum zoom of the cam //REDUCE MAXIMUM ZOOOM <------------
 
 		CamPitch -= r.x * rotSpeed * deltaT;
-		CamPitch = glm::clamp(CamPitch, glm::radians(0.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
+		CamPitch = glm::clamp(CamPitch, glm::radians(-10.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
 
 		CamYaw += r.y * rotSpeed * deltaT;
 
@@ -1673,9 +1673,9 @@ protected:
 		//Bring to initial position
 		if (handleFire || enterPressedFirstTime) { //replace hanfleFire with "wasFire" to have event happen upon pressing and not release of fire key
 			//glm::vec3 
-			CamRadius = initialCamRadius;
-			CamPitch = initialPitch;
-			CamYaw = initialYaw;
+			CamRadius = initialCamRadius; 
+			CamPitch = initialPitch; 
+			CamYaw = initialYaw; 
 		}
 		//if in menu, fix the camera at a certain point
 		if (gameState == -1) {
