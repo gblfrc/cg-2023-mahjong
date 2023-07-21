@@ -169,6 +169,7 @@ protected:
 	DescriptorSet DSDoor;
 	DescriptorSet DSBlackboardFrame;
 	DescriptorSet DSBlackboardBoard;
+	DescriptorSet DSBlackboardText;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -216,6 +217,7 @@ protected:
 	Texture TDoor;
 	Texture TBlackboardFrame;
 	Texture TBlackboardBoard;
+	Texture TBlackboardText;
 	
 
 	// C++ storage for uniform variables
@@ -230,6 +232,7 @@ protected:
 	RoughSurfaceUniformBlock chairubo;
 	RoughSurfaceUniformBlock pictureFrameImageubo1, pictureFrameImageubo2;
 	RoughSurfaceUniformBlock doorubo;
+	RoughSurfaceUniformBlock blackboardTextubo;
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
@@ -283,7 +286,8 @@ protected:
 	// [37] - Door
 	// [38] - Blackboard Frame
 	// [39] - Blackboard Board
-	CommonUniformBlock commonubo[40];
+	// [40] - Blackboard Text
+	CommonUniformBlock commonubo[41];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -710,6 +714,7 @@ protected:
 		TDoor.init(this, "textures/room/wood_door_2.png");
 		TBlackboardFrame.init(this, "textures/room/blackboard_frame.png");
 		TBlackboardBoard.init(this, "textures/room/blackboard_board.png");
+		TBlackboardText.init(this, "textures/room/commands.png");
 		//-------------------------------
 		// Init local variables
 		CamH = 1.0f;
@@ -897,6 +902,11 @@ protected:
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TDoor}
 			});
+		DSBlackboardText.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
+					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr}, 
+					{2, TEXTURE, 0, &TBlackboardText}
+			});
 
 		DSLion.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
@@ -1008,6 +1018,7 @@ protected:
 		DSDoor.cleanup();
 		DSBlackboardFrame.cleanup(); 
 		DSBlackboardBoard.cleanup();
+		DSBlackboardText.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -1075,6 +1086,7 @@ protected:
 		TDoor.cleanup();
 		TBlackboardFrame.cleanup();
 		TBlackboardBoard.cleanup();
+		TBlackboardText.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -1327,6 +1339,17 @@ protected:
 		DSBlackboardBoard.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MBlackboardBoard.indices.size()), 1, 0, 0, 0);
+
+
+		// PRoughSurfaces
+		//
+		PRoughSurfaces.bind(commandBuffer);
+		DSGubo.bind(commandBuffer, PRoughSurfaces, 1, currentImage);
+		//Blackboard commands text
+		MPlainRectangle.bind(commandBuffer);
+		DSBlackboardText.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1784,7 +1807,9 @@ protected:
 		// [36] - Kettle
 		// [37] - Door
 		// [38] - Blackboard Frame
-		// [38] - Blackboard Board
+		// [39] - Blackboard Board
+		// [40] - Blackboard Text
+
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -2310,7 +2335,7 @@ protected:
 		else {
 			blackboardFrameubo.amb = 1.0f; blackboardFrameubo.gamma = 200.0f;
 		}
-		blackboardFrameubo.sColor = generalSColor;
+		blackboardFrameubo.sColor = 0.2f*generalSColor;
 		DSBlackboardFrame.map(currentImage, &commonubo[38], sizeof(commonubo[38]), 0);
 		DSBlackboardFrame.map(currentImage, &blackboardFrameubo, sizeof(blackboardFrameubo), 1);
 		commonubo[39].mvpMat = Prj * View * World;
@@ -2327,6 +2352,20 @@ protected:
 		blackboardBoardubo.sColor = generalSColor;
 		DSBlackboardBoard.map(currentImage, &commonubo[39], sizeof(commonubo[39]), 0);
 		DSBlackboardBoard.map(currentImage, &blackboardBoardubo, sizeof(blackboardBoardubo), 1);
+
+		//Blackboard text
+		World = glm::translate(glm::mat4(1), glm::vec3(-1.97f, 1.1f, -0.5f)) *
+			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.54f)) *
+			glm::scale(glm::mat4(1), glm::vec3(1.6f, 1.0f, 1.0f));
+		commonubo[40].mvpMat = Prj * View * World;
+		commonubo[40].mMat = World;
+		commonubo[40].nMat = glm::inverse(glm::transpose(World));
+		commonubo[40].transparency = 1.0f;
+		commonubo[40].textureIdx = 0;
+		blackboardTextubo.amb = 20.0f; blackboardTextubo.sigma = 1.3f;
+		DSBlackboardText.map(currentImage, &commonubo[40], sizeof(commonubo[40]), 0);
+		DSBlackboardText.map(currentImage, &blackboardTextubo, sizeof(blackboardTextubo), 1);
 
 		//Lamp
 		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 3.01f, 0.0f)) * //glm::translate(glm::mat4(1), lanternLightPos) *
