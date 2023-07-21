@@ -1366,7 +1366,8 @@ protected:
 		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data);
 		int* pixels = reinterpret_cast<int*>(data);
 		int index = y * windowWidth + x;
-		int hoverIndex = 0;
+		int hoverIndex = -1;
+		//cout << "Window size: " << windowWidth << "x" << windowHeight << endl;
 		if (y < windowHeight && x < windowWidth) {
 			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
@@ -1527,7 +1528,7 @@ protected:
 				//}
 				//cout << "\n";
 				//for (vector<int> sv : game.suitVectors) {
-					//sv.clear();
+				//	sv.clear();
 				//}
 				//cout << "Game over: " << game.isGameOver() << endl;
 				//cout << "Game won: " << game.isWon() << endl;
@@ -1555,6 +1556,9 @@ protected:
 					PlaySound(TEXT("sounds/retro_error_long_tone.wav"), NULL, SND_FILENAME | SND_ASYNC);
 					std::cout << "\n------\nYou Lost!\n------\n";
 				}
+				gameState = 7;
+				break;
+			case 7: 
 				//PRESS ENTER TO GO BACK TO MENU
 				if (enter) {
 					//go back to menu
