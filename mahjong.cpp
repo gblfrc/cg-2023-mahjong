@@ -141,6 +141,8 @@ protected:
 	Model<VertexMesh> MLamp;
 	Model<VertexMesh> MKettle;
 	Model<VertexMesh> MDoor;
+	Model<VertexMesh> MBlackboardFrame;
+	Model<VertexMesh> MBlackboardBoard;
 
 	DescriptorSet DSGubo;
 	DescriptorSet DSBackground;
@@ -165,6 +167,8 @@ protected:
 	DescriptorSet DSLamp;
 	DescriptorSet DSKettle;
 	DescriptorSet DSDoor;
+	DescriptorSet DSBlackboardFrame;
+	DescriptorSet DSBlackboardBoard;
 	// Descriptor sets for UI elements
 	DescriptorSet DSGameOver;
 	DescriptorSet DSYouWin;
@@ -210,6 +214,8 @@ protected:
 	Texture TLamp;
 	Texture TKettle;
 	Texture TDoor;
+	Texture TBlackboardFrame;
+	Texture TBlackboardBoard;
 	
 
 	// C++ storage for uniform variables
@@ -229,6 +235,8 @@ protected:
 	SmoothSurfaceUniformBlock vaseubo;
 	SmoothSurfaceUniformBlock candleubo;
 	SmoothSurfaceUniformBlock kettleubo;
+	SmoothSurfaceUniformBlock blackboardFrameubo;
+	SmoothSurfaceUniformBlock blackboardBoardubo;
 	UIUniformBlock gameoverubo;
 	UIUniformBlock youwinubo;
 	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
@@ -273,7 +281,9 @@ protected:
 	// [35] - Lamp
 	// [36] - Kettle
 	// [37] - Door
-	CommonUniformBlock commonubo[38];
+	// [38] - Blackboard Frame
+	// [39] - Blackboard Board
+	CommonUniformBlock commonubo[40];
 
 	// Other application parameters
 	int tileTextureIdx = 0;
@@ -586,6 +596,8 @@ protected:
 		MLamp.init(this, &VMesh, "models/Lamp.obj", OBJ);
 		MKettle.init(this, &VMesh, "models/kettle.obj", OBJ);
 		MDoor.init(this, &VMesh, "models/door2.obj", OBJ);
+		MBlackboardFrame.init(this, &VMesh, "models/Blackboard_1.obj", OBJ);
+		MBlackboardBoard.init(this, &VMesh, "models/Blackboard_0.obj", OBJ);
 
 		//----------------------------
 		// Create the TEXTURES
@@ -696,7 +708,8 @@ protected:
 		TCandle.init(this, "textures/room/candle.jpg");
 		TKettle.init(this, "textures/room/kettle.jpg");
 		TDoor.init(this, "textures/room/wood_door_2.png");
-
+		TBlackboardFrame.init(this, "textures/room/blackboard_frame.png");
+		TBlackboardBoard.init(this, "textures/room/blackboard_board.png");
 		//-------------------------------
 		// Init local variables
 		CamH = 1.0f;
@@ -890,6 +903,16 @@ protected:
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TLion}
 			});
+		DSBlackboardFrame.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TBlackboardFrame}
+			});
+		DSBlackboardBoard.init(this, &DSLGeneric, {
+					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
+					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
+					{2, TEXTURE, 0, &TBlackboardBoard}
+			});
 		DSPictureFrame1.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr}, 
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr}, 
@@ -983,6 +1006,8 @@ protected:
 		DSCandle.cleanup(); 
 		DSKettle.cleanup();
 		DSDoor.cleanup();
+		DSBlackboardFrame.cleanup(); 
+		DSBlackboardBoard.cleanup();
 		DSGameOver.cleanup();
 		DSYouWin.cleanup();
 		//menu
@@ -1048,6 +1073,8 @@ protected:
 		TLamp.cleanup();
 		TKettle.cleanup();
 		TDoor.cleanup();
+		TBlackboardFrame.cleanup();
+		TBlackboardBoard.cleanup();
 
 		// Cleanup models
 		MBackground.cleanup();
@@ -1074,6 +1101,8 @@ protected:
 		MLamp.cleanup();
 		MKettle.cleanup();
 		MDoor.cleanup();
+		MBlackboardFrame.cleanup();
+		MBlackboardBoard.cleanup();
 
 		// Cleanup descriptor set layouts
 		DSLTile.cleanup();
@@ -1289,6 +1318,15 @@ protected:
 		DSKettle.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MKettle.indices.size()), 1, 0, 0, 0);
+		//Blackboard
+		MBlackboardFrame.bind(commandBuffer);
+		DSBlackboardFrame.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MBlackboardFrame.indices.size()), 1, 0, 0, 0);
+		MBlackboardBoard.bind(commandBuffer);
+		DSBlackboardBoard.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+			static_cast<uint32_t>(MBlackboardBoard.indices.size()), 1, 0, 0, 0);
 
 		// PUI
 		PUI.bind(commandBuffer);
@@ -1735,6 +1773,8 @@ protected:
 		// [35] - Lamp
 		// [36] - Kettle
 		// [37] - Door
+		// [38] - Blackboard Frame
+		// [38] - Blackboard Board
 
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
@@ -2125,7 +2165,7 @@ protected:
 		DSPictureFrameImage2.map(currentImage, &pictureFrameImageubo2, sizeof(pictureFrameImageubo2), 1);
 
 		//Vase
-		World = glm::translate(glm::mat4(1), glm::vec3(-1.5f, 0.0f, -1.8f)) *
+		World = glm::translate(glm::mat4(1), glm::vec3(1.5f, 0.0f, -1.8f)) *
 			glm::rotate(glm::mat4(1), glm::radians(60.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.016f));
 		commonubo[27].mvpMat = Prj * View * World;
@@ -2244,6 +2284,39 @@ protected:
 		kettleubo.sColor = generalSColor;
 		DSKettle.map(currentImage, &commonubo[36], sizeof(commonubo[36]), 0);
 		DSKettle.map(currentImage, &kettleubo, sizeof(kettleubo), 1);
+
+		//Blackboard
+		World = glm::translate(glm::mat4(1), glm::vec3(-2.0f, 1.3f, -0.5f)) *
+			glm::rotate(glm::mat4(1), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+			glm::scale(glm::mat4(1), glm::vec3(0.008f));
+		commonubo[38].mvpMat = Prj * View * World;
+		commonubo[38].mMat = World;
+		commonubo[38].nMat = glm::inverse(glm::transpose(World));
+		commonubo[38].transparency = 0.0f;
+		commonubo[38].textureIdx = 0;
+		if (isNight) {
+			blackboardFrameubo.amb = 0.0001f; blackboardFrameubo.gamma = 10000.0f;
+		}
+		else {
+			blackboardFrameubo.amb = 1.0f; blackboardFrameubo.gamma = 200.0f;
+		}
+		blackboardFrameubo.sColor = generalSColor;
+		DSBlackboardFrame.map(currentImage, &commonubo[38], sizeof(commonubo[38]), 0);
+		DSBlackboardFrame.map(currentImage, &blackboardFrameubo, sizeof(blackboardFrameubo), 1);
+		commonubo[39].mvpMat = Prj * View * World;
+		commonubo[39].mMat = World;
+		commonubo[39].nMat = glm::inverse(glm::transpose(World));
+		commonubo[39].transparency = 0.0f;
+		commonubo[39].textureIdx = 0;
+		if (isNight) {
+			blackboardBoardubo.amb = 0.0001f; blackboardBoardubo.gamma = 10000.0f;
+		}
+		else {
+			blackboardBoardubo.amb = 1.0f; blackboardBoardubo.gamma = 200.0f;
+		}
+		blackboardBoardubo.sColor = generalSColor;
+		DSBlackboardBoard.map(currentImage, &commonubo[39], sizeof(commonubo[39]), 0);
+		DSBlackboardBoard.map(currentImage, &blackboardBoardubo, sizeof(blackboardBoardubo), 1);
 
 		//Lamp
 		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 3.01f, 0.0f)) * //glm::translate(glm::mat4(1), lanternLightPos) *
