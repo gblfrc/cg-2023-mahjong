@@ -1547,6 +1547,9 @@ protected:
 
 				if (reset) {
 					game = MahjongGame(structurePath);
+					for (int j = 0; j < 144; j++) {
+						disappearedTiles[j] = false;
+					}
 					reset = false;
 				}
 				//gameManuallyEnded = false; 
@@ -1736,7 +1739,7 @@ protected:
 				backtomenuubo.visible = 1.0f;
 				yesbuttonubo.visible = 1.0f;
 				nobuttonubo.visible = 1.0f;
-				if (click && (hoverIndex == -2 || hoverIndex == -3)) {
+				if (handleClick && (hoverIndex == -2 || hoverIndex == -3)) {
 					backtomenuubo.visible = 0.0f;
 					yesbuttonubo.visible = 0.0f;
 					nobuttonubo.visible = 0.0f;
