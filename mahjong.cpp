@@ -1,83 +1,86 @@
+//COMPUTER GRAPHICS PROJECT 2022/23
+
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
+#include "MahjongGame.hpp"
+
 #include <glm/ext/vector_common.hpp>
 #include <glm/ext/scalar_common.hpp>
-#include "MahjongGame.hpp"
-#include <iostream>
+#include <glm/gtx/transform2.hpp>
 #include <windows.h>
 #include <mmsystem.h>
 #include <string>
 #include <random>
-#include <glm/gtx/transform2.hpp>
+
 
 //link windows multimedia library to our program
 #pragma comment(lib, "winmm.lib")
 
-// correct alignas(...) values for uniform buffer objects data structures:
-//        float : alignas(4)
-//        vec2  : alignas(8)
-//        vec3  : alignas(16)
-//        vec4  : alignas(16)
-//        mat3  : alignas(16)
-//        mat4  : alignas(16)
+
+//----------------------
+// UNIFORM BLOCKS
+//----------------------
 
 struct CommonUniformBlock {
-	alignas(16) glm::mat4 mvpMat;
-	alignas(16) glm::mat4 mMat;
-	alignas(16) glm::mat4 nMat;
-	alignas(4) float transparency;
-	alignas(4) int textureIdx;
-	alignas(4) int objectIdx;
+	alignas(16) glm::mat4 mvpMat;			// ViewProjection
+	alignas(16) glm::mat4 mMat;				// World matrix
+	alignas(16) glm::mat4 nMat;				// Normal transformation matrix
+	alignas(4) float transparency;			// Either 1.0f or 0.0f
+	alignas(4) int textureIdx;				// Id of the texture to take from the sampler2DArray of textures
+	alignas(4) int objectIdx;				// Id used to identify object for selection
 };
 
 struct TileUniformBlock {
-	alignas(4) float amb;
-	alignas(4) float gamma;
-	alignas(16) glm::vec3 sColor;
+	alignas(4) float amb;					// Coefficient to regulate the effect of ambient light on the tile
+	alignas(4) float gamma;					// Gamma coefficient for Blinn shader
+	alignas(16) glm::vec3 sColor;			// Specular color
 	alignas(16) glm::mat4 mvpMat;
 	alignas(16) glm::mat4 mMat;
 	alignas(16) glm::mat4 nMat;
-	alignas(4) int tileIdx;
-	alignas(4) int suitIdx;
-	alignas(4) float transparency;
-	alignas(4) int hoverIdx;
-	alignas(4) int selectedIdx;
-	alignas(4) int textureIdx;
-	alignas(4) int isInMenu;
+	alignas(4) int tileIdx;					// Index of the tile on the board
+	alignas(4) int suitIdx;					// Index of the tile w.r.t. the drawing on it
+	alignas(4) float transparency;			// Transparency of the tile, used in disappearing animation
+	alignas(4) int hoverIdx;				// Index of the tile on which the mouse cursor is hovering
+	alignas(4) int selectedIdx;				// Index of the tile that is already selected in game
+	alignas(4) int textureIdx;			
+	alignas(4) int isInMenu;				// Either 0 or 1, used to define if the tile is in the menu or in game and change lightr accordingly
 };
 
 struct RoughSurfaceUniformBlock {
 	alignas(4) float amb;
-	alignas(4) float sigma;
+	alignas(4) float sigma;					// Roughness for Oren Nayar shader
 };
 
 struct SmoothSurfaceUniformBlock {
 	alignas(4) float amb;
-	alignas(4) float gamma;
+	alignas(4) float gamma;					// Gamma for Blinn shader
 	alignas(16) glm::vec3 sColor;
 };
 
 struct PlainWithEmissionUniformBlock {
-	alignas(16) glm::vec3 emission;
+	alignas(16) glm::vec3 emission;			// Emission color
 };
 
 struct GlobalUniformBlock {
-	alignas(4) float beta;					// decay factor of the point light
-	alignas(4) float g;						// distance parameter for point light
-	alignas(16) glm::vec3 PlightPos;		// point light position
-	alignas(16) glm::vec3 PlightColor;		// original color of the point light
-	alignas(16) glm::vec3 AmbLightColor;	// ambient color
-	alignas(16) glm::vec3 eyePos;			// viewer position
+	alignas(4) float beta;					// Decay factor of the point light
+	alignas(4) float g;						// Distance parameter for point light
+	alignas(16) glm::vec3 PlightPos;		// Point light position
+	alignas(16) glm::vec3 PlightColor;		// Original color of the point light
+	alignas(16) glm::vec3 AmbLightColor;	// Ambient color
+	alignas(16) glm::vec3 eyePos;			// Viewer position
 };
 
 struct UIUniformBlock {
-	alignas(4) float visible;
+	alignas(4) float visible;				// Either 1.0f or 0.0f
 	alignas(4) float transparency;
 	alignas(4) int objectIdx;
 };
 
-// The vertices data structures
+//----------------------
+// VERTEX DATA STRUCTURES
+//----------------------
+
 struct VertexMesh {
 	glm::vec3 pos;
 	glm::vec3 norm;
@@ -89,14 +92,21 @@ struct VertexUI {
 	glm::vec2 UV;
 };
 
-// MAIN ! 
+//----------------------
+// MAIN PROJECT
+//----------------------
+
 class Mahjong : public BaseProject {
 protected:
 
+	//----------------------
+	// VARIABLES DECLARATION
+	//----------------------
+	
 	// Current aspect ratio (used by the callback that resized the window)
 	float Ar;
 
-	// Descriptor Layouts ["classes" of what will be passed to the shaders]
+	// Descriptor Set Layouts
 	DescriptorSetLayout DSLGubo;		// DSL for GlobalUniformBufferObject
 	DescriptorSetLayout DSLTile;		// DSL for Tile objects
 	DescriptorSetLayout DSLPlain;		// DSL with 1 UNIFORM and 1 TEXTURE
@@ -107,7 +117,7 @@ protected:
 	VertexDescriptor VMesh;
 	VertexDescriptor VUI;
 
-	// Pipelines [Shader couples]
+	// Pipelines
 	Pipeline PPlain;
 	Pipeline PTile;
 	Pipeline PRoughSurfaces;
@@ -115,8 +125,7 @@ protected:
 	Pipeline PPlainWithEmission;
 	Pipeline PUI;
 
-	// Models, textures and Descriptors (values assigned to the uniforms)
-	// Please note that Model objects depends on the corresponding vertex structure
+	// Models, Textures and Descriptors (values assigned to the uniforms)
 	Model<VertexMesh> MBackground;
 	Model<VertexMesh> MTile;
 	Model<VertexMesh> MWall;
@@ -127,8 +136,6 @@ protected:
 	Model<VertexMesh> MWindow;
 	Model<VertexMesh> MGameTitle;
 	Model<VertexMesh> MLandscape;
-	Model<VertexUI> MGameOver;
-	Model<VertexUI> MYouWin;
 	Model<VertexMesh> MPlainRectangle;
 	Model<VertexMesh> MArrowButton;
 	Model<VertexMesh> MCircleButton;
@@ -143,6 +150,8 @@ protected:
 	Model<VertexMesh> MDoor;
 	Model<VertexMesh> MBlackboardFrame;
 	Model<VertexMesh> MBlackboardBoard;
+	Model<VertexUI> MGameOver;
+	Model<VertexUI> MYouWin;
 	Model<VertexUI> MYesButton;
 	Model<VertexUI> MNoButton;
 	Model<VertexUI> MBackToMenu;
@@ -187,7 +196,7 @@ protected:
 	DescriptorSet DSYesButton, DSNoButton;
 	DescriptorSet DSBackToMenu;
 	
-
+	// Scene
 	Texture TPoolCloth;
 	Texture TTile;
 	Texture TWallDragon;
@@ -203,7 +212,16 @@ protected:
 	Texture TPictureFrame; 
 	Texture TPictureFrameImage1, TPictureFrameImage2;
 	Texture TFlame;
-	//Buttons
+	Texture TVase;
+	Texture TChair;
+	Texture TCandle;
+	Texture TLamp;
+	Texture TKettle;
+	Texture TDoor;
+	Texture TBlackboardFrame;
+	Texture TBlackboardBoard;
+	Texture TBlackboardText; 
+	// UI
 	Texture TButton;
 	Texture TArrowButtonLeft, TArrowButtonRight;
 	Texture TCircleButton;
@@ -214,23 +232,15 @@ protected:
 	Texture TSelection4;
 	Texture TTileSelText;
 	Texture TBoardSelText;
-	Texture TVase;
-	Texture TChair;
-	Texture TCandle;
-	Texture TLamp;
-	Texture TKettle;
-	Texture TDoor;
-	Texture TBlackboardFrame;
-	Texture TBlackboardBoard;
-	Texture TBlackboardText;
 	Texture TYesButton, TNoButton;
 	Texture TBackToMenu;
 	
 
 	// C++ storage for uniform variables
-	TileUniformBlock tileubo[144];	//not necessary as an array, works also with only one TileUniformBlock??
+	GlobalUniformBlock gubo; 
+	TileUniformBlock tileubo[144];
+	TileUniformBlock tileHomeubo; //rotating tile in home menu screen 
 	RoughSurfaceUniformBlock bgubo;
-	GlobalUniformBlock gubo;
 	RoughSurfaceUniformBlock wallubo;
 	RoughSurfaceUniformBlock floorubo;
 	RoughSurfaceUniformBlock ceilingubo;
@@ -240,19 +250,18 @@ protected:
 	RoughSurfaceUniformBlock pictureFrameImageubo1, pictureFrameImageubo2;
 	RoughSurfaceUniformBlock doorubo;
 	RoughSurfaceUniformBlock blackboardTextubo;
+	RoughSurfaceUniformBlock lampubo;
 	SmoothSurfaceUniformBlock lionubo;
 	SmoothSurfaceUniformBlock pictureFrameubo1, pictureFrameubo2;
 	SmoothSurfaceUniformBlock vaseubo;
 	SmoothSurfaceUniformBlock candleubo;
 	SmoothSurfaceUniformBlock kettleubo;
 	SmoothSurfaceUniformBlock blackboardFrameubo;
-	SmoothSurfaceUniformBlock blackboardBoardubo;
-	UIUniformBlock gameoverubo;
-	UIUniformBlock youwinubo;
-	TileUniformBlock tileHomeubo; //rotating tile in home menu screen
+	SmoothSurfaceUniformBlock blackboardBoardubo;	
 	CommonUniformBlock tileSelTextubo, boardSelTextubo;
 	PlainWithEmissionUniformBlock flameEmissionubo;
-	RoughSurfaceUniformBlock lampubo;
+	UIUniformBlock gameoverubo; 
+	UIUniformBlock youwinubo; 
 	UIUniformBlock yesbuttonubo;
 	UIUniformBlock nobuttonubo;
 	UIUniformBlock backtomenuubo;
@@ -270,13 +279,13 @@ protected:
 	// [10] - Game title
 	// [11] - Button1
 	// [12] - Button2
-	// [13] - Button3
+	// [13] - Button3 (Not used anymore)
 	// [14] - Arrow Left 1
 	// [15] - Arrow Left 2
-	// [16] - Arrow Left 3
+	// [16] - Arrow Left 3 (Not used anymore)
 	// [17] - Arrow Right 1
 	// [18] - Arrow Right 2
-	// [19] - Arrow Right 3
+	// [19] - Arrow Right 3 (Not used anymore)
 	// [20] - Play button
 	// [21] - Game setting
 	// [22] - Tile type selection title
@@ -301,13 +310,13 @@ protected:
 	CommonUniformBlock commonubo[41];
 
 	// Other application parameters
-	int tileTextureIdx = 0;
-	int boardTextureIdx = 0;
-	int circleTextureIdx = 0;
-	int pictureFrameImageIdx1 = 0;
-	int pictureFrameImageIdx2 = 0;
-	int lampTextureIdx = 1;
-	int landscapeTextureIdx = 0;
+	int tileTextureIdx = 0;					//Id of the current tile texture 
+	int boardTextureIdx = 0;				//Id of the current board texture
+	int circleTextureIdx = 0;				//Id of the current day/night button texture
+	int pictureFrameImageIdx1 = 0;			//Id of the current picture frame image 1 texture
+	int pictureFrameImageIdx2 = 0;			//Id of the current picture frame image 2 texture
+	int lampTextureIdx = 1;					//Id of the current lamp texture (Alight or not)
+	int landscapeTextureIdx = 0;			//Id of the current window landscape texture
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -320,9 +329,8 @@ protected:
 	const float initialYaw = glm::radians(0.0f);
 	
 	//other parameters
-	int gameState = 0;
+	int gameState = -1;
 	int isCandleAlight = 0;
-	bool gameManuallyEnded = false;
 	glm::vec3 generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	float DisappearingTileTransparency = 1.0f;
 	const float homeTileRotSpeed = glm::radians(80.0f);
@@ -330,12 +338,11 @@ protected:
 	int secondTileIndex = -1;
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
 								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
-	bool disappearedTiles[144] = {0};
 	const glm::vec3 homeMenuPosition = glm::vec3(-10.0f, 0.0f, -20.0f);
 	const glm::mat4 homeMenuWorld = glm::translate(glm::mat4(1.0f), homeMenuPosition);
 
 
-	// Here you set the main application parameters
+	// Main application parameters
 	void setWindowParameters() {
 		// window size, title and initial background
 		windowWidth = 1200;
@@ -344,10 +351,10 @@ protected:
 		windowResizable = GLFW_TRUE;
 		initialBackgroundColor = { 0.0f, 0.005f, 0.01f, 1.0f };
 
-		// Descriptor pool sizes							//TO RECALCULATE <-----
-		uniformBlocksInPool = 300;//186;
+		// Descriptor pool sizes
+		uniformBlocksInPool = 217;
 		texturesInPool = 49;
-		setsInPool = 300;//179;
+		setsInPool = 195;
 
 		// Initialize aspect ratio
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -360,8 +367,8 @@ protected:
 		windowHeight = h;
 	}
 
-	// Here you load and setup all your Vulkan Models and Textures.
-	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
+	// Load and setup Vulkan Models and Textures.
+	// Create the Descriptor Set Layouts and load the shaders for the pipelines
 	void localInit() {
 		// Descriptor Set Layouts
 		DSLTile.init(this, {
@@ -413,22 +420,24 @@ protected:
 		// PTile --> Pipeline for objects representing Mahjong tiles
 		PTile.init(this, &VMesh, "shaders/TileVert.spv", "shaders/TileFrag.spv", { &DSLGubo, &DSLTile, &DSLTextureOnly });
 		PTile.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
-		// Other pipelines
+		// PRoughSurfaces --> Pipeline for rough objects
 		PRoughSurfaces.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/OrenNayarFrag.spv", { &DSLGeneric, &DSLGubo });
 		PRoughSurfaces.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
-		// Other pipelines
+		// PSmoothSurfaces --> Pipeline for smooth objects
 		PSmoothSurfaces.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/BlinnFrag.spv", { &DSLGeneric, &DSLGubo });
 		PSmoothSurfaces.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, false);
-		// PPlain --> Pipeline for elements that have to be 'copied' from textures
+		// PPlainWithEmission --> Pipeline for elements that have to be 'copied' from textures but with an additional emission term
 		PPlainWithEmission.init(this, &VMesh, "shaders/PhongVert.spv", "shaders/PlainWithEmissionFrag.spv", { &DSLGeneric});
 		PPlainWithEmission.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, true);
-
-		//----------------------------
-		// Models, textures and Descriptors (values assigned to the uniforms)
 		
 
-		//----------------------------
-		// MODELS CREATION
+		//----------------------
+		// MODELS
+		//----------------------
+		
+		//----------------------
+		// Manual models
+		//----------------------
 		
 		//home menu base coordinates
 		float a = 2.0f;
@@ -441,6 +450,7 @@ protected:
 		};
 		MHome.indices = { 0, 2, 1,    0, 3, 2 };
 		MHome.initMesh(this, &VMesh);
+
 		//Game Title base coordinates
 		float half_width_for_vert = 1.33f; 
 		float hUp = 2.5f;
@@ -494,6 +504,7 @@ protected:
 		};
 		MBackground.indices = { 0, 2, 1,   0,3,2};
 		MBackground.initMesh(this, &VMesh);
+
 		// Landscape (requires scale and translation in place)
 		MLandscape.vertices = {
 			{{-1.0f, 1.0f, 0.0f},{0.0f, 0.0f, 1.0f},{0.0f, 0.0f}},
@@ -503,6 +514,7 @@ protected:
 		};
 		MLandscape.indices = { 0, 2, 1,   0,3,2 };
 		MLandscape.initMesh(this, &VMesh);
+
 		// Create walls
 		float roomHeight = 3.0f;
 		float roomHalfWidth = 2.0f;
@@ -630,7 +642,10 @@ protected:
 		MNoButton.indices = { 0, 1, 2,    1, 2, 3 };
 		MNoButton.initMesh(this, &VUI);
 
-		// IMPORT MODELS
+		//----------------------
+		// Imported models
+		//----------------------
+
 		MTile.init(this, &VMesh, "models/Tile.obj", OBJ);
 		MTable.init(this, &VMesh, "models/Table.obj", OBJ);
 		MWindow.init(this, &VMesh, "models/Window.obj", OBJ);
@@ -646,13 +661,11 @@ protected:
 		MBlackboardFrame.init(this, &VMesh, "models/Blackboard_1.obj", OBJ);
 		MBlackboardBoard.init(this, &VMesh, "models/Blackboard_0.obj", OBJ);
 
-		//----------------------------
-		// Create the TEXTURES
-		
-		// The second parameter is the file name
-		//TPoolCloth.init(this, "textures/background/poolcloth.png");
+		//----------------------
+		// TEXTURES 
+		//----------------------
 
-		//Tiles textures
+		// Tiles textures
 		const char* tileTextureFiles[4] = {
 			"textures/tiles/tiles_white_resized.png",
 			"textures/tiles/tiles_dark_resized.png",
@@ -661,18 +674,16 @@ protected:
 		};
 		TTile.initFour(this, tileTextureFiles);
 
-		//Background cloth textures
+		// Background cloth textures
 		const char* clothTextureFiles[4] = {
 			"textures/background/poolcloth.png",
 			"textures/background/redCloth.png",
 			"textures/background/wood.png",
 			"textures/background/dark_wood_resized.png",
-			//"textures/background/marble.png",
-			//"textures/background/earthenware.png",  //CAUSES ERROR ch:4 instead of ch: 3?
 		};
 		TPoolCloth.initFour(this, clothTextureFiles);
 
-		//Tiles style selcetion names
+		// Tiles style name selection
 		const char* tileNamesTextureFiles[4] = {
 			"textures/buttons/white_tiles_text.png",
 			"textures/buttons/black_tiles_text.png",
@@ -681,7 +692,7 @@ protected:
 		};
 		TTileSelText.initFour(this, tileNamesTextureFiles);
 
-		//Board styles
+		// Board style name selection
 		const char* boardNamesTextureFiles[4] = {
 			"textures/buttons/poolTable_board_text.png",
 			"textures/buttons/imperialRed_board_text.png",
@@ -690,14 +701,14 @@ protected:
 		}; 
 		TBoardSelText.initFour(this, boardNamesTextureFiles); 
 
-		//Light styles
+		// Light button styles
 		const char* circleNamesTextureFiles[2] = {
 			"textures/buttons/dayTime.png",
 			"textures/buttons/nightTime.png",
 		};
 		TCircleButton.initTwo(this, circleNamesTextureFiles);
 
-		//Images that can appear in the picture frame 1
+		// Images that can appear in the picture frame 1
 		const char* frameImagesTextureFiles1[4] = {
 			"textures/room/picture1.jpg",
 			"textures/room/picture2.jpg",
@@ -706,7 +717,7 @@ protected:
 		};
 		TPictureFrameImage1.initFour(this, frameImagesTextureFiles1);
 
-		//Images that can appear in the picture frame 2
+		// Images that can appear in the picture frame 2
 		const char* frameImagesTextureFiles2[5] = { 
 			"textures/foto_cina/shanghai.jpg",
 			"textures/foto_cina/suzhou.jpg",
@@ -716,20 +727,21 @@ protected:
 		};
 		TPictureFrameImage2.initFive(this, frameImagesTextureFiles2); 
 
-		//Lamp if it is off or on
+		// Textures for the hanging lamp (off/on)
 		const char* lampTextureFiles[2] = {
 			"textures/room/lamp.png",
 			"textures/room/lampAlight.jpg",
 		};
 		TLamp.initTwo(this, lampTextureFiles);
 
+		// Textures of the landscape visible outside the window
 		const char* landscapeTextureFiles[2] = {
 			"textures/room/landscape.jpg",
 			"textures/room/landscape_night.jpg",
 		};
 		TLandscape.initTwo(this, landscapeTextureFiles);
 
-		// Initialize other textures
+		// Other textures
 		TWallDragon.init(this, "textures/room/dragon_texture0.jpg");
 		TFloor.init(this, "textures/room/floor.png");
 		TCeiling.init(this, "textures/room/ceiling.jpg");
@@ -761,20 +773,20 @@ protected:
 		TYesButton.init(this, "textures/buttons/yes.png");
 		TNoButton.init(this, "textures/buttons/no.png");
 
-		//-------------------------------
-		// Init local variables
+		//----------------------
+		// INIT LOCAL VARIABLES
+		//----------------------
 		CamH = 1.0f;
 		CamRadius = initialCamRadius;
 		CamPitch = initialPitch;
 		CamYaw = initialYaw;
-		gameState = -1;				//INITIAL GAME STATE <-----
-		firstTileIndex = -1;
-		secondTileIndex = -1;
 	}
 
-	// Here you create your pipelines and Descriptor Sets!
+	//----------------------------------------
+	// PIPELINES AND DESCRIPTOR SETS CREATION
+	//----------------------------------------
 	void pipelinesAndDescriptorSetsInit() {
-		// This creates a new pipeline (with the current surface), using its shaders
+		// Create a new pipeline (with the current surface), using its shaders
 		PRoughSurfaces.create();
 		PSmoothSurfaces.create();
 		PTile.create();
@@ -782,7 +794,9 @@ protected:
 		PPlainWithEmission.create();
 		PUI.create();
 
-		// Descriptor Sets
+		//----------------------
+		// DESCRIPTOR SETS 
+		//----------------------
 
 		// UI
 		DSGameOver.init(this, &DSLPlain, {
@@ -831,7 +845,6 @@ protected:
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TButton}
 			});
-
 		DSArrowButton1_left.init(this, &DSLPlain, {
 				{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 				{1, TEXTURE, 0, &TArrowButtonLeft}
@@ -915,31 +928,26 @@ protected:
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TPoolCloth}
 			});
-
 		DSWall.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TWallDragon}
 			});
-
 		DSFloor.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TFloor}
 			});
-
 		DSCeiling.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TCeiling}
 			});
-
 		DSTable.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
 					{2, TEXTURE, 0, &TTable}
 			});
-
 		DSWindow1.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr},
@@ -965,7 +973,6 @@ protected:
 					{1, UNIFORM, sizeof(RoughSurfaceUniformBlock), nullptr}, 
 					{2, TEXTURE, 0, &TBlackboardText}
 			});
-
 		DSLion.init(this, &DSLGeneric, {
 					{0, UNIFORM, sizeof(CommonUniformBlock), nullptr},
 					{1, UNIFORM, sizeof(SmoothSurfaceUniformBlock), nullptr},
@@ -1032,11 +1039,11 @@ protected:
 					{2, TEXTURE, 0, &TFlame}
 			});
 		
-
-
 	}
 
-	// Here you destroy your pipelines and Descriptor Sets!
+	//--------------------------------------------
+	// DESTROY PIPELINES AND DESCRIPTOR SETS
+	//--------------------------------------------
 	// All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
@@ -1082,7 +1089,6 @@ protected:
 		DSBackToMenu.cleanup();
 		DSYesButton.cleanup();
 		DSNoButton.cleanup();
-		//menu
 		DSHTile.cleanup();
 		DSHome.cleanup();
 		DSGameTitle.cleanup();
@@ -1106,10 +1112,9 @@ protected:
 
 	}
 
-	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
-	// All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
-	// You also have to destroy the pipelines: since they need to be rebuilt, they have two different
-	// methods: .cleanup() recreates them, while .destroy() delete them completely
+	//------------------------------------------------------------
+	// DESTROY MODELS, TEXTURES AND DESCRIPTOR SET LAYOUTS
+	//------------------------------------------------------------
 	void localCleanup() {
 		// Cleanup textures
 		TPoolCloth.cleanup();
@@ -1190,7 +1195,7 @@ protected:
 		DSLTextureOnly.cleanup();
 		DSLPlain.cleanup();
 
-		// Destroys the pipelines
+		// Destroy the pipelines
 		PTile.destroy();
 		PRoughSurfaces.destroy();
 		PSmoothSurfaces.destroy();
@@ -1199,14 +1204,14 @@ protected:
 		PUI.destroy();
 	}
 
-	// Here it is the creation of the command buffer:
-	// You send to the GPU all the objects you want to draw,
-	// with their buffers and textures
-
+	//-----------------------------------
+	// CREATION OF THE COMMAND BUFFER
+	//-----------------------------------
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
+
 		// PPlain
-		//
+		
 		PPlain.bind(commandBuffer);
 		// Landscape (out of windows)
 		MLandscape.bind(commandBuffer);
@@ -1281,8 +1286,9 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MCircleButton.indices.size()), 1, 0, 0, 0);
 
+
 		// PTile
-		//
+		
 		// Tiles in main structure
 		PTile.bind(commandBuffer);
 		MTile.bind(commandBuffer);
@@ -1300,7 +1306,7 @@ protected:
 
 
 		// PRoughSurfaces
-		//
+		
 		PRoughSurfaces.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PRoughSurfaces, 1, currentImage);
 		// Background for game
@@ -1363,8 +1369,9 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MDoor.indices.size()), 1, 0, 0, 0);
 
+
 		// PSmoothSurfaces
-		//
+		
 		PSmoothSurfaces.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PSmoothSurfaces, 1, currentImage);
 		// Lion statue
@@ -1409,7 +1416,7 @@ protected:
 
 
 		// PRoughSurfaces
-		//
+		
 		PRoughSurfaces.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PRoughSurfaces, 1, currentImage);
 		//Blackboard commands text
@@ -1418,7 +1425,9 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
 
+
 		// PUI
+
 		PUI.bind(commandBuffer);
 		// Game over
 		MGameOver.bind(commandBuffer);
@@ -1446,17 +1455,20 @@ protected:
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MNoButton.indices.size()), 1, 0, 0, 0);
 
-		//PPlainWithEmission
+
+		// PPlainWithEmission
+
 		PPlainWithEmission.bind(commandBuffer);
-		//Flame
+		// Flame
 		MFlame.bind(commandBuffer);
 		DSFlame.bind(commandBuffer, PPlainWithEmission, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MFlame.indices.size()), 1, 0, 0, 0);
 	}
 
-	// Here is where you update the uniforms.
-	// Very likely this will be where you will be writing the logic of your application.
+	//---------------------
+	// MAIN UPDATE CYCLE
+	//---------------------
 	void updateUniformBuffer(uint32_t currentImage) {
 
 		//---------------------
@@ -1467,6 +1479,7 @@ protected:
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
+
 		// Integration with the timers and the controllers
 		float deltaT;
 		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
@@ -1475,18 +1488,6 @@ protected:
 		bool enter = false;
 		bool mButton = false;
 		getSixAxis(deltaT, m, r, fire, click, enter, mButton); 
-		//std::cout << "\nclicked is :" << clicked<<"\n";
-		//std::cout << "\nEnter: " << enter << " \n";
-		
-		// getSixAxis() is defined in Starter.hpp in the base class.
-		// It fills the float point variable passed in its first parameter with the time
-		// since the last call to the procedure.
-		// It fills vec3 in the second parameters, with three values in the -1,1 range corresponding
-		// to motion (with left stick of the gamepad, or ASWD + RF keys on the keyboard)
-		// It fills vec3 in the third parameters, with three values in the -1,1 range corresponding
-		// to motion (with right stick of the gamepad, or Arrow keys + QE keys on the keyboard, or mouse)
-		// If fills the last boolean variable with true if fire has been pressed:
-		//          SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
 		// To debounce the pressing of the fire button, and start the event when the key is released
 		static bool wasFire = false;
@@ -1498,39 +1499,29 @@ protected:
 		bool handleClick = (wasClick && (!click)); 
 		wasClick = click; 
 
+		// To get the position of the cursor on screen
 		double mousex, mousey;
 		glfwGetCursorPos(window, &mousex, &mousey);
 		int x = int(mousex);
 		int y = int(mousey);
 
 
-
+		// Access texture data for object selection
 		void* data;
-		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data);
-		vkGetImageSubresourceLayout(device, entityImage, &entitySubresource, &entityLayout);
-		//cout << "Offset: " << entityLayout.offset << endl;
-		//cout << "Window Width: " << windowWidth << endl;
-		//cout << "Window Height: " << windowHeight << endl;
-		//cout << "Size: " << entityLayout.size << endl;
-		//cout << "Row Pitch: " << entityLayout.rowPitch << endl;
-		//cout << "Array Pitch: " << entityLayout.arrayPitch << endl;
-		//cout << "Depth Pitch: " << entityLayout.depthPitch << endl;
-		//cout << "-------------------------------------------------" << endl;
-		//int rowLength = entityLayout.rowPitch
+		vkMapMemory(device, entityImageMemory, 0, VK_WHOLE_SIZE, 0, &data); // Put entityImageMemory in &data
+		vkGetImageSubresourceLayout(device, entityImage, &entitySubresource, &entityLayout); // Get info from entityImage
+		
+		// Access &data to read pointed pixel content
 		int* pixels = reinterpret_cast<int*>(data);
 		int index = y * entityLayout.rowPitch/4 + x;
 		int hoverIndex = -1;
-		//cout << "Window size: " << windowWidth << "x" << windowHeight << endl;
 		if (y < windowHeight && x < windowWidth) {
-			//cout << x << ", " << y << " ---> " << pixels[index] << "\n";
 			hoverIndex = pixels[index];
 		}
 		vkUnmapMemory(device, entityImageMemory);
 
-		//if(handleClick) std::cout << "\nClick on tile: " << pixels[index]<<"\n";
 
-
-
+		// Initialization of the game
 		string structurePath = "./structure.json";
 		static MahjongGame game = MahjongGame(structurePath);
 		static bool reset = false;
@@ -1540,28 +1531,17 @@ protected:
 		// STATE MACHINE FOR THE GAME
 		// -------------------------
 		bool enterPressedFirstTime = false;
-		//std:cout << "\nGameState: " << gameState<<"\n";	//DEBUG PRINT
-		switch (gameState) {		// main state machine implementation
+		switch (gameState) {
 			
 			case -1: //menu	
 
 				if (reset) {
 					game = MahjongGame(structurePath);
-					for (int j = 0; j < 144; j++) {
-						disappearedTiles[j] = false;
-					}
 					reset = false;
 				}
-				//gameManuallyEnded = false; 
-				
-				/* //Start the game with enter key
-				if (enter) {
-					gameState = 0;
-					enterPressedFirstTime = true;
-				}*/
 
-				//get clicks to change textures and shaders
-				//Change tiles texture
+				// Get clicks to change textures and shaders
+				// Change tiles texture
 				if (handleClick && hoverIndex==-42) {
 					tileTextureIdx++;
 					if (tileTextureIdx == 4) tileTextureIdx = 0;
@@ -1573,7 +1553,7 @@ protected:
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
 
-				//Change board texture
+				// Change board texture
 				if (handleClick && hoverIndex == -44) {
 					boardTextureIdx++;
 					if (boardTextureIdx == 4) boardTextureIdx = 0;
@@ -1588,10 +1568,10 @@ protected:
 				//Change day/Night
 				if (handleClick && hoverIndex == -45) {
 					circleTextureIdx++;
-
 					if (circleTextureIdx == 2) circleTextureIdx = 0;
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				}
+
 				//Start the game
 				if (handleClick && hoverIndex == -30) {
 					gameState = 0;
@@ -1607,17 +1587,11 @@ protected:
 					std::mt19937 rng2(time(NULL));
 					std::uniform_int_distribution<int> gen2(min, max);
 					pictureFrameImageIdx2 = gen2(rng);
-					//std::cout << "\nRandom picture idx: " << pictureFrameImageIdx << "\n";
 
-					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); //TO CHANGE WITH DEDICATED ONE
+					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 
 					enterPressedFirstTime = true;
 				}
-
-				/**/
-				//std::cout << "\nhoverIndex: " << hoverIndex << "\n";						//DEBUG
-				//std::cout << "\nBoardTexIdx: " << boardTextureIdx << "\n----------------\n";
-				
 				break;
 			case 0:
 				//no piece selected
@@ -1656,8 +1630,7 @@ protected:
 				break;
 			case 3:
 				//wrong choice of second piece
-				//notify error, how?
-				std::cout << "\n ERROR: tiles cannot be removed together \n";
+				//notify error
 				PlaySound(TEXT("sounds/game_error_tone_1.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				//deselect tiles
 				firstTileIndex = -1;
@@ -1666,8 +1639,7 @@ protected:
 				break;
 			case 4:
 				//two pieces start to disappear
-				//std::cout <<"\nTile indexes: " << firstTileIndex << ", " << secondTileIndex << "are disappearing with T= "<< DisappearingTileTransparency<<"\n";
-				DisappearingTileTransparency = DisappearingTileTransparency - 2.5f * deltaT; //check coefficient 0.1f
+				DisappearingTileTransparency = DisappearingTileTransparency - 2.5f * deltaT;
 				if (DisappearingTileTransparency <= 0) {
 					DisappearingTileTransparency = 0;
 					gameState = 5;
@@ -1676,61 +1648,38 @@ protected:
 			case 5:
 				//remove the tile
 				game.removeTiles(firstTileIndex, secondTileIndex);
-				cout << "Game over: " << game.isGameOver() << endl;
-				cout << "Game won: " << game.isWon() << endl;
-				// DEBUG - Trigger game won
-				//for (int i = 0; i < game.tiles.size(); i++) {
-				//	game.tiles[i].isRemoved = true;
-				//}
-				//cout << "\n";
-				//for (vector<int> sv : game.suitVectors) {
-				//	sv.clear();
-				//}
-				//cout << "Game over: " << game.isGameOver() << endl;
-				//cout << "Game won: " << game.isWon() << endl;
-				// Usual flow
 				if (game.isWon() || game.isGameOver()) {
 					gameState = 6;
-					break;
 				}
-				disappearedTiles[firstTileIndex] = true;
-				disappearedTiles[secondTileIndex] = true;
-				//game.removeTiles(firstTileIndex, secondTileIndex);
-				//go back to initial state
-				gameState = 0;
+				else {
+					gameState = 0;
+				}
 				break;
 			case 6:
+				// The game has ended
 				if (game.isWon()) {
 					youwinubo.visible = 1.0f;
 					gameoverubo.visible = 0.0f;
 					PlaySound(TEXT("sounds/clapping_people.wav"), NULL, SND_FILENAME | SND_ASYNC);
-					std::cout << "\n------\nVictory!\n------\n";
 				}
-				else if (game.isGameOver() || gameManuallyEnded) {
+				else if (game.isGameOver()) {
 					gameoverubo.visible = 1.0f;
 					youwinubo.visible = 0.0f;
 					PlaySound(TEXT("sounds/retro_error_long_tone.wav"), NULL, SND_FILENAME | SND_ASYNC);
-					std::cout << "\n------\nYou Lost!\n------\n";
 				}
 				gameState = 7;
 				break;
 			case 7: 
-				//PRESS ENTER TO GO BACK TO MENU
+				// PRESS ENTER TO GO BACK TO MENU
 				if (enter) {
-					//go back to menu
+					// Go back to menu
 					gameoverubo.visible = 0.0f;
 					youwinubo.visible = 0.0f;
 					boardTextureIdx = 0;
 					tileTextureIdx = 0;
 					circleTextureIdx = 0;
-					gameManuallyEnded = false; 
 					gameState = -1;
-					cout << "Reset: " << reset << endl;
 					reset = true;
-					//reinitialise game
-					for (int j = 0; j < 144; j++) {
-						disappearedTiles[j] = false;
-					}
 				}
 				break;
 			case 8:	// screen to go back to menu
@@ -1750,7 +1699,7 @@ protected:
 					else firstTileIndex != -1 ? gameState = 1 : gameState = 0;
 				}
 		}
-		if (gameState!=-1 && gameState != 7 && mButton) {
+		if ((gameState==1 || gameState== 0) && mButton) {
 			gameState = 8;
 		}
 
@@ -1761,7 +1710,7 @@ protected:
 		//Change position accoring to received commands
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 0.20f, 1.5f); //minumum and maximum zoom of the cam //REDUCE MAXIMUM ZOOOM <------------
+		CamRadius = glm::clamp(CamRadius, 0.20f, 1.5f); //minumum and maximum zoom of the cam
 
 		CamPitch -= r.x * rotSpeed * deltaT;
 		CamPitch = glm::clamp(CamPitch, glm::radians(-10.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
@@ -1778,30 +1727,16 @@ protected:
 		}
 		//if in menu, fix the camera at a certain point
 		if (gameState == -1) {
-			CamRadius = 4.0f; //lower to be closer to green board in the menu
+			CamRadius = 4.0f;
 			CamPitch = 0.0f;
 			CamYaw = 0.0f;
 		}
-
-
-		/* da usare insieme a ubo perch� servono le matrici
-		glm::mat4 initalModel = glm::rotate(glm::mat4(1.0f),
-								glm::radians(0.0f),
-								glm::vec3(0.0f, 0.0f, 1.0f));
-
-
-		ubo.view = glm::lookAt(game.getCamPos(deltaT),game.getAimPos(),glm::vec3(0.0f, 1.0f, 0.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f),
-						swapChainExtent.width / (float) swapChainExtent.height,
-						0.1f, 10.0f); ==  glm::perspective(FOVy, Ar, nearPlane, farPlane);
-		ubo.proj[1][1] *= -1;*/
 
 
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
 
 		//a
-		//glm::vec3 camTarget = glm::vec3(0,CamH,0);
 		glm::vec3 camTarget = glm::vec3(0, 0.6f, -0.5);
 		if (gameState == -1) {
 			camTarget = homeMenuPosition + glm::vec3(0, 1.2f, 0);
@@ -1815,18 +1750,20 @@ protected:
 
 
 		//--------------------------
-		//BUFFERS FILLING
+		// BUFFER FILLING
 		//--------------------------
 
-		//Some positions
-		//Candle+Flame Position
+		// Useful saved positions
+		// Candle+Flame Position
 		glm::vec3 candlePos = glm::vec3(0.35f, 0.6f, -0.7f);
 		glm::vec3 candleLightPos = candlePos + glm::vec3(0.0f, 0.115f, 0.0f); 
-		//Day lantern point light position
+		// Day lantern point light position
 		glm::vec3 lanternLightPos = glm::vec3(0.0f, 2.4f, 0.0f);
+		// Picture frame position
+		glm::mat4 pictureFramePosition = glm::translate(glm::mat4(1), glm::vec3(1.96f, 1.75f, 0.3f));
 
 
-
+		// Day/Night parameter setting + Gubo filling
 		bool isNight = circleTextureIdx;
 		if (isNight) {
 			isCandleAlight = 1;
@@ -1846,16 +1783,11 @@ protected:
 			landscapeTextureIdx = 0;
 			gubo.PlightPos = lanternLightPos;
 			gubo.PlightColor = glm::vec3(255.0f/255.0f, 252.0f/255.0f, 221.0f/255.0f); //Yellow-ish white
-			//gubo.PlightColor = glm::vec3(1.0f);
 			gubo.beta = 1.0f;
 			gubo.g = 1.3f;
 			gubo.AmbLightColor = glm::vec3(0.01f);
 		}
-			
-		
 		gubo.eyePos = camPos;
-
-		// Writes value to the GPU
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 
 		// UI elements
@@ -1921,7 +1853,6 @@ protected:
 		// [39] - Blackboard Board
 		// [40] - Blackboard Text
 
-
 		glm::mat4 translateUp = glm::translate(glm::mat4(2.0f), glm::vec3(0.0f, 1.5f, 0.0f));
 
 		// Home screen background
@@ -1933,7 +1864,7 @@ protected:
 		commonubo[9].textureIdx = boardTextureIdx;
 		DSHome.map(currentImage, &commonubo[9], sizeof(commonubo[9]), 0);
 
-		//Button1
+		// Button1
 		glm::mat4 WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.15f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
 		commonubo[11].mvpMat = Prj * View * WorldB;
 		commonubo[11].mMat = WorldB;
@@ -1942,7 +1873,7 @@ protected:
 		commonubo[11].textureIdx = 0;
 		DSButton1.map(currentImage, &commonubo[11], sizeof(commonubo[11]), 0);
 
-		//Tile Selection Text
+		// Tile Selection Text
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.15f, 0.13f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
 		tileSelTextubo.mvpMat = Prj * View * WorldB;
 		tileSelTextubo.mMat = WorldB;
@@ -1951,7 +1882,7 @@ protected:
 		tileSelTextubo.textureIdx = tileTextureIdx;
 		DSTileSelText.map(currentImage, &tileSelTextubo, sizeof(tileSelTextubo), 0);
 
-		//Button2
+		// Button2
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.8f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
 		commonubo[12].mvpMat = Prj * View * WorldB;
 		commonubo[12].mMat = WorldB;
@@ -1960,7 +1891,7 @@ protected:
 		commonubo[12].textureIdx = 0;
 		DSButton2.map(currentImage, &commonubo[12], sizeof(commonubo[12]), 0);
 
-		//Board Selection Text
+		// Board Selection Text
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -1.8f, 0.13f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.3f);
 		boardSelTextubo.mvpMat = Prj * View * WorldB;
 		boardSelTextubo.mMat = WorldB;
@@ -1978,7 +1909,7 @@ protected:
 		commonubo[13].textureIdx = 0;
 		DSButton3.map(currentImage, &commonubo[13], sizeof(commonubo[13]), 0);*/
 
-		//Arrow button 1 Left
+		// Arrow button 1 Left
 		glm::mat4 WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.35f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[14].mvpMat = Prj * View * WorldA_B;
 		commonubo[14].mMat = WorldA_B;
@@ -1988,7 +1919,7 @@ protected:
 		commonubo[14].objectIdx = -41;
 		DSArrowButton1_left.map(currentImage, &commonubo[14], sizeof(commonubo[14]), 0);
 
-		//Arrow button 2 Left
+		// Arrow button 2 Left
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(0.35f, -1.65f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[15].mvpMat = Prj * View * WorldA_B;
 		commonubo[15].mMat = WorldA_B;
@@ -1998,7 +1929,7 @@ protected:
 		commonubo[15].objectIdx = -43;
 		DSArrowButton2_left.map(currentImage, &commonubo[15], sizeof(commonubo[15]), 0);
 
-		//day/night button
+		// Day/night button
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(1.05f, -3.2f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[34].mvpMat = Prj * View * WorldA_B;
 		commonubo[34].mMat = WorldA_B;
@@ -2008,7 +1939,7 @@ protected:
 		commonubo[34].objectIdx = -45;
 		DSCircleButton.map(currentImage, &commonubo[34], sizeof(commonubo[34]), 0);
 
-		//Arrow button 1 Right
+		// Arrow button 1 Right
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.7f, 0.0f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[17].mvpMat = Prj * View * WorldA_B;
 		commonubo[17].mMat = WorldA_B;
@@ -2018,7 +1949,7 @@ protected:
 		commonubo[17].objectIdx = -42;
 		DSArrowButton1_right.map(currentImage, &commonubo[17], sizeof(commonubo[17]), 0);
 
-		//Arrow button 2 Right
+		// Arrow button 2 Right
 		WorldA_B = glm::translate(glm::mat4(1.0f), glm::vec3(3.7f, -1.65f, 0.11f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.0f);
 		commonubo[18].mvpMat = Prj * View * WorldA_B;
 		commonubo[18].mMat = WorldA_B;
@@ -2037,7 +1968,7 @@ protected:
 		commonubo[19].textureIdx = 0;
 		DSArrowButton3_right.map(currentImage, &commonubo[19], sizeof(commonubo[19]), 0);*/
 
-		//Play button
+		// Play button
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(-2.7f, -3.6f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.6f);
 		commonubo[20].mvpMat = Prj * View * WorldB;
 		commonubo[20].mMat = WorldB;
@@ -2047,7 +1978,7 @@ protected:
 		commonubo[20].objectIdx = -30;
 		DSPlayButton.map(currentImage, &commonubo[20], sizeof(commonubo[20]), 0); 
 		
-		//Game settings title
+		// Game settings title
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.7f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.2f, 0.5f, 1.0f) * 1.4f);
 		commonubo[21].mvpMat = Prj * View * WorldB;
 		commonubo[21].mMat = WorldB;
@@ -2056,7 +1987,7 @@ protected:
 		commonubo[21].textureIdx = 0;
 		DSSelection1.map(currentImage, &commonubo[21], sizeof(commonubo[21]), 0);
 
-		//tile selection title 
+		// Tile selection title 
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 1.01f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.2f, 0.5f, 1.0f) * 0.8f);
 		commonubo[22].mvpMat = Prj * View * WorldB;
 		commonubo[22].mMat = WorldB;
@@ -2065,7 +1996,7 @@ protected:
 		commonubo[22].textureIdx = 0;
 		DSSelection2.map(currentImage, &commonubo[22], sizeof(commonubo[22]), 0);
 
-		//board selection title
+		// Board selection title
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, -0.6f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.3f, 0.5f, 1.0f) * 0.8f);
 		commonubo[23].mvpMat = Prj * View * WorldB;
 		commonubo[23].mMat = WorldB;
@@ -2074,7 +2005,7 @@ protected:
 		commonubo[23].textureIdx = 0;
 		DSSelection3.map(currentImage, &commonubo[23], sizeof(commonubo[23]), 0);
 
-		//day/night time selection title
+		// day/night time selection title
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.65f, -3.1f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f) * 0.9f);
 		commonubo[33].mvpMat = Prj * View * WorldB;
 		commonubo[33].mMat = WorldB;
@@ -2083,11 +2014,11 @@ protected:
 		commonubo[33].textureIdx = 0;
 		DSSelection4.map(currentImage, &commonubo[33], sizeof(commonubo[33]), 0);
 		 
-		//Matrix setup for rotating tile
+		// Matrix setup for rotating tile
 		static float ang = 0.0f;
 		ang += homeTileRotSpeed * deltaT;
 		tileHomeubo.transparency = 1.0f;
-		glm::mat4 rotTile = translateUp * homeMenuWorld *
+		glm::mat4 rotTileW = translateUp * homeMenuWorld *
 			glm::translate(glm::mat4(1), glm::vec3(-2.4f, -0.3f, 0.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(-80.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::sin(ang)+0.5f, glm::vec3(0.0f, 0.0f, 1.0f)) *
@@ -2098,9 +2029,9 @@ protected:
 		tileHomeubo.amb = 10.0f;
 		tileHomeubo.gamma = 300.0f;
 		tileHomeubo.sColor = glm::vec3(0.1f);
-		tileHomeubo.mvpMat = Prj * View * rotTile;
-		tileHomeubo.mMat = rotTile;
-		tileHomeubo.nMat = glm::inverse(glm::transpose(rotTile));
+		tileHomeubo.mvpMat = Prj * View * rotTileW;
+		tileHomeubo.mMat = rotTileW;
+		tileHomeubo.nMat = glm::inverse(glm::transpose(rotTileW));
 		tileHomeubo.tileIdx = -2;
 		tileHomeubo.suitIdx = 10;
 		tileHomeubo.selectedIdx = -10;
@@ -2109,7 +2040,7 @@ protected:
 		tileHomeubo.isInMenu = 1;
 		DSHTile.map(currentImage, &tileHomeubo, sizeof(tileHomeubo), 0);
 
-		//Matrix setup for Game Title
+		// Matrix setup for Game Title
 		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.6f);
 			//* glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
 		commonubo[10].mvpMat = Prj * View * WorldTitle;
@@ -2221,7 +2152,7 @@ protected:
 		commonubo[8].textureIdx = landscapeTextureIdx;
 		DSLandscape.map(currentImage, &commonubo[8], sizeof(commonubo[8]), 0);
 
-		//Lion statue
+		// Lion statue
 		World = glm::translate(glm::mat4(1), glm::vec3(-1.4f, 0.0f, 1.2f)) *
 				glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 				glm::scale(glm::mat4(1), glm::vec3(0.7));
@@ -2241,9 +2172,7 @@ protected:
 		DSLion.map(currentImage, &commonubo[24], sizeof(commonubo[24]), 0);
 		DSLion.map(currentImage, &lionubo, sizeof(lionubo), 1);
 
-
-		glm::mat4 pictureFramePosition = glm::translate(glm::mat4(1), glm::vec3(1.96f, 1.75f, 0.3f));
-		//Picture frame 1
+		// Picture frame 1
 		World = pictureFramePosition *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * 
 			glm::scale(glm::mat4(1), glm::vec3(0.5)); 
@@ -2262,7 +2191,7 @@ protected:
 		DSPictureFrame1.map(currentImage, &commonubo[25], sizeof(commonubo[25]), 0);
 		DSPictureFrame1.map(currentImage, &pictureFrameubo1, sizeof(pictureFrameubo1), 1);
 
-		//Picture frame Image 1
+		// Picture frame Image 1
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.47f)) * glm::scale(glm::mat4(1), glm::vec3(1.0f, 1.2f, 1.0f)) * 
@@ -2276,7 +2205,7 @@ protected:
 		DSPictureFrameImage1.map(currentImage, &commonubo[26], sizeof(commonubo[26]), 0);
 		DSPictureFrameImage1.map(currentImage, &pictureFrameImageubo1, sizeof(pictureFrameImageubo1), 1);
 
-		//Picture frame 2
+		// Picture frame 2
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.3f, -1.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.5));
@@ -2295,7 +2224,7 @@ protected:
 		DSPictureFrame2.map(currentImage, &commonubo[29], sizeof(commonubo[29]), 0);
 		DSPictureFrame2.map(currentImage, &pictureFrameubo2, sizeof(pictureFrameubo2), 1);
 
-		//Picture frame Image 2
+		// Picture frame Image 2
 		World = pictureFramePosition * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.3f, -1.5f)) *
 			glm::translate(glm::mat4(1), glm::vec3(0.0f, -0.26f, -0.015f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
@@ -2310,7 +2239,7 @@ protected:
 		DSPictureFrameImage2.map(currentImage, &commonubo[30], sizeof(commonubo[30]), 0);
 		DSPictureFrameImage2.map(currentImage, &pictureFrameImageubo2, sizeof(pictureFrameImageubo2), 1);
 
-		//Vase
+		// Vase
 		World = glm::translate(glm::mat4(1), glm::vec3(1.5f, 0.0f, -1.8f)) *
 			glm::rotate(glm::mat4(1), glm::radians(60.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.016f));
@@ -2329,7 +2258,7 @@ protected:
 		DSVase.map(currentImage, &commonubo[27], sizeof(commonubo[27]), 0);
 		DSVase.map(currentImage, &vaseubo, sizeof(vaseubo), 1);
 
-		//Chair
+		// Chair
 		World = glm::translate(glm::mat4(1), glm::vec3(0.15f, -0.1f, 0.3f)) *
 			glm::rotate(glm::mat4(1), glm::radians(35.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.7f));
@@ -2342,7 +2271,7 @@ protected:
 		DSChair.map(currentImage, &commonubo[28], sizeof(commonubo[28]), 0);
 		DSChair.map(currentImage, &chairubo, sizeof(chairubo), 1);
 
-		//Door
+		// Door
 		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.0f, 2.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(1.2f, 1.0f, 1.0f)) *
@@ -2357,7 +2286,7 @@ protected:
 		DSDoor.map(currentImage, &doorubo, sizeof(doorubo), 1);
 
 
-		//Flame
+		// Flame
 		std::mt19937 rngFlame(time(NULL));
 		std::uniform_int_distribution<int> genScaleDiff(8, 12);
 		float scaleDiff = genScaleDiff(rngFlame)/10.0f;
@@ -2369,7 +2298,6 @@ protected:
 			glm::vec3(235.0f/255.0f, 103.0f/255.0f, 52.0f/255.0f),		//Dark orange
 			glm::vec3(245.0f/255.0f, 2.0f/255.0f, 2.0f/255.0f),			//Red
 			glm::vec3(232.0f/255.0f, 65.0f/255.0f, 19.0f/255.0f),		//Lighter red
-			//glm::vec3(237.0f/255.0f, 198.0f/255.0f, 2.0f/255.0f),		//Yellow
 			glm::vec3(245.0f/255.0f, 136.0f/255.0f, 2.0f/255.0f),		// Light orange
 		};
 		glm::vec3 chosenEmissionColor = emissionColors[emissionPicker];
@@ -2391,7 +2319,7 @@ protected:
 		DSFlame.map(currentImage, &commonubo[31], sizeof(commonubo[31]), 0);
 		DSFlame.map(currentImage, &flameEmissionubo, sizeof(flameEmissionubo), 1);
 
-		//Candle
+		// Candle
 		World = glm::translate(glm::mat4(1), candlePos) *
 			glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.055f));
@@ -2412,7 +2340,7 @@ protected:
 		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
 		DSCandle.map(currentImage, &candleubo, sizeof(candleubo), 1);
 
-		//Kettle
+		// Kettle
 		World = glm::translate(glm::mat4(1), glm::vec3(-0.4f, 0.6f, -0.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(235.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.4f));
@@ -2431,7 +2359,7 @@ protected:
 		DSKettle.map(currentImage, &commonubo[36], sizeof(commonubo[36]), 0);
 		DSKettle.map(currentImage, &kettleubo, sizeof(kettleubo), 1);
 
-		//Blackboard
+		// Blackboard
 		World = glm::translate(glm::mat4(1), glm::vec3(-2.0f, 1.3f, -0.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.008f));
@@ -2464,7 +2392,7 @@ protected:
 		DSBlackboardBoard.map(currentImage, &commonubo[39], sizeof(commonubo[39]), 0);
 		DSBlackboardBoard.map(currentImage, &blackboardBoardubo, sizeof(blackboardBoardubo), 1);
 
-		//Blackboard text
+		// Blackboard text
 		World = glm::translate(glm::mat4(1), glm::vec3(-1.97f, 1.1f, -0.5f)) *
 			glm::rotate(glm::mat4(1), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.54f)) *
@@ -2478,8 +2406,8 @@ protected:
 		DSBlackboardText.map(currentImage, &commonubo[40], sizeof(commonubo[40]), 0);
 		DSBlackboardText.map(currentImage, &blackboardTextubo, sizeof(blackboardTextubo), 1);
 
-		//Lamp
-		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 3.01f, 0.0f)) * //glm::translate(glm::mat4(1), lanternLightPos) *
+		// Lamp
+		World = glm::translate(glm::mat4(1), glm::vec3(0.0f, 3.01f, 0.0f)) *
 			glm::rotate(glm::mat4(1), glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(1.5f));
 		commonubo[35].mvpMat = Prj * View * World;
@@ -2496,31 +2424,30 @@ protected:
 		// Matrix setup for tiles
 		for (int i = 0; i < 144; i++) {
 			float scaleFactor = game.tiles[i].isRemoved ? 0.0f : 1.0f;
-			//float scaleFactor = 0.0f;
 			glm::mat4 Tbase = baseTranslation * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 
 			World = Tbase * Tmat * Smat; // translate tile in position
-			//World = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-9.2 + i%10*2, 0, 9.2-i/10*2)), glm::vec3(50.0f));
+
 			tileubo[i].amb = 1.0f; 
-			tileubo[i].gamma = 300.0f; //CHANGE GAMMA HIGHER FOR POINT LIGHT
+			tileubo[i].gamma = 300.0f;
 			if(isNight) tileubo[i].sColor = generalSColor;
-			else tileubo[i].sColor =glm::vec3(0.5f); //glm::vec3(0.2f);
+			else tileubo[i].sColor =glm::vec3(0.5f);
 			tileubo[i].tileIdx = game.tiles[i].tileIdx;
 			tileubo[i].suitIdx = game.tiles[i].suitIdx;
 			tileubo[i].transparency = 1.0f;
 			tileubo[i].textureIdx = tileTextureIdx;
 			tileubo[i].isInMenu = 0;
 
-			//highlight the piece on which the mouse is hoovering
+			// Highlight the piece on which the mouse is hoovering
 			tileubo[i].hoverIdx = hoverIndex;
 
-			//highlight the first selected piece
+			// Highlight the first selected piece
 			if (i==firstTileIndex) {
 				tileubo[i].selectedIdx = firstTileIndex;
 			}
-			//highlight the first selected piece
+			// Highlight the second selected piece
 			else if (i == secondTileIndex) {
 				tileubo[i].selectedIdx = secondTileIndex;
 			}
@@ -2528,26 +2455,14 @@ protected:
 				tileubo[i].selectedIdx = -1;
 			}
 			
-			if (disappearedTiles[i]) {
-				tileubo[i].mvpMat = Prj * View * removedTileWorld;
-				tileubo[i].mMat = removedTileWorld; 
-				tileubo[i].nMat = glm::inverse(glm::transpose(removedTileWorld)); 
-				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0);
-				
+			tileubo[i].mvpMat = Prj * View * World; 
+			tileubo[i].mMat = World; 
+			tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
+			if (gameState==4 && (i == firstTileIndex || i == secondTileIndex)) {
+				// Set transparency to DisappearingTileTransparency;
+				tileubo[i].transparency = DisappearingTileTransparency;	
 			}
-			else {
-				tileubo[i].mvpMat = Prj * View * World; 
-				tileubo[i].mMat = World; 
-				tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
-				if (gameState==4 & (i == firstTileIndex || i == secondTileIndex)) {
-					//set transparency to = DisappearingTileTransparency;
-					tileubo[i].transparency = DisappearingTileTransparency;
-					//std::cout <<"\ntransparency of tile\n" <<i<<": "<< tileubo[i].transparency<<"\n--------\n";
-					//set highlight of selected tile
-					
-				}
-				DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0); 
-			}
+			DSTile[i].map(currentImage, &tileubo[i], sizeof(tileubo[i]), 0); 
 		}
 	}	
 };

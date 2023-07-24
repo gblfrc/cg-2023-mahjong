@@ -13,11 +13,9 @@ class MahjongGame {
 
 public:
 	vector<Tile> tiles;
-	bool isInitialized;
-	vector<int> suitVectors[36];
+	vector<int> suitVectors[36];	// Array of vectors of int, having in position i a vector containing the indexes of the tiles removable together
 
 	MahjongGame(string path) {
-		isInitialized = true;
 		// open Input File Stream (ifstream) associated to structure json
 		ifstream f(path);
 		// parse structure as json
@@ -82,9 +80,6 @@ public:
 			(suitIdx0 >= 40 && suitIdx0 < 44 && suitIdx1 >= 40 && suitIdx1 < 44) ||
 			(suitIdx0 >= 44 && suitIdx0 < 48 && suitIdx1 >= 44 && suitIdx1 < 48)) && tile0.isOpen() && tile1.isOpen() && idx0!=idx1);
 		
-		//DEBUG:
-		std::cout << "\nResult of check on 2 tiles: " << result << "\n";
-		
 		return result;
 	}
 
@@ -110,10 +105,6 @@ public:
 				for (int underIdx : tile.under) {
 					tiles[underIdx].over.erase(remove(tiles[underIdx].over.begin(), tiles[underIdx].over.end(), tile.tileIdx), tiles[underIdx].over.end());
 				}
-				//// remove all neighbors from current tile
-				//tile.left.clear();
-				//tile.right.clear();
-				//tile.under.clear();
 				// set current tile as removed
 				tiles[tile.tileIdx].isRemoved = true;
 				// remove current tile from related suit vector
