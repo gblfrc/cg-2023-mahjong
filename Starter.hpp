@@ -850,7 +850,7 @@ protected:
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.sampleRateShading = VK_TRUE;
-		deviceFeatures.independentBlend = VK_TRUE;
+		deviceFeatures.independentBlend = VK_TRUE;	// Differentiates the two flows
 		
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1063,9 +1063,9 @@ protected:
 		depthAttachmentRef.layout = 
 						VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    	VkAttachmentDescription colorAttachment{};
+    	VkAttachmentDescription colorAttachment{};			// Utilized for color image swap chain
 		colorAttachment.format = swapChainImageFormat;
-		colorAttachment.samples = msaaSamples;
+		colorAttachment.samples = msaaSamples;				// MultiSampleAntiAliasing Samples
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1084,7 +1084,7 @@ protected:
 		colorEntityAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorEntityAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		
-		VkAttachmentReference colorAttachmentRefs[2];
+		VkAttachmentReference colorAttachmentRefs[2];		// Contains the two previous color attachments
 		colorAttachmentRefs[0].attachment = 0;
 		colorAttachmentRefs[0].layout =
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -1132,7 +1132,7 @@ protected:
     void createFramebuffers() {
 		swapChainFramebuffers.resize(swapChainImageViews.size());
 		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-			std::array<VkImageView, 5> attachments = {
+			std::array<VkImageView, 5> attachments = {	// 5 attachments instead of 3
 				colorImageView,
 				depthImageView,
 				colorEntityImageView,
@@ -1205,7 +1205,7 @@ protected:
 			VK_SAMPLE_COUNT_1_BIT, entityImageFormat, VK_IMAGE_TILING_LINEAR,
 			//VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | //to use memory area accessible also by CPU (for map and unmap)
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			entityImage, entityImageMemory);
 		entityImageView = createImageView(entityImage, entityImageFormat,
