@@ -2458,7 +2458,7 @@ protected:
 			tileubo[i].mvpMat = Prj * View * World; 
 			tileubo[i].mMat = World; 
 			tileubo[i].nMat = glm::inverse(glm::transpose(World)); 
-			if (gameState==4 && (i == firstTileIndex || i == secondTileIndex)) {
+			if ((gameState == 4 || gameState == 5) && (i == firstTileIndex || i == secondTileIndex)) {
 				// Set transparency to DisappearingTileTransparency;
 				tileubo[i].transparency = DisappearingTileTransparency;	
 			}

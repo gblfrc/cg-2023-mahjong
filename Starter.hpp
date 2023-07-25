@@ -253,9 +253,9 @@ struct Texture {
 							);
 
 	void init(BaseProject *bp, const char * file, VkFormat Fmt, bool initSampler);
-	void initTwo(BaseProject* bp, const char* files[2]);
-	void initFour(BaseProject *bp, const char * files[4]);
-	void initFive(BaseProject* bp, const char* files[5]);
+	void initTwo(BaseProject* bp, const char* files[2]);			// NEW - Texture as array of 2 layers
+	void initFour(BaseProject *bp, const char * files[4]);			// NEW - Texture as array of 4 layers
+	void initFive(BaseProject* bp, const char* files[5]);			// NEW - Texture as array of 5 layers 
 	void initCubic(BaseProject *bp, const char * files[6]);
 	void cleanup();
 };
@@ -375,13 +375,13 @@ protected:
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	// Resolved Images
-	// swap chain images
+	// Swap chain images
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
-	// entity image
+	// Entity image
 	VkImage entityImage;
 	VkImageView entityImageView;
 	VkFormat entityImageFormat;
@@ -400,12 +400,12 @@ protected:
 	VkImageView depthImageView;
 
 	// Unresolved Images
-	// color image
+	// Color image
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
-	// color entity image
+	// Color entity image
 	VkImage colorEntityImage;
 	VkDeviceMemory colorEntityImageMemory;
 	VkImageView colorEntityImageView;
@@ -453,11 +453,11 @@ protected:
 		createLogicalDevice();			
 		createSwapChain();				
 		createImageViews();				
-		createRenderPass();			
-		createCommandPool();			
-		createColorResources();
+		createRenderPass();			// Edited to handle entity image
+		createCommandPool();		
+		createColorResources();		// Edited to handle entity image
 		createDepthResources();			
-		createFramebuffers();			
+		createFramebuffers();		// Edited to handle entity image
 		createDescriptorPool();			
 
 		localInit();
@@ -1028,6 +1028,7 @@ protected:
 		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+		// Color attachment for entity image
 		VkAttachmentDescription colorEntityAttachmentResolve{};
 		colorEntityAttachmentResolve.format = findEntityImageFormat();
 		colorEntityAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -1072,6 +1073,7 @@ protected:
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+		// Color attachment for color entity image
     	VkAttachmentDescription colorEntityAttachment{};
 		colorEntityAttachment.format = findEntityImageFormat();
 		colorEntityAttachment.samples = msaaSamples;
@@ -1172,19 +1174,6 @@ protected:
 		 	PrintVkError(result);
 			throw std::runtime_error("failed to create command pool!");
 		}
-	}
-
-	int getMaxImageSize() {
-		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-		int count;
-		const GLFWvidmode* modes = glfwGetVideoModes(monitor, &count);
-		int maxWidth = 0;
-		int maxHeight = 0;
-		for (int i = 0; i < count; i++) {
-			if (modes[i].width > maxWidth) maxWidth = modes[i].width;
-			if (modes[i].height > maxHeight) maxHeight = modes[i].height;
-		}
-		return maxWidth * maxHeight;
 	}
 
 	void createColorResources() {
@@ -1830,19 +1819,19 @@ protected:
 	}
 
 	void cleanupSwapChain() {
-		// destroy color image
+		// Destroy color image
     	vkDestroyImageView(device, colorImageView, nullptr);
     	vkDestroyImage(device, colorImage, nullptr);
     	vkFreeMemory(device, colorImageMemory, nullptr);
-		// destroy entity color image
+		// Destroy entity color image
     	vkDestroyImageView(device, colorEntityImageView, nullptr);
     	vkDestroyImage(device, colorEntityImage, nullptr);
     	vkFreeMemory(device, colorEntityImageMemory, nullptr);
-		// destroy entity image
+		// Destroy entity image
     	vkDestroyImageView(device, entityImageView, nullptr);
     	vkDestroyImage(device, entityImage, nullptr);
     	vkFreeMemory(device, entityImageMemory, nullptr);
-    	// destroy depth image
+    	// Destroy depth image
 		vkDestroyImageView(device, depthImageView, nullptr);
 		vkDestroyImage(device, depthImage, nullptr);
 		vkFreeMemory(device, depthImageMemory, nullptr);
@@ -2003,7 +1992,7 @@ protected:
 		r.y -= 4*xScrollOffset;
 		xScrollOffset = 0.0f;
 		
-		fire = glfwGetKey(window, GLFW_KEY_SPACE) | glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+		fire = glfwGetKey(window, GLFW_KEY_SPACE) || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 		handleGamePad(GLFW_JOYSTICK_1,m,r,fire);
 		handleGamePad(GLFW_JOYSTICK_2,m,r,fire);
 		handleGamePad(GLFW_JOYSTICK_3,m,r,fire);
