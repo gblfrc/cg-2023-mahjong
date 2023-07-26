@@ -1537,6 +1537,9 @@ protected:
 
 				if (reset) {
 					game = MahjongGame(structurePath);
+					boardTextureIdx = 0;
+					tileTextureIdx = 0;
+					circleTextureIdx = 0;
 					reset = false;
 				}
 
@@ -1692,9 +1695,12 @@ protected:
 					backtomenuubo.visible = 0.0f;
 					yesbuttonubo.visible = 0.0f;
 					nobuttonubo.visible = 0.0f;
-					if (hoverIndex == -2) {
+					if (hoverIndex == -2) {	//yes
 						gameState = -1;
 						reset = true;
+						boardTextureIdx = 0;
+						tileTextureIdx = 0;
+						circleTextureIdx = 0;
 					}
 					else firstTileIndex != -1 ? gameState = 1 : gameState = 0;
 				}
