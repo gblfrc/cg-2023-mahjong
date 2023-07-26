@@ -1444,12 +1444,12 @@ protected:
 		DSBackToMenu.bind(commandBuffer, PUI, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MBackToMenu.indices.size()), 1, 0, 0, 0);
-		// Back to menu
+		// Back to menu yes button
 		MYesButton.bind(commandBuffer);
 		DSYesButton.bind(commandBuffer, PUI, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MYesButton.indices.size()), 1, 0, 0, 0);
-		// Back to menu
+		// Back to menu no button
 		MNoButton.bind(commandBuffer);
 		DSNoButton.bind(commandBuffer, PUI, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1719,7 +1719,7 @@ protected:
 		CamRadius = glm::clamp(CamRadius, 0.20f, 1.5f); // Minumum and maximum zoom of the cam
 
 		CamPitch -= r.x * rotSpeed * deltaT;
-		CamPitch = glm::clamp(CamPitch, glm::radians(-10.0f), glm::radians(89.0f)); // Constraints on degrees on elevation of the cam 
+		CamPitch = glm::clamp(CamPitch, glm::radians(-10.0f), glm::radians(89.0f)); // Constraints on degrees of elevation of the cam 
 
 		CamYaw += r.y * rotSpeed * deltaT;
 
@@ -1759,7 +1759,7 @@ protected:
 		//--------------------------
 
 		// Useful saved positions
-		// Candle+Flame Position
+		// Candle + Flame Position
 		glm::vec3 candlePos = glm::vec3(0.35f, 0.6f, -0.7f);
 		glm::vec3 candleLightPos = candlePos + glm::vec3(0.0f, 0.115f, 0.0f); 
 		// Day lantern point light position
@@ -1808,11 +1808,11 @@ protected:
 		backtomenuubo.transparency = 1.0f;
 		backtomenuubo.objectIdx = -1;
 		DSBackToMenu.map(currentImage, &backtomenuubo, sizeof(backtomenuubo), 0);
-		// Back to menu message
+		// "Back to menu message" yes button
 		yesbuttonubo.transparency = 1.0f;
 		yesbuttonubo.objectIdx = -2;
 		DSYesButton.map(currentImage, &yesbuttonubo, sizeof(yesbuttonubo), 0);
-		// Back to menu message
+		// "Back to menu message" no button
 		nobuttonubo.transparency = 1.0f;
 		nobuttonubo.objectIdx = -3;
 		DSNoButton.map(currentImage, &nobuttonubo, sizeof(nobuttonubo), 0);
@@ -2047,7 +2047,6 @@ protected:
 
 		// Matrix setup for Game Title
 		glm::mat4 WorldTitle = glm::translate(glm::mat4(1.0f), glm::vec3(-2.5f, -1.0f, 0.1f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1) * 1.6f);
-			//* glm::scale(glm::mat4(1), glm::vec3(-1.0f, 1.0f, -1.0f));
 		commonubo[10].mvpMat = Prj * View * WorldTitle;
 		commonubo[10].mMat = WorldTitle;
 		commonubo[10].nMat = glm::inverse(glm::transpose(WorldTitle));
@@ -2433,7 +2432,7 @@ protected:
 			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // Matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 
-			World = Tbase * Tmat * Smat; // translate tile in position
+			World = Tbase * Tmat * Smat; // Translate tile in position
 
 			tileubo[i].amb = 1.0f; 
 			tileubo[i].gamma = 300.0f;
