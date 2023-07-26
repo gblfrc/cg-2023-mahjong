@@ -51,7 +51,7 @@ const std::vector<const char*> validationLayers = {
 };
 
  std::vector<const char*> deviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME		// To enable swap chain
 };
 
 struct QueueFamilyIndices {
@@ -65,7 +65,7 @@ struct QueueFamilyIndices {
 };
 
 struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
+	VkSurfaceCapabilitiesKHR capabilities;		// To contain the size of the frame buffer, minimum and maximum number of buffers supported
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
 };
@@ -344,10 +344,10 @@ public:
     	windowResizable = GLFW_FALSE;
 
     	setWindowParameters();
-        initWindow();
-        initVulkan();
-        mainLoop();
-        cleanup();
+        initWindow();				// Create the O.S. window
+        initVulkan();				// Set up Vulkan resources
+        mainLoop();					// Update/render cycle of the app
+        cleanup();					// Release resources
     }
 
 protected:
@@ -420,12 +420,14 @@ protected:
 	std::vector<VkFence> imagesInFlight;
 	
     void initWindow() {
-        glfwInit();
+        glfwInit();			// Initialize GLFW
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, windowResizable);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);		// Set operating mode for Vulkan
+        glfwWindowHint(GLFW_RESIZABLE, windowResizable);	// Make the window resizable
 
-        window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
+		// Create the O.S. window and return its identifier
+		// The parameters are set by setWindowParameters() in mahjong.cpp
+        window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);	
 
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
@@ -445,6 +447,7 @@ protected:
 	virtual void localInit() = 0;
 	virtual void pipelinesAndDescriptorSetsInit() = 0;
 
+	// Function to set up Vulkan resources
     void initVulkan() {
 		createInstance();				
 		setupDebugMessenger();			
@@ -477,7 +480,7 @@ protected:
     	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.apiVersion = VK_API_VERSION_1_0;
 		
-		VkInstanceCreateInfo createInfo{};
+		VkInstanceCreateInfo createInfo{};	// Data structure to contain parameters to use to create the instance
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		createInfo.pApplicationInfo = &appInfo;
 
@@ -490,7 +493,7 @@ protected:
 
 		createInfo.enabledLayerCount = 0;
 
-		auto extensions = getRequiredExtensions();
+		auto extensions = getRequiredExtensions();		// Get extentions needed bu the O.S.
 		createInfo.enabledExtensionCount =
 			static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();		
@@ -510,7 +513,7 @@ protected:
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)
 									&debugCreateInfo;
 		
-		VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+		VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);	// Instance creation
 		
 		if(result != VK_SUCCESS) {
 		 	PrintVkError(result);
@@ -639,7 +642,8 @@ protected:
 		}
 	}
 
-    void createSurface() {
+	// Create the presentation surface
+    void createSurface() {	
     	if (glfwCreateWindowSurface(instance, window, nullptr, &surface)
     			!= VK_SUCCESS) {
 			throw std::runtime_error("failed to create window surface!");
@@ -670,6 +674,7 @@ protected:
 			}
 	};
 
+	// Select the most appropriate physical device to use
     void pickPhysicalDevice() {
     	uint32_t deviceCount = 0;
     	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -684,6 +689,7 @@ protected:
 		
 		std::cout << "Physical devices found: " << deviceCount << "\n";
 		
+		// Cycle through each device to determine whether is suitable and pick up one
 		for (const auto& device : devices) {
 			if(checkIfItHasDeviceExtension(device, "VK_KHR_portability_subset")) {
 				deviceExtensions.push_back("VK_KHR_portability_subset");
@@ -733,11 +739,12 @@ protected:
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 		QueueFamilyIndices indices;
 		
+		// Enumerate the queue families supported by the physical device
 		uint32_t queueFamilyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
 						nullptr);
 
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);	// Put the families inside this array
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
 								queueFamilies.data());
 								
@@ -746,7 +753,8 @@ protected:
 			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				indices.graphicsFamily = i;
 			}
-				
+			
+			// Determine the presentation support
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface,
 												 &presentSupport);
@@ -786,9 +794,11 @@ protected:
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
 		SwapChainSupportDetails details;
 		
+		// Query swap chain capabilities
 		 vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
 		 		&details.capabilities);
 
+		 // Query swap chain formats
 		uint32_t formatCount;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
 				nullptr);
@@ -799,6 +809,7 @@ protected:
 					&formatCount, details.formats.data());
 		}
 		
+		// Query swap chain presentation modes
 		uint32_t presentModeCount;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface,
 			&presentModeCount, nullptr);
@@ -830,6 +841,7 @@ protected:
 		return VK_SAMPLE_COUNT_1_BIT;
 	}	
 
+	// Create the logical device
 	void createLogicalDevice() {
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 		
@@ -852,6 +864,7 @@ protected:
 		deviceFeatures.sampleRateShading = VK_TRUE;
 		deviceFeatures.independentBlend = VK_TRUE;	// Differentiates the two flows
 		
+		// Fill the following data structure with parameters for the creation of logical device
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		
@@ -868,6 +881,7 @@ protected:
 					static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();
 		
+		// Cretation of the logical device
 		VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
 		
 		if (result != VK_SUCCESS) {
@@ -895,6 +909,7 @@ protected:
 			imageCount = swapChainSupport.capabilities.maxImageCount;
 		}
 		
+		// Parameters for swap chain creation
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = surface;
@@ -924,6 +939,7 @@ protected:
 		 createInfo.clipped = VK_TRUE;
 		 createInfo.oldSwapchain = VK_NULL_HANDLE;
 		 
+		 // Create the swap chain
 		 VkResult result = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
 		 if (result != VK_SUCCESS) {
 		 	PrintVkError(result);
@@ -1160,13 +1176,15 @@ protected:
 		}
 	}
 
+	// Create the command pools
     void createCommandPool() {
     	QueueFamilyIndices queueFamilyIndices = 
     			findQueueFamilies(physicalDevice);
     			
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+		// Parameter to specify the Queue family on which the commands will be executed:
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();		// Queue set for graphics creation
 		poolInfo.flags = 0; // Optional
 		
 		VkResult result = vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
@@ -1618,14 +1636,15 @@ protected:
 	
 	virtual void populateCommandBuffer(VkCommandBuffer commandBuffer, int i) = 0;
 
+	// Create command buffers
     void createCommandBuffers() {
     	commandBuffers.resize(swapChainFramebuffers.size());
     	
     	VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+		allocInfo.commandPool = commandPool;	// The pool from which to create the command buffer
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;	// Primary level: to support drawing on screen (Secondary level is for support to primary level)
+		allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();	// How many to create
 		
 		VkResult result = vkAllocateCommandBuffers(device, &allocInfo,
 				commandBuffers.data());
@@ -1851,7 +1870,7 @@ protected:
 			vkDestroyImageView(device, swapChainImageViews[i], nullptr);
 		}
 		
-		vkDestroySwapchainKHR(device, swapChain, nullptr);
+		vkDestroySwapchainKHR(device, swapChain, nullptr);		// Release the swap chain
 
 		vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 	}
@@ -1867,18 +1886,18 @@ protected:
 			vkDestroyFence(device, inFlightFences[i], nullptr);
     	}
     	
-    	vkDestroyCommandPool(device, commandPool, nullptr);
+    	vkDestroyCommandPool(device, commandPool, nullptr);		// Release the command pool
     	
- 		vkDestroyDevice(device, nullptr);
+ 		vkDestroyDevice(device, nullptr);						// Release the logical device
 		
 		DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 		
-		vkDestroySurfaceKHR(instance, surface, nullptr);
-    	vkDestroyInstance(instance, nullptr);
+		vkDestroySurfaceKHR(instance, surface, nullptr);	// Release the presentation surface
+    	vkDestroyInstance(instance, nullptr);				// Release the instance
 
-        glfwDestroyWindow(window);
+        glfwDestroyWindow(window);							// Close the window
 
-        glfwTerminate();
+        glfwTerminate();									// Release all resources
     }
 	
 	void RebuildPipeline() {
