@@ -1,4 +1,4 @@
-//COMPUTER GRAPHICS PROJECT 2022/23
+// COMPUTER GRAPHICS PROJECT 2022/23
 
 // This has been adapted from the Vulkan tutorial
 
@@ -14,7 +14,7 @@
 #include <random>
 
 
-//link windows multimedia library to our program
+// Link windows multimedia library to our program
 #pragma comment(lib, "winmm.lib")
 
 
@@ -239,7 +239,7 @@ protected:
 	// C++ storage for uniform variables
 	GlobalUniformBlock gubo; 
 	TileUniformBlock tileubo[144];
-	TileUniformBlock tileHomeubo; //rotating tile in home menu screen 
+	TileUniformBlock tileHomeubo; // Rotating tile in home menu screen 
 	RoughSurfaceUniformBlock bgubo;
 	RoughSurfaceUniformBlock wallubo;
 	RoughSurfaceUniformBlock floorubo;
@@ -310,13 +310,13 @@ protected:
 	CommonUniformBlock commonubo[41];
 
 	// Other application parameters
-	int tileTextureIdx = 0;					//Id of the current tile texture 
-	int boardTextureIdx = 0;				//Id of the current board texture
-	int circleTextureIdx = 0;				//Id of the current day/night button texture
-	int pictureFrameImageIdx1 = 0;			//Id of the current picture frame image 1 texture
-	int pictureFrameImageIdx2 = 0;			//Id of the current picture frame image 2 texture
-	int lampTextureIdx = 1;					//Id of the current lamp texture (Alight or not)
-	int landscapeTextureIdx = 0;			//Id of the current window landscape texture
+	int tileTextureIdx = 0;					// Id of the current tile texture 
+	int boardTextureIdx = 0;				// Id of the current board texture
+	int circleTextureIdx = 0;				// Id of the current day/night button texture
+	int pictureFrameImageIdx1 = 0;			// Id of the current picture frame image 1 texture
+	int pictureFrameImageIdx2 = 0;			// Id of the current picture frame image 2 texture
+	int lampTextureIdx = 1;					// Id of the current lamp texture (Alight or not)
+	int landscapeTextureIdx = 0;			// Id of the current window landscape texture
 	// Camera parameters
 	const float FOVy = glm::radians(90.0f);
 	const float nearPlane = 0.01f;
@@ -328,7 +328,7 @@ protected:
 	const float initialPitch = glm::radians(60.0f);
 	const float initialYaw = glm::radians(0.0f);
 	
-	//other parameters
+	// Other parameters
 	int gameState = -1;
 	int isCandleAlight = 0;
 	glm::vec3 generalSColor = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -337,14 +337,14 @@ protected:
 	int firstTileIndex = -1;
 	int secondTileIndex = -1;
 	const glm::mat4 removedTileWorld = glm::translate(glm::mat4(1.0), glm::vec3(10.0f, -20.0f, 0.0f)) * 
-								glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
+									      glm::scale(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, 0.0f));
 	const glm::vec3 homeMenuPosition = glm::vec3(-10.0f, 0.0f, -20.0f);
 	const glm::mat4 homeMenuWorld = glm::translate(glm::mat4(1.0f), homeMenuPosition);
 
 
 	// Main application parameters
 	void setWindowParameters() {
-		// window size, title and initial background
+		// Window size, title and initial background
 		windowWidth = 1200;
 		windowHeight = 900;
 		windowTitle = "Mahjong";
@@ -372,22 +372,22 @@ protected:
 	void localInit() {
 		// Descriptor Set Layouts
 		DSLTile.init(this, {
-					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}			// tile block
+					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}			// Tile block
 			});
 		DSLPlain.init(this, {
-					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// common block
-					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}	// texture
+					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// Common block
+					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}	// Texture
 			});
 		DSLGeneric.init(this, {
-					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// common block
-					{1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// shading block
-					{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}	// texture
+					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// Common block
+					{1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},			// Shading block
+					{2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}	// Texture
 			});
 		DSLTextureOnly.init(this, {
-					{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},	// texture
+					{0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},	// Texture
 			});
 		DSLGubo.init(this, {
-					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}			// gubo block
+					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}			// Gubo block
 			});
 		// Vertex descriptors
 		VMesh.init(this, {
@@ -435,11 +435,11 @@ protected:
 		// MODELS
 		//----------------------
 		
-		//----------------------
-		// Manual models
-		//----------------------
+		//--------------------------
+		// Manually defined models
+		//--------------------------
 		
-		//home menu base coordinates
+		// Home menu base coordinates
 		float a = 2.0f;
 		float b = 3.0f;
 		MHome.vertices = {
@@ -451,7 +451,7 @@ protected:
 		MHome.indices = { 0, 2, 1,    0, 3, 2 };
 		MHome.initMesh(this, &VMesh);
 
-		//Game Title base coordinates
+		// Game Title base coordinates
 		float half_width_for_vert = 1.33f; 
 		float hUp = 2.5f;
 		float hDown = 1.5f;
@@ -477,7 +477,7 @@ protected:
 		MPlainRectangle.indices = { 0, 2, 1,    0, 3, 2 };
 		MPlainRectangle.initMesh(this, &VMesh);
 
-		//Arrow base coordinates
+		// Arrow base coordinates
 		float squareSide = 1.0f;
 		MArrowButton.vertices = {
 			{{-squareSide/2, squareSide, 0.0f}, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }},
@@ -488,7 +488,7 @@ protected:
 		MArrowButton.indices = { 0, 2, 1,    0, 3, 2 };
 		MArrowButton.initMesh(this, &VMesh);
 
-		//day/night button
+		// Day/night button
 		MCircleButton.vertices = MArrowButton.vertices;
 		MCircleButton.indices = MArrowButton.indices;
 		MCircleButton.initMesh(this, &VMesh);
@@ -521,8 +521,8 @@ protected:
 		vector<VertexMesh> wallVertices;
 		vector<unsigned int> wallIndices;
 		int vertexIndex = 0;
-		// walls are defined separately because uvs have to change order for each wall
-		// left wall
+		// Walls are defined separately because uvs have to change order for each wall
+		// Left wall
 		float x = -roomHalfWidth;
 		for (float z : {roomHalfWidth, -roomHalfWidth}) {
 			for (float y : {roomHeight, 0.0f}) {
@@ -530,7 +530,7 @@ protected:
 				vertexIndex++;
 			}
 		}
-		// right wall
+		// Right wall
 		x = roomHalfWidth;
 		vertexIndex = 0;
 		for (float z : {-roomHalfWidth, roomHalfWidth}) {
@@ -539,7 +539,7 @@ protected:
 				vertexIndex++;
 			}
 		}
-		// front wall
+		// Front wall
 		float z = -roomHalfWidth;
 		vertexIndex = 0;
 		for (float x : {-roomHalfWidth, roomHalfWidth}) {
@@ -548,7 +548,7 @@ protected:
 				vertexIndex++;
 			}
 		}
-		// back wall
+		// Back wall
 		z = roomHalfWidth;
 		vertexIndex = 0;
 		for (float x : {roomHalfWidth, -roomHalfWidth}) {
@@ -1228,7 +1228,7 @@ protected:
 		DSGameTitle.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MGameTitle.indices.size()), 1, 0, 0, 0);
-		//Rectangles
+		// Rectangles
 		MPlainRectangle.bind(commandBuffer);
 		DSButton1.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1260,7 +1260,7 @@ protected:
 		DSBoardSelText.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0);
-		//Arrow buttons
+		// Arrow buttons
 		MArrowButton.bind(commandBuffer);
 		DSArrowButton1_left.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1280,7 +1280,7 @@ protected:
 		DSArrowButton3_right.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MArrowButton.indices.size()), 1, 0, 0, 0);
-		//Circle button
+		// Circle button
 		MCircleButton.bind(commandBuffer);
 		DSCircleButton.bind(commandBuffer, PPlain, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1345,12 +1345,12 @@ protected:
 		DSWindow3.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MWindow.indices.size()), 1, 0, 0, 0);
-		//Chair
+		// Chair
 		MChair.bind(commandBuffer);
 		DSChair.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MChair.indices.size()), 1, 0, 0, 0);
-		//Picture frame image
+		// Picture frame image
 		MPlainRectangle.bind(commandBuffer); 
 		DSPictureFrameImage1.bind(commandBuffer, PRoughSurfaces, 0, currentImage); 
 		vkCmdDrawIndexed(commandBuffer, 
@@ -1358,12 +1358,12 @@ protected:
 		DSPictureFrameImage2.bind(commandBuffer, PRoughSurfaces, 0, currentImage); 
 		vkCmdDrawIndexed(commandBuffer, 
 			static_cast<uint32_t>(MPlainRectangle.indices.size()), 1, 0, 0, 0); 
-		//Lamp
+		// Lamp
 		MLamp.bind(commandBuffer);
 		DSLamp.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MLamp.indices.size()), 1, 0, 0, 0);
-		//Door
+		// Door
 		MDoor.bind(commandBuffer);
 		DSDoor.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1379,32 +1379,32 @@ protected:
 		DSLion.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MLion.indices.size()), 1, 0, 0, 0);
-		//Picture frame 1
+		// Picture frame 1
 		MPictureFrame.bind(commandBuffer);
 		DSPictureFrame1.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPictureFrame.indices.size()), 1, 0, 0, 0);
-		//Picture frame 2
+		// Picture frame 2
 		MPictureFrame.bind(commandBuffer);
 		DSPictureFrame2.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MPictureFrame.indices.size()), 1, 0, 0, 0);
-		//Vase
+		// Vase
 		MVase.bind(commandBuffer);
 		DSVase.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MVase.indices.size()), 1, 0, 0, 0);
-		//Candle
+		// Candle
 		MCandle.bind(commandBuffer);
 		DSCandle.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MCandle.indices.size()), 1, 0, 0, 0);
-		//Kettle
+		// Kettle
 		MKettle.bind(commandBuffer);
 		DSKettle.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 			static_cast<uint32_t>(MKettle.indices.size()), 1, 0, 0, 0);
-		//Blackboard
+		// Blackboard
 		MBlackboardFrame.bind(commandBuffer);
 		DSBlackboardFrame.bind(commandBuffer, PSmoothSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1419,7 +1419,7 @@ protected:
 		
 		PRoughSurfaces.bind(commandBuffer);
 		DSGubo.bind(commandBuffer, PRoughSurfaces, 1, currentImage);
-		//Blackboard commands text
+		// Blackboard commands text
 		MPlainRectangle.bind(commandBuffer);
 		DSBlackboardText.bind(commandBuffer, PRoughSurfaces, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -1472,7 +1472,7 @@ protected:
 	void updateUniformBuffer(uint32_t currentImage) {
 
 		//---------------------
-		//GETTING COMMANDS IMPUTS
+		// GETTING COMMANDS INPUTS
 		//---------------------
 
 		// Standard procedure to quit when the ESC key is pressed
@@ -1533,7 +1533,7 @@ protected:
 		bool enterPressedFirstTime = false;
 		switch (gameState) {
 			
-			case -1: //menu	
+			case -1: // Menu	
 
 				if (reset) {
 					game = MahjongGame(structurePath);
@@ -1568,18 +1568,18 @@ protected:
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC); 
 				}
 
-				//Change day/Night
+				// Change day/Night
 				if (handleClick && hoverIndex == -45) {
 					circleTextureIdx++;
 					if (circleTextureIdx == 2) circleTextureIdx = 0;
 					PlaySound(TEXT("sounds/button_click.wav"), NULL, SND_FILENAME | SND_ASYNC);
 				}
 
-				//Start the game
+				// Start the game
 				if (handleClick && hoverIndex == -30) {
 					gameState = 0;
 
-					//random gen of the index to use to chose the picture for the picture frame
+					// Random gen of the index to use to chose the picture for the picture frame
 					int max = 3;
 					int min = 0;
 					std::mt19937 rng(time(NULL));
@@ -1597,17 +1597,17 @@ protected:
 				}
 				break;
 			case 0:
-				//no piece selected
+				// No piece selected
 				firstTileIndex = -1;
 				secondTileIndex = -1;
-				DisappearingTileTransparency = 1.0f; //not transparent
+				DisappearingTileTransparency = 1.0f; // Not transparent
 				if (handleClick && hoverIndex > -1) {
 					firstTileIndex = hoverIndex;
 					gameState = 1;
 				}
 				break;
 			case 1:
-				//1 piece selected and highlighted
+				// 1 piece selected and highlighted
 				if (handleClick && hoverIndex>-1) {
 					if (hoverIndex != firstTileIndex) {
 						secondTileIndex = hoverIndex;
@@ -1620,28 +1620,28 @@ protected:
 				}
 				break;
 			case 2:
-				//2 pieces selected and highlighted
+				// 2 pieces selected and highlighted
 				if (game.canRemoveTiles(firstTileIndex,secondTileIndex)) {
-					//correct selection
+					// Correct selection
 					gameState = 4;
 				}
 				else {
-					//selected 2 uncompatible tiles
+					// Selected 2 uncompatible tiles
 					gameState = 3;
 				}
 				DisappearingTileTransparency = 1.0f;
 				break;
 			case 3:
-				//wrong choice of second piece
-				//notify error
+				// Wrong choice of second piece
+				// Notify error
 				PlaySound(TEXT("sounds/game_error_tone_1.wav"), NULL, SND_FILENAME | SND_ASYNC);
-				//deselect tiles
+				// Deselect tiles
 				firstTileIndex = -1;
 				secondTileIndex = -1;
 				gameState = 0;
 				break;
 			case 4:
-				//two pieces start to disappear
+				// Two pieces start to disappear
 				DisappearingTileTransparency = DisappearingTileTransparency - 2.5f * deltaT;
 				if (DisappearingTileTransparency <= 0) {
 					DisappearingTileTransparency = 0;
@@ -1649,7 +1649,7 @@ protected:
 				}
 				break;
 			case 5:
-				//remove the tile
+				// Remove the tile
 				game.removeTiles(firstTileIndex, secondTileIndex);
 				if (game.isWon() || game.isGameOver()) {
 					gameState = 6;
@@ -1685,7 +1685,7 @@ protected:
 					reset = true;
 				}
 				break;
-			case 8:	// screen to go back to menu
+			case 8:	// Screen to go back to menu
 				youwinubo.visible = 0.0f;
 				gameoverubo.visible = 0.0f;
 				backtomenuubo.visible = 1.0f;
@@ -1695,7 +1695,7 @@ protected:
 					backtomenuubo.visible = 0.0f;
 					yesbuttonubo.visible = 0.0f;
 					nobuttonubo.visible = 0.0f;
-					if (hoverIndex == -2) {	//yes
+					if (hoverIndex == -2) {	// Yes
 						gameState = -1;
 						reset = true;
 						boardTextureIdx = 0;
@@ -1710,28 +1710,27 @@ protected:
 		}
 
 		//---------------------------
-		//CAMERA SETTINGS
+		// CAMERA SETTINGS
 		//---------------------------
 
-		//Change position accoring to received commands
+		// Change position accoring to received commands
 		CamH += m.z * movSpeed * deltaT;
 		CamRadius -= m.x * movSpeed * deltaT;
-		CamRadius = glm::clamp(CamRadius, 0.20f, 1.5f); //minumum and maximum zoom of the cam
+		CamRadius = glm::clamp(CamRadius, 0.20f, 1.5f); // Minumum and maximum zoom of the cam
 
 		CamPitch -= r.x * rotSpeed * deltaT;
-		CamPitch = glm::clamp(CamPitch, glm::radians(-10.0f), glm::radians(89.0f)); //constraints on degrees on elevation of the cam 
+		CamPitch = glm::clamp(CamPitch, glm::radians(-10.0f), glm::radians(89.0f)); // Constraints on degrees on elevation of the cam 
 
 		CamYaw += r.y * rotSpeed * deltaT;
 
-		//Game logic: overwrites coordinates if fire (space) is pressed and released
-		//Bring to initial position
-		if (handleFire || enterPressedFirstTime) { //replace hanfleFire with "wasFire" to have event happen upon pressing and not release of fire key
-			//glm::vec3 
+		// Game logic: overwrites coordinates if fire (space) is pressed and released
+		// Bring to initial position
+		if (handleFire || enterPressedFirstTime) { // Replace hanfleFire with "wasFire" to have event happen upon pressing and not release of fire key 
 			CamRadius = initialCamRadius; 
 			CamPitch = initialPitch; 
 			CamYaw = initialYaw; 
 		}
-		//if in menu, fix the camera at a certain point
+		// If in menu, fix the camera at a certain point
 		if (gameState == -1) {
 			CamRadius = 4.0f;
 			CamPitch = 0.0f;
@@ -1742,13 +1741,13 @@ protected:
 		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
 		Prj[1][1] *= -1;
 
-		//a
+		// a
 		glm::vec3 camTarget = glm::vec3(0, 0.6f, -0.5);
 		if (gameState == -1) {
 			camTarget = homeMenuPosition + glm::vec3(0, 1.2f, 0);
 		}
 
-		//c
+		// c
 		glm::vec3 camPos = camTarget + CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw), sin(CamPitch), cos(CamPitch) * cos(CamYaw));
 
 
@@ -2011,7 +2010,7 @@ protected:
 		commonubo[23].textureIdx = 0;
 		DSSelection3.map(currentImage, &commonubo[23], sizeof(commonubo[23]), 0);
 
-		// day/night time selection title
+		// Day/night time selection title
 		WorldB = glm::translate(glm::mat4(1.0f), glm::vec3(2.65f, -3.1f, 0.12f)) * translateUp * homeMenuWorld * glm::scale(glm::mat4(1), glm::vec3(1.0f) * 0.9f);
 		commonubo[33].mvpMat = Prj * View * WorldB;
 		commonubo[33].mMat = WorldB;
@@ -2301,16 +2300,16 @@ protected:
 		std::uniform_int_distribution<int> genEmissionPicker(0, 3);
 		int emissionPicker = genEmissionPicker(rngFlame);
 		glm::vec3 emissionColors[4] = {
-			glm::vec3(235.0f/255.0f, 103.0f/255.0f, 52.0f/255.0f),		//Dark orange
-			glm::vec3(245.0f/255.0f, 2.0f/255.0f, 2.0f/255.0f),			//Red
-			glm::vec3(232.0f/255.0f, 65.0f/255.0f, 19.0f/255.0f),		//Lighter red
+			glm::vec3(235.0f/255.0f, 103.0f/255.0f, 52.0f/255.0f),		// Dark orange
+			glm::vec3(245.0f/255.0f, 2.0f/255.0f, 2.0f/255.0f),			// Red
+			glm::vec3(232.0f/255.0f, 65.0f/255.0f, 19.0f/255.0f),		// Lighter red
 			glm::vec3(245.0f/255.0f, 136.0f/255.0f, 2.0f/255.0f),		// Light orange
 		};
 		glm::vec3 chosenEmissionColor = emissionColors[emissionPicker];
 		std::uniform_int_distribution<int> genshearCoeff(-2, 2);
 		float shearhx = genshearCoeff(rngFlame)/10.0f;
 		float shearhz = genshearCoeff(rngFlame)/10.0f;
-		World = glm::translate(glm::mat4(1), candleLightPos) * //glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.115f, 0.0f)) *
+		World = glm::translate(glm::mat4(1), candleLightPos) *
 			glm::rotate(glm::mat4(1), glm::radians(rotationDiff), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::scale(glm::mat4(1), glm::vec3(0.16f)) *
 			glm::scale(glm::mat4(1), glm::vec3(float(isCandleAlight))) *
@@ -2341,7 +2340,7 @@ protected:
 			candleubo.amb = 1.0f; candleubo.gamma = 200.0f;
 		}
 		
-		if (isCandleAlight) candleubo.sColor = chosenEmissionColor;	//change specular color according to emitted color by the candle light
+		if (isCandleAlight) candleubo.sColor = chosenEmissionColor;	// Change specular color according to emitted color by the candle light
 		else candleubo.sColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		DSCandle.map(currentImage, &commonubo[32], sizeof(commonubo[32]), 0);
 		DSCandle.map(currentImage, &candleubo, sizeof(candleubo), 1);
@@ -2431,7 +2430,7 @@ protected:
 		for (int i = 0; i < 144; i++) {
 			float scaleFactor = game.tiles[i].isRemoved ? 0.0f : 1.0f;
 			glm::mat4 Tbase = baseTranslation * glm::translate(glm::mat4(1), glm::vec3(0.0f, 0.6f, 0.0f));
-			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // matrix for translation
+			glm::mat4 Tmat = glm::translate(glm::mat4(1), game.tiles[i].position * scaleFactor); // Matrix for translation
 			glm::mat4 Smat = glm::scale(glm::mat4(1), glm::vec3(scaleFactor));
 
 			World = Tbase * Tmat * Smat; // translate tile in position
