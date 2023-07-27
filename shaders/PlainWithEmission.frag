@@ -30,5 +30,5 @@ void main() {
 	float alpha = ubo.transparency * texture(tex, vec3(fragUV, ubo.textureIdx)).a + (1.0f-ubo.transparency);
 	// Outputs
 	outColor = vec4(clamp(texture(tex, vec3(fragUV, ubo.textureIdx)).rgb + 0.7f*eubo.emission, 0.0f, 1.0f), alpha);
-	id = ubo.objectIdx;
+	id = -1;
 }

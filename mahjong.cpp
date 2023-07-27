@@ -2154,6 +2154,7 @@ protected:
 		commonubo[8].nMat = glm::inverse(glm::transpose(World));
 		commonubo[8].transparency = 0.0f;
 		commonubo[8].textureIdx = landscapeTextureIdx;
+		commonubo[8].objectIdx = -1;
 		DSLandscape.map(currentImage, &commonubo[8], sizeof(commonubo[8]), 0);
 
 		// Lion statue
