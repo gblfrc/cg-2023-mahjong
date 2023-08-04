@@ -33,7 +33,7 @@ The structure of this repository aims at reproducing the one of the archives pro
 - It might happen, upon compiling the project with VS, that an error (C4996) is thrown for the presence of an unsafe function *sprintf* in the header file *stb_image_write.h*. To solve this issue, simply replace such function with *sprintf_s*.
 
 ## Grading
-The project was presented in the Summer session, on 27th July 2023. As of 30/07/2023, no grading information had been released yet. More on this will be provided as soon as the grading is published.
+The project was presented in the Summer session, on 27th July 2023 and was evaluated with the highest grade.
 
 ## Authors
 - [Luca Gerin](https://github.com/LucaGerin)
